@@ -1,0 +1,14 @@
+{
+	"require": {
+		"php": "^7.3",
+		"lib-iconv": "*",
+		"ext-pdo": "*",
+		"ext-pdo_sqlite": "*",
+		"ext-mbstring": "*",
+		"ext-fileinfo": "*",
+		"ext-intl" : "*",
+		"ext-tidy" : "*",
+		"ext-gd": "*"
+	},
+	"prefer-stable": true
+}
