@@ -1,3 +1,4 @@
+
 -- Database presets
 PRAGMA encoding = "UTF-8";	-- Default encoding set to UTF-8
 PRAGMA page_size = "16384";	-- Blob performance improvement
@@ -5,6 +6,7 @@ PRAGMA auto_vacuum = "2";	-- File size improvement
 PRAGMA temp_store = "2";	-- Memory temp storage for performance
 PRAGMA journal_mode = "WAL";	-- Performance improvement
 PRAGMA secure_delete = "1";	-- Privacy improvement
+
 
 -- Generate a random unique string
 -- Usage:
@@ -35,6 +37,9 @@ CREATE TABLE sites (
 	
 	-- Relative path
 	basepath TEXT NOT NULL, 
+	
+	-- Serialized JSON
+	settings TEXT NOT NULL DEFAULT '{}',
 	
 	is_active INTEGER NOT NULL DEFAULT 1,
 	is_maintenance INTEGER NOT NULL DEFAULT 0
@@ -90,8 +95,6 @@ CREATE TABLE date_formats(
 );-- --
 CREATE UNIQUE INDEX idx_date_locals ON date_formats( locale );-- --
 CREATE UNIQUE INDEX idx_date_format ON date_formats( render );-- --
-
-
 
 
 -- User profiles
@@ -151,6 +154,7 @@ CREATE TABLE user_auth(
 	provider_id INTEGER DEFAULT NULL,
 	email TEXT DEFAULT NULL COLLATE NOCASE,
 	mobile_pin TEXT DEFAULT NULL COLLATE NOCASE,
+	info TEXT DEFAULT NULL,
 	
 	-- Activity
 	last_ip TEXT DEFAULT NULL COLLATE NOCASE,
@@ -214,7 +218,7 @@ BEGIN
 		last_ip		= NEW.last_ip,
 		last_login	= CURRENT_TIMESTAMP, 
 		last_active	= CURRENT_TIMESTAMP
-		WHERE id = OLD.id;
+		WHERE id	= OLD.id;
 END;-- --
 
 CREATE TRIGGER user_last_ip INSTEAD OF 
@@ -223,7 +227,7 @@ BEGIN
 	UPDATE user_auth SET 
 		last_ip		= NEW.last_ip, 
 		last_active	= CURRENT_TIMESTAMP 
-		WHERE id = OLD.id;
+		WHERE id	= OLD.id;
 END;-- --
 
 CREATE TRIGGER user_last_active INSTEAD OF 
@@ -270,7 +274,7 @@ SELECT
 	users.created AS created, 
 	users.status AS status, 
 	users.username AS name
-	 
+	
 	FROM logins
 	JOIN users ON logins.user_id = users.id;-- --
 
@@ -372,17 +376,11 @@ CREATE UNIQUE INDEX idx_user_role ON
 	user_roles( role_id, user_id );-- --
 
 
-
-
-
--- Site content
+-- Site content regions/paged collections
 CREATE TABLE areas (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 	label TEXT NOT NULL COLLATE NOCASE,
 	site_id INTEGER NOT NULL,
-	
-	-- Render template HTML
-	render TEXT NOT NULL DEFAULT '' COLLATE NOCASE,
 	
 	permissions TEXT NOT NULL DEFAULT '{}',
 	settings TEXT NOT NULL DEFAULT '{}',
@@ -392,17 +390,35 @@ CREATE TABLE areas (
 		REFERENCES sites ( id )
 		ON DELETE CASCADE
 );-- --
+CREATE UNIQUE INDEX idx_area_label ON areas ( label );-- --
+
+-- Area render template HTML
+CREATE TABLE area_render (
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+	area_id INTEGER NOT NULL,
+	
+	render TEXT NOT NULL DEFAULT '' COLLATE NOCASE,
+	settings TEXT NOT NULL DEFAULT '{}',
+	status INTEGER NOT NULL DEFAULT 0,
+	
+	CONSTRAINT fk_area_render
+		FOREIGN KEY ( area_id ) 
+		REFERENCES areas ( id )
+		ON DELETE CASCADE
+);-- --
 
 CREATE TABLE pages (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	uuid TEXT DEFAULT NULL,
 	site_id INTEGER NOT NULL,
 	ptype TEXT NOT NULL COLLATE NOCASE,
-	render TEXT NOT NULL DEFAULT '' COLLATE NOCASE,	-- Template override
+	
+	-- Template override
+	render TEXT NOT NULL DEFAULT '' COLLATE NOCASE,
 	parent_id INTEGER DEFAULT NULL,
 	is_home INTEGER NOT NULL DEFAULT 0,
-	enable_children INTEGER NOT NULL DEFAULT 0,
-	enable_comments INTEGER NOT NULL DEFAULT 0,
+	allow_children INTEGER NOT NULL DEFAULT 0,
+	allow_comments INTEGER NOT NULL DEFAULT 0,
 	sort_order INTEGER NOT NULL DEFAULT 0,
 	child_count INTEGER NOT NULL DEFAULT 0,
 	comment_count INTEGER NOT NULL DEFAULT 0,
@@ -477,6 +493,22 @@ CREATE TABLE page_paths (
 );
 CREATE UNIQUE INDEX idx_page_paths ON page_paths ( url ASC );
 
+-- Render clusters
+CREATE TABLE page_area(
+	page_id INTEGER NOT NULL, 
+	area_id INTEGER NOT NULL, 
+	
+	CONSTRAINT fk_page_area_page 
+		FOREIGN KEY ( page_id ) 
+		REFERENCES pages ( id ) 
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_page_area_area 
+		FOREIGN KEY ( area_id ) 
+		REFERENCES areas ( id ) 
+		ON DELETE RESTRICT
+);-- --
+
 
 -- Page content data
 CREATE TABLE page_texts (
@@ -486,8 +518,12 @@ CREATE TABLE page_texts (
 	path_id INTEGER NOT NULL,
 	slug TEXT NOT NULL COLLATE NOCASE,
 	title TEXT NOT NULL COLLATE NOCASE,
-	body TEXT NOT NULL COLLATE NOCASE,	-- Exactly as entered
-	bare TEXT NOT NULL COLLATE NOCASE,	-- HTML stripped
+	
+	-- Exactly as entered
+	body TEXT NOT NULL COLLATE NOCASE,
+	
+	-- HTML stripped
+	bare TEXT NOT NULL COLLATE NOCASE,
 	
 	CONSTRAINT fk_page_texts_page 
 		FOREIGN KEY ( page_id ) 
@@ -584,7 +620,6 @@ CREATE TABLE page_text_users(
 CREATE UNIQUE INDEX idx_page_text_users ON 
 	page_text_users( text_id, user_id );-- --
 
-
 -- Page text revision history ( this should be append-only )
 CREATE TABLE page_revisions (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
@@ -636,9 +671,6 @@ CREATE TRIGGER page_text_delete BEFORE DELETE ON page_texts FOR EACH ROW
 BEGIN
 	DELETE FROM page_text_search WHERE docid = OLD.id;
 END;-- --
-
-
-
 
 -- Content tagging and categorizing
 CREATE TABLE terms (
@@ -717,8 +749,6 @@ CREATE TABLE page_terms (
 CREATE UNIQUE INDEX idx_page_term_slug ON 
 	page_terms ( page_id, term_id );-- --
 CREATE INDEX idx_page_term_sort ON page_terms ( sort_order );-- --
-
-
 
 
 -- Page feedback
@@ -849,6 +879,7 @@ CREATE TABLE attachments (
 	filesize INTEGER NOT NULL DEFAULT 0,
 	
 	mime_type TEXT NOT NULL COLLATE NOCASE,
+	meta TEXT NOT NULL DEFAULT '' COLLATE NOCASE,
 	
 	preview TEXT DEFAULT NULL, 
 	sort_order INTEGER NOT NULL DEFAULT 0,
@@ -977,9 +1008,6 @@ BEGIN
 END;-- --
 
 
-
-
-
 -- Content menues and navigation
 CREATE TABLE menues(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -1020,8 +1048,6 @@ CREATE TABLE menu_texts (
 );-- --
 CREATE UNIQUE INDEX idx_menu_lang ON 
 	menu_texts ( menu_id, lang_id );-- --
-
-
 
 
 -- Special actions
@@ -1080,8 +1106,6 @@ CREATE VIEW site_event_view AS SELECT
 
 
 
-
-
 CREATE TABLE user_events (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	user_id INTEGER NOT NULL,
@@ -1120,9 +1144,6 @@ CREATE VIEW user_event_view AS SELECT
 	FROM user_events u
 	LEFT JOIN events e ON u.event_id = e.id
 	LEFT JOIN triggers t ON u.trigger_id = t.id;-- --
-
-
-
 
 
 CREATE TABLE page_events (
@@ -1165,9 +1186,6 @@ CREATE VIEW page_event_view AS SELECT
 	LEFT JOIN triggers t ON p.trigger_id = t.id;-- --
 
 
-
-
-
 CREATE TABLE menu_events (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	menu_id INTEGER NOT NULL,
@@ -1206,8 +1224,6 @@ CREATE VIEW menu_event_view AS SELECT
 	FROM menu_events m
 	LEFT JOIN events e ON m.event_id = e.id
 	LEFT JOIN triggers t ON m.trigger_id = t.id;-- --
-
-
 
 
 -- Loadable modules
@@ -1249,7 +1265,7 @@ CREATE TABLE redirects (
 		REFERENCES languages ( id ) 
 		ON DELETE CASCADE
 );-- --
-CREATE UNIQUE INDEX idx_redirect ON redirects( old_src, new_src );-- --
+CREATE UNIQUE INDEX idx_redirect ON redirects( old_src, new_src );
 
 
 
