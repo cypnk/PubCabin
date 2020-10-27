@@ -12,6 +12,10 @@ DATE=`date +%Y-%m-%d-%H-%M-%S`
 mkdir -p backup
 mkdir -p uploads
 
+# Runtime application data
+mkdir -p cache
+mkdir -p modules
+
 # Language folder
 mkdir -p lang
 
@@ -20,6 +24,10 @@ touch config.json
 
 # Default language file
 touch lang/en-US.json
+
+# Error logs
+touch errors.log
+touch visitor_errors.log
 
 
 # Make a backup if a database exists, instead of overwriting
@@ -65,6 +73,8 @@ fi
 # Set permissions
 chmod -R 600 backup
 chmod -R 755 uploads
+chmod -R 755 cache
+chmod -R 755 modules
 chmod -R 755 lang
 
 chmod 755 main.db
