@@ -26,6 +26,14 @@ CREATE VIEW uuid AS SELECT lower(
 	hex( randomblob( 6 ) )
 ) AS id;-- --
 
+-- Shared settings
+CREATE TABLE settings(
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	label TEXT NOT NULL COLLATE NOCASE,
+	info TEXT NOT NULL DEFAULT '{}'	-- serialized JSON
+);-- --
+CREATE UNIQUE INDEX idx_settings_label ON settings( label );-- --
+
 
 -- Site data and content
 CREATE TABLE sites (
@@ -40,12 +48,19 @@ CREATE TABLE sites (
 	
 	-- Serialized JSON
 	settings TEXT NOT NULL DEFAULT '{}',
+	settings_id INTEGER DEFAULT NULL,
 	
 	is_active INTEGER NOT NULL DEFAULT 1,
-	is_maintenance INTEGER NOT NULL DEFAULT 0
+	is_maintenance INTEGER NOT NULL DEFAULT 0,
+	
+	CONSTRAINT fk_site_settings
+		FOREIGN KEY ( settings_id ) 
+		REFERENCES settings ( id )
+		ON DELETE SET NULL
 );-- --
 CREATE UNIQUE INDEX idx_site_path ON sites ( basename, basepath );-- --
 CREATE INDEX idx_site_label ON sites ( label );-- --
+CREATE INDEX idx_site_settings ON sites ( settings_id );-- --
 
 
 CREATE TABLE languages (
@@ -107,10 +122,17 @@ CREATE TABLE users (
 	bio TEXT DEFAULT NULL COLLATE NOCASE,
 	created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	status INTEGER NOT NULL DEFAULT 0
+	settings_id INTEGER DEFAULT NULL,
+	status INTEGER NOT NULL DEFAULT 0,
+	
+	CONSTRAINT fk_user_settings
+		FOREIGN KEY ( settings_id ) 
+		REFERENCES settings ( id )
+		ON DELETE SET NULL
 );-- --
 CREATE UNIQUE INDEX idx_username ON users( username );-- --
 CREATE UNIQUE INDEX idx_user_uuid ON users( uuid );-- --
+CREATE INDEX idx_user_settings ON users ( settings_id );-- --
 
 -- User searching
 CREATE VIRTUAL TABLE user_search 
@@ -349,13 +371,20 @@ CREATE TABLE role_privileges(
 	
 	-- Serialized JSON
 	settings TEXT NOT NULL DEFAULT '{}',
+	settings_id INTEGER DEFAULT NULL,
 	
 	CONSTRAINT fk_privilege_role 
 		FOREIGN KEY ( role_id ) 
 		REFERENCES roles ( id )
-		ON DELETE CASCADE
+		ON DELETE CASCADE, 
+	
+	CONSTRAINT fk_role_settings
+		FOREIGN KEY ( settings_id ) 
+		REFERENCES settings ( id )
+		ON DELETE SET NULL
 );-- --
 CREATE INDEX idx_privilege_role ON role_privileges( role_id );-- --
+CREATE INDEX idx_privilege_settings ON role_privileges ( settings_id );-- --
 
 CREATE TABLE user_roles(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -384,13 +413,20 @@ CREATE TABLE areas (
 	
 	permissions TEXT NOT NULL DEFAULT '{}',
 	settings TEXT NOT NULL DEFAULT '{}',
+	settings_id INTEGER DEFAULT NULL,
 	
 	CONSTRAINT fk_pages_site 
 		FOREIGN KEY ( site_id ) 
 		REFERENCES sites ( id )
-		ON DELETE CASCADE
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_area_settings
+		FOREIGN KEY ( settings_id ) 
+		REFERENCES settings
+		ON DELETE SET NULL
 );-- --
 CREATE UNIQUE INDEX idx_area_label ON areas ( label );-- --
+CREATE INDEX idx_area_settings ON areas ( settings_id );-- --
 
 -- Area render template HTML
 CREATE TABLE area_render (
@@ -399,13 +435,20 @@ CREATE TABLE area_render (
 	
 	render TEXT NOT NULL DEFAULT '' COLLATE NOCASE,
 	settings TEXT NOT NULL DEFAULT '{}',
+	settings_id INTEGER DEFAULT NULL,
 	status INTEGER NOT NULL DEFAULT 0,
 	
 	CONSTRAINT fk_area_render
 		FOREIGN KEY ( area_id ) 
 		REFERENCES areas ( id )
-		ON DELETE CASCADE
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_area_render_settings
+		FOREIGN KEY ( settings_id ) 
+		REFERENCES settings ( id )
+		ON DELETE SET NULL
 );-- --
+CREATE INDEX idx_area_render_settings ON area_render ( settings_id );-- --
 
 CREATE TABLE pages (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -426,23 +469,35 @@ CREATE TABLE pages (
 	updated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	published DATETIME DEFAULT NULL,
 	status INTEGER NOT NULL DEFAULT 0,
+	settings TEXT NOT NULL DEFAULT '{}',
+	settings_id INTEGER DEFAULT NULL,
 	
 	CONSTRAINT fk_pages_site 
 		FOREIGN KEY ( site_id ) 
 		REFERENCES sites ( id )
-		ON DELETE CASCADE, 
+		ON DELETE CASCADE,
 		
 	CONSTRAINT fk_pages_parent 
 		FOREIGN KEY ( parent_id ) 
 		REFERENCES pages ( id ) 
-		ON DELETE CASCADE
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_page_settings
+		FOREIGN KEY ( settings_id ) 
+		REFERENCES settings ( id )
+		ON DELETE SET NULL
 );-- --
 CREATE UNIQUE INDEX idx_page_uuid ON pages ( uuid );-- --
+CREATE INDEX idx_page_parent ON pages ( parent_id );-- --
+CREATE INDEX idx_page_site ON pages ( site_id );-- --
+CREATE INDEX idx_page_home ON pages ( is_home );-- --
 CREATE INDEX idx_page_type ON pages ( ptype );-- --
 CREATE INDEX idx_page_sort ON pages ( sort_order );-- --
 CREATE INDEX idx_page_created ON pages ( created );-- --
 CREATE INDEX idx_page_updated ON pages ( updated );-- --
+CREATE INDEX idx_page_status ON pages ( status );-- --
 CREATE INDEX idx_page_published ON pages ( published );-- --
+CREATE INDEX idx_page_settings ON pages ( settings_id );-- --
 
 
 -- Unset previous default hompage
@@ -548,7 +603,6 @@ CREATE UNIQUE INDEX idx_page_text ON
 -- Page with this slug can only occur once per site
 CREATE UNIQUE INDEX idx_page_slug ON page_texts ( page_id, slug );-- --
 
-
 -- Generate a random slug if empty
 CREATE TRIGGER page_texts_insert_slug AFTER INSERT ON 
 	page_texts FOR EACH ROW
@@ -583,7 +637,11 @@ CREATE TABLE text_sources (
 		REFERENCES page_texts ( id ) 
 		ON DELETE CASCADE
 );-- --
-
+CREATE INDEX idx_text_source ON term_sources ( text_id );-- --
+CREATE INDEX idx_term_source_url ON term_sources ( url );-- --
+CREATE INDEX idx_term_source_ttl ON term_sources ( ttl );-- --
+CREATE INDEX idx_term_source_created ON term_souces ( created );-- --
+CREATE INDEX idx_term_source_updated ON term_source ( updated );-- --
 
 -- Content authorship
 CREATE TABLE page_users(
@@ -639,8 +697,8 @@ CREATE TABLE page_revisions (
 		REFERENCES users ( id ) 
 		ON DELETE RESTRICT
 );-- --
-CREATE INDEX idx_page_revision_user ON page_revisions( user_id );-- --
-
+CREATE INDEX idx_page_revision_user ON page_revisions ( user_id );-- --
+CREATE INDEX idx_page_revision_text ON page_revisions ( text_id );-- --
 
 -- Page text searching
 CREATE VIRTUAL TABLE page_search 
@@ -689,7 +747,7 @@ CREATE TABLE term_texts (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 	term_id INTEGER NOT NULL,
 	lang_id INTEGER NOT NULL,
-	slug TEXT NOT NULL,
+	slug TEXT NOT NULL COLLATE NOCASE,
 	title TEXT COLLATE NOCASE,
 	body TEXT NOT NULL COLLATE NOCASE,
 	
@@ -707,7 +765,7 @@ CREATE TABLE term_texts (
 -- Unique slug per taxonomy term
 CREATE UNIQUE INDEX idx_term_text_slug ON 
 	term_texts ( term_id, slug );-- --
-
+CREATE INDEX idx_term_text_lang ON term_texts ( lang_id );-- --
 
 -- Generate a random term text slug if empty
 CREATE TRIGGER term_texts_insert_slug AFTER INSERT ON 
@@ -757,7 +815,7 @@ CREATE TABLE comments (
 	uuid TEXT DEFAULT NULL, 
 	user_id INTEGER DEFAULT NULL, 
 	author_name TEXT DEFAULT NULL COLLATE NOCASE,
-	author_sign TEXT DEFAULT NULL,
+	author_sign TEXT DEFAULT NULL COLLATE NOCASE,
 	author_email TEXT DEFAULT NULL COLLATE NOCASE,
 	author_url TEXT DEFAULT NULL COLLATE NOCASE,
 	author_ip TEXT DEFAULT NULL COLLATE NOCASE,
@@ -811,9 +869,6 @@ BEGIN
 	UPDATE pages SET comment_count = ( comment_count - 1 )
 		WHERE id = OLD.page_id;
 END;-- --
-
-
-
 
 
 -- Replies view
@@ -1007,6 +1062,12 @@ BEGIN
 		WHERE id = NEW.attachment_id;
 END;-- --
 
+CREATE TRIGGER attachment_text_delete BEFORE DELETE ON 
+	attachment_texts FOR EACH ROW 
+BEGIN
+	DELETE FROM attachment_search WHERE docid = OLD.id;
+END;-- --
+
 
 -- Content menues and navigation
 CREATE TABLE menues(
@@ -1050,6 +1111,96 @@ CREATE UNIQUE INDEX idx_menu_lang ON
 	menu_texts ( menu_id, lang_id );-- --
 
 
+
+-- Content locations
+CREATE TABLE places(
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	geo_lat REAL NOT NULL DEFAULT 0, 
+	geo_lon REAL NOT NULL DEFAULT 0
+);-- --
+CREATE UNIQUE INDEX idx_places ON places( geo_lat, geo_lon );-- --
+
+CREATE TABLE place_labels(
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	label TEXT NOT NULL DEFAULT '' COLLATE NOCASE,
+	place_id INTEGER NOT NULL,
+	lang_id INTEGER NOT NULL,
+	
+	CONSTRAINT fk_place_label
+		FOREIGN KEY ( place_id ) 
+		REFERENCES places ( id ) 
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_place_label_lang 
+		FOREIGN KEY ( lang_id ) 
+		REFERENCES languages ( id ) 
+		ON DELETE CASCADE
+);-- --
+
+-- Place searching
+CREATE VIRTUAL TABLE place_search 
+	USING fts4( body, tokenize=unicode61 );-- --
+
+-- Entry locations
+CREATE TABLE page_places(
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+	page_id INTEGER NOT NULL,
+	place_id INTEGER NOT NULL,
+	sort_order INTEGER NOT NULL DEFAULT 0,
+	
+	CONSTRAINT fk_page_place_page 
+		FOREIGN KEY ( page_id ) 
+		REFERENCES pages ( id ) 
+		ON DELETE CASCADE,
+		
+	CONSTRAINT fk_page_place
+		FOREIGN KEY ( place_id ) 
+		REFERENCES places ( id ) 
+		ON DELETE CASCADE
+);-- --
+CREATE INDEX idx_page_place_sort ON page_places( sort_order );-- --
+
+
+CREATE TABLE comment_places(
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+	comment_id INTEGER NOT NULL,
+	place_id INTEGER NOT NULL,
+	sort_order INTEGER NOT NULL DEFAULT 0,
+	
+	CONSTRAINT fk_comment_place_page 
+		FOREIGN KEY ( comment_id ) 
+		REFERENCES comments ( id ) 
+		ON DELETE CASCADE,
+		
+	CONSTRAINT fk_comment_place
+		FOREIGN KEY ( place_id ) 
+		REFERENCES places ( id ) 
+		ON DELETE CASCADE
+);-- --
+CREATE INDEX idx_comment_place_sort ON comment_places( sort_order );-- --
+
+
+CREATE TRIGGER page_place_insert AFTER INSERT ON 
+	place_labels FOR EACH ROW 
+BEGIN
+	INSERT INTO place_search( docid, body ) 
+		VALUES ( NEW.id, NEW.label );
+END;-- --
+
+CREATE TRIGGER page_place_update AFTER UPDATE ON 
+	place_labels FOR EACH ROW 
+BEGIN
+	UPDATE place_search SET body = NEW.label 
+		WHERE docid = NEW.id;
+END;-- --
+
+CREATE TRIGGER page_place_delete BEFORE DELETE ON 
+	place_labels FOR EACH ROW 
+BEGIN
+	DELETE FROM place_search WHERE docid = OLD.id;
+END;-- --
+
+
 -- Special actions
 CREATE TABLE events (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -1073,6 +1224,7 @@ CREATE TABLE site_events (
 	
 	-- Serialized JSON parameters
 	settings TEXT NOT NULL DEFAULT '{}',
+	settings_id INTEGER DEFAULT NULL,
 	
 	CONSTRAINT fk_site_events_site 
 		FOREIGN KEY ( site_id ) 
@@ -1087,9 +1239,15 @@ CREATE TABLE site_events (
 	CONSTRAINT fk_site_events_event
 		FOREIGN KEY ( event_id ) 
 		REFERENCES events ( id ) 
-		ON DELETE CASCADE
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_site_events_settings
+		FOREIGN KEY ( settings_id ) 
+		REFERENCES settings ( id )
+		ON DELETE SET NULL
 );-- --
 CREATE INDEX idx_site_event_sort ON site_events ( sort_order ASC );-- --
+CREATE INDEX idx_site_event_settings ON site_events ( settings_id );-- --
 
 CREATE VIEW site_event_view AS SELECT
 	s.id AS site_id, 
@@ -1113,6 +1271,7 @@ CREATE TABLE user_events (
 	trigger_id INTEGER NOT NULL,
 	sort_order INTEGER NOT NULL DEFAULT 0,
 	settings TEXT NOT NULL DEFAULT '{}',
+	settings_id INTEGER DEFAULT NULL,
 	
 	CONSTRAINT fk_user_events_user 
 		FOREIGN KEY ( user_id ) 
@@ -1127,9 +1286,15 @@ CREATE TABLE user_events (
 	CONSTRAINT fk_user_events_event
 		FOREIGN KEY ( event_id ) 
 		REFERENCES events ( id ) 
-		ON DELETE CASCADE
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_user_events_settings
+		FOREIGN KEY ( settings_id ) 
+		REFERENCES settings ( id )
+		ON DELETE SET NULL
 );-- --
 CREATE INDEX idx_user_event_sort ON user_events ( sort_order ASC );-- --
+CREATE INDEX idx_user_event_settings ON user_events ( settings_id );-- --
 
 
 CREATE VIEW user_event_view AS SELECT
@@ -1153,6 +1318,7 @@ CREATE TABLE page_events (
 	trigger_id INTEGER NOT NULL,
 	sort_order INTEGER NOT NULL DEFAULT 0,
 	settings TEXT NOT NULL DEFAULT '{}',
+	settings_id INTEGER DEFAULT NULL,
 	
 	CONSTRAINT fk_page_events_page 
 		FOREIGN KEY ( page_id ) 
@@ -1167,9 +1333,15 @@ CREATE TABLE page_events (
 	CONSTRAINT fk_page_events_event
 		FOREIGN KEY ( event_id ) 
 		REFERENCES events ( id ) 
-		ON DELETE CASCADE
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_page_events_settings
+		FOREIGN KEY ( settings_id ) 
+		REFERENCES settings ( id )
+		ON DELETE SET NULL
 );-- --
 CREATE INDEX idx_page_event_sort ON page_events ( sort_order ASC );-- --
+CREATE INDEX idx_page_event_settings ON page_events ( settings_id );-- --
 
 
 CREATE VIEW page_event_view AS SELECT
@@ -1193,6 +1365,7 @@ CREATE TABLE menu_events (
 	trigger_id INTEGER NOT NULL,
 	sort_order INTEGER NOT NULL DEFAULT 0,
 	settings TEXT NOT NULL DEFAULT '{}',
+	settings_id INTEGER DEFAULT NULL,
 	
 	CONSTRAINT fk_menu_events_user 
 		FOREIGN KEY ( menu_id ) 
@@ -1207,9 +1380,15 @@ CREATE TABLE menu_events (
 	CONSTRAINT fk_menu_events_event
 		FOREIGN KEY ( event_id ) 
 		REFERENCES events ( id ) 
-		ON DELETE CASCADE
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_menu_events_settings
+		FOREIGN KEY ( settings_id ) 
+		REFERENCES settings ( id )
+		ON DELETE SET NULL
 );-- --
 CREATE INDEX idx_menu_event_sort ON menu_events ( sort_order ASC );-- --
+CREATE INDEX idx_menu_event_settings ON menu_events ( settings_id );-- --
 
 
 CREATE VIEW menu_event_view AS SELECT
