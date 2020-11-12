@@ -637,11 +637,11 @@ CREATE TABLE text_sources (
 		REFERENCES page_texts ( id ) 
 		ON DELETE CASCADE
 );-- --
-CREATE INDEX idx_text_source ON term_sources ( text_id );-- --
-CREATE INDEX idx_term_source_url ON term_sources ( url );-- --
-CREATE INDEX idx_term_source_ttl ON term_sources ( ttl );-- --
-CREATE INDEX idx_term_source_created ON term_souces ( created );-- --
-CREATE INDEX idx_term_source_updated ON term_source ( updated );-- --
+CREATE INDEX idx_text_source ON text_sources ( text_id );-- --
+CREATE INDEX idx_term_source_url ON text_sources ( url );-- --
+CREATE INDEX idx_term_source_ttl ON text_sources ( ttl );-- --
+CREATE INDEX idx_term_source_created ON text_sources ( created );-- --
+CREATE INDEX idx_term_source_updated ON text_sources ( updated );-- --
 
 -- Content authorship
 CREATE TABLE page_users(
