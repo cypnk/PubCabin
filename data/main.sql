@@ -1255,7 +1255,7 @@ CREATE VIEW site_event_view AS SELECT
 	s.sort_order AS sort_order,
 	e.label AS event_label, 
 	s.trigger_id AS trigger_id, 
-	t.callback AS callback,
+	GROUP_CONCAT( DISTINCT t.callback, ',' ) AS callback,
 	s.settings AS settings
 	
 	FROM site_events s
@@ -1303,7 +1303,7 @@ CREATE VIEW user_event_view AS SELECT
 	u.sort_order AS sort_order,
 	e.label AS event_label, 
 	s.trigger_id AS trigger_id, 
-	t.callback AS callback,
+	GROUP_CONCAT( DISTINCT t.callback, ',' ) AS callback,
 	u.settings AS settings
 	
 	FROM user_events u
@@ -1350,7 +1350,7 @@ CREATE VIEW page_event_view AS SELECT
 	p.sort_order AS sort_order,
 	e.label AS event_label, 
 	s.trigger_id AS trigger_id, 
-	t.callback AS callback,
+	GROUP_CONCAT( DISTINCT t.callback, ',' ) AS callback,
 	p.settings AS settings
 	
 	FROM page_events p
@@ -1397,7 +1397,7 @@ CREATE VIEW menu_event_view AS SELECT
 	m.sort_order AS sort_order,
 	e.label AS event_label, 
 	s.trigger_id AS trigger_id, 
-	t.callback AS callback,
+	GROUP_CONCAT( DISTINCT t.callback, ',' ) AS callback,
 	m.settings AS settings
 	
 	FROM menu_events m
