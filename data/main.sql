@@ -1116,10 +1116,13 @@ CREATE UNIQUE INDEX idx_menu_lang ON
 -- Content locations
 CREATE TABLE places(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	settings TEXT NOT NULL DEFAULT '{}',
+	settings_id INTEGER DEFAULT NULL,
 	geo_lat REAL NOT NULL DEFAULT 0, 
 	geo_lon REAL NOT NULL DEFAULT 0
 );-- --
 CREATE UNIQUE INDEX idx_places ON places( geo_lat, geo_lon );-- --
+CREATE INDEX idx_place_settings ON places( settings_id );-- --
 
 CREATE TABLE place_labels(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -1161,6 +1164,18 @@ CREATE TABLE page_places(
 );-- --
 CREATE INDEX idx_page_place_sort ON page_places( sort_order );-- --
 
+CREATE VIEW page_place_view AS SELECT
+	l.place_id AS place_id,
+	l.page_id AS page_id,
+	p.geo_lat AS geo_lat,
+	p.geo_lon AS geo_lon,
+	p.settings AS settings_override,
+	g.settings AS settings
+	
+	FROM page_places l
+	LEFT JOIN places p ON l.place_id = p.id
+	LEFT JOIN settings g ON p.settings_id = g.id;-- --
+
 
 CREATE TABLE comment_places(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
@@ -1180,23 +1195,32 @@ CREATE TABLE comment_places(
 );-- --
 CREATE INDEX idx_comment_place_sort ON comment_places( sort_order );-- --
 
+CREATE VIEW page_place_view AS SELECT
+	l.place_id AS place_id,
+	l.comment_id AS comment_id,
+	p.geo_lat AS geo_lat,
+	p.geo_lon AS geo_lon,
+	p.settings AS settings_override,
+	g.settings AS settings
+	
+	FROM comment_places l
+	LEFT JOIN places p ON l.place_id = p.id
+	LEFT JOIN settings g ON p.settings_id = g.id;-- --
 
-CREATE TRIGGER page_place_insert AFTER INSERT ON 
-	place_labels FOR EACH ROW 
+
+CREATE TRIGGER place_label_insert AFTER INSERT ON place_labels FOR EACH ROW 
 BEGIN
 	INSERT INTO place_search( docid, body ) 
 		VALUES ( NEW.id, NEW.label );
 END;-- --
 
-CREATE TRIGGER page_place_update AFTER UPDATE ON 
-	place_labels FOR EACH ROW 
+CREATE TRIGGER place_label_update AFTER UPDATE ON place_labels FOR EACH ROW 
 BEGIN
 	UPDATE place_search SET body = NEW.label 
 		WHERE docid = NEW.id;
 END;-- --
 
-CREATE TRIGGER page_place_delete BEFORE DELETE ON 
-	place_labels FOR EACH ROW 
+CREATE TRIGGER place_label_delete BEFORE DELETE ON place_labels FOR EACH ROW 
 BEGIN
 	DELETE FROM place_search WHERE docid = OLD.id;
 END;-- --
