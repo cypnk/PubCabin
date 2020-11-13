@@ -1256,11 +1256,13 @@ CREATE VIEW site_event_view AS SELECT
 	e.label AS event_label, 
 	s.trigger_id AS trigger_id, 
 	GROUP_CONCAT( DISTINCT t.callback, ',' ) AS callback,
-	s.settings AS settings
+	s.settings AS settings_override,
+	g.settings AS settings
 	
 	FROM site_events s
 	LEFT JOIN events e ON s.event_id = e.id
-	LEFT JOIN triggers t ON s.trigger_id = t.id;-- --
+	LEFT JOIN triggers t ON s.trigger_id = t.id
+	LEFT JOIN settings g ON s.settings_id = g.id;-- --
 
 
 
@@ -1302,13 +1304,15 @@ CREATE VIEW user_event_view AS SELECT
 	u.event_id AS event_id, 
 	u.sort_order AS sort_order,
 	e.label AS event_label, 
-	s.trigger_id AS trigger_id, 
+	u.trigger_id AS trigger_id, 
 	GROUP_CONCAT( DISTINCT t.callback, ',' ) AS callback,
-	u.settings AS settings
+	u.settings AS settings_override,
+	g.settings AS settings
 	
 	FROM user_events u
 	LEFT JOIN events e ON u.event_id = e.id
-	LEFT JOIN triggers t ON u.trigger_id = t.id;-- --
+	LEFT JOIN triggers t ON u.trigger_id = t.id
+	LEFT JOIN settings g ON u.settings_id = g.id;-- --
 
 
 CREATE TABLE page_events (
@@ -1349,13 +1353,15 @@ CREATE VIEW page_event_view AS SELECT
 	p.event_id AS event_id, 
 	p.sort_order AS sort_order,
 	e.label AS event_label, 
-	s.trigger_id AS trigger_id, 
+	p.trigger_id AS trigger_id, 
 	GROUP_CONCAT( DISTINCT t.callback, ',' ) AS callback,
-	p.settings AS settings
+	p.settings AS settings_override,
+	g.settings AS settings
 	
 	FROM page_events p
 	LEFT JOIN events e ON p.event_id = e.id
-	LEFT JOIN triggers t ON p.trigger_id = t.id;-- --
+	LEFT JOIN triggers t ON p.trigger_id = t.id
+	LEFT JOIN settings g ON p.settings_id = g.id;-- --
 
 
 CREATE TABLE menu_events (
@@ -1398,11 +1404,13 @@ CREATE VIEW menu_event_view AS SELECT
 	e.label AS event_label, 
 	s.trigger_id AS trigger_id, 
 	GROUP_CONCAT( DISTINCT t.callback, ',' ) AS callback,
-	m.settings AS settings
+	m.settings AS settings_override,
+	g.settings AS settings
 	
 	FROM menu_events m
 	LEFT JOIN events e ON m.event_id = e.id
-	LEFT JOIN triggers t ON m.trigger_id = t.id;-- --
+	LEFT JOIN triggers t ON m.trigger_id = t.id
+	LEFT JOIN settings g ON m.settings_id = g.id;-- --
 
 
 -- Loadable modules
@@ -1444,7 +1452,55 @@ CREATE TABLE redirects (
 		REFERENCES languages ( id ) 
 		ON DELETE CASCADE
 );-- --
-CREATE UNIQUE INDEX idx_redirect ON redirects( old_src, new_src );
+CREATE UNIQUE INDEX idx_redirect ON redirects( old_src, new_src );-- --
+
+CREATE TABLE redirect_events (
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	redirect_id INTEGER NOT NULL,
+	event_id INTEGER NOT NULL,
+	trigger_id INTEGER NOT NULL,
+	sort_order INTEGER NOT NULL DEFAULT 0,
+	settings TEXT NOT NULL DEFAULT '{}',
+	settings_id INTEGER DEFAULT NULL,
+	
+	CONSTRAINT fk_redirect_events_redirect 
+		FOREIGN KEY ( redirect_id ) 
+		REFERENCES redirects ( id ) 
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_redirect_events_trigger 
+		FOREIGN KEY ( trigger_id ) 
+		REFERENCES triggers ( id ) 
+		ON DELETE CASCADE,
+		
+	CONSTRAINT fk_redirect_events_event
+		FOREIGN KEY ( event_id ) 
+		REFERENCES events ( id ) 
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_redirect_events_settings
+		FOREIGN KEY ( settings_id ) 
+		REFERENCES settings ( id )
+		ON DELETE SET NULL
+);-- --
+CREATE INDEX idx_redirect_event_sort ON redirect_events ( sort_order ASC );-- --
+
+CREATE VIEW redirect_event_view AS SELECT
+	r.id AS user_id, 
+	r.event_id AS event_id, 
+	r.sort_order AS sort_order,
+	e.label AS event_label, 
+	s.trigger_id AS trigger_id, 
+	GROUP_CONCAT( DISTINCT t.callback, ',' ) AS callback,
+	r.settings AS settings_override,
+	g.settings AS settings
+	
+	FROM redirect_events r
+	LEFT JOIN events e ON r.event_id = e.id
+	LEFT JOIN triggers t ON r.trigger_id = t.id
+	LEFT JOIN settings g ON r.settings_id = g.id;
+
+
 
 
 
