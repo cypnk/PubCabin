@@ -122,6 +122,7 @@ CREATE TABLE users (
 	bio TEXT DEFAULT NULL COLLATE NOCASE,
 	created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	settings TEXT NOT NULL DEFAULT '{}',
 	settings_id INTEGER DEFAULT NULL,
 	status INTEGER NOT NULL DEFAULT 0,
 	
@@ -1364,6 +1365,55 @@ CREATE VIEW page_event_view AS SELECT
 	LEFT JOIN settings g ON p.settings_id = g.id;-- --
 
 
+CREATE TABLE comment_events (
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	comment_id INTEGER NOT NULL,
+	event_id INTEGER NOT NULL,
+	trigger_id INTEGER NOT NULL,
+	sort_order INTEGER NOT NULL DEFAULT 0,
+	settings TEXT NOT NULL DEFAULT '{}',
+	settings_id INTEGER DEFAULT NULL,
+	
+	CONSTRAINT fk_comment_events_comment
+		FOREIGN KEY ( comment_id ) 
+		REFERENCES comments ( id ) 
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_comments_events_trigger 
+		FOREIGN KEY ( trigger_id ) 
+		REFERENCES triggers ( id ) 
+		ON DELETE CASCADE,
+		
+	CONSTRAINT fk_comments_events_event
+		FOREIGN KEY ( event_id ) 
+		REFERENCES events ( id ) 
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_comments_events_settings
+		FOREIGN KEY ( settings_id ) 
+		REFERENCES settings ( id )
+		ON DELETE SET NULL
+);-- --
+CREATE INDEX idx_comments_event_sort ON comment_events ( sort_order ASC );-- --
+CREATE INDEX idx_comments_event_settings ON comment_events ( settings_id );-- --
+
+
+CREATE VIEW comment_event_view AS SELECT
+	c.id AS comment_id, 
+	c.event_id AS event_id, 
+	c.sort_order AS sort_order,
+	e.label AS event_label, 
+	c.trigger_id AS trigger_id, 
+	GROUP_CONCAT( DISTINCT t.callback, ',' ) AS callback,
+	c.settings AS settings_override,
+	g.settings AS settings
+	
+	FROM comment_events c
+	LEFT JOIN events e ON c.event_id = e.id
+	LEFT JOIN triggers t ON c.trigger_id = t.id
+	LEFT JOIN settings g ON c.settings_id = g.id;-- --
+
+
 CREATE TABLE menu_events (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	menu_id INTEGER NOT NULL,
@@ -1484,6 +1534,7 @@ CREATE TABLE redirect_events (
 		ON DELETE SET NULL
 );-- --
 CREATE INDEX idx_redirect_event_sort ON redirect_events ( sort_order ASC );-- --
+CREATE INDEX idx_redirect_event_settings ON redirect_events ( settings_id );-- --
 
 CREATE VIEW redirect_event_view AS SELECT
 	r.id AS user_id, 
