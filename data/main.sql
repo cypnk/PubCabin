@@ -352,7 +352,7 @@ BEGIN
 END;-- --
 
 -- Update last modified
-CREATE TRIGGER update_update AFTER UPDATE ON users FOR EACH ROW
+CREATE TRIGGER user_update AFTER UPDATE ON users FOR EACH ROW
 BEGIN
 	UPDATE users SET updated = CURRENT_TIMESTAMP 
 		WHERE id = OLD.id;
