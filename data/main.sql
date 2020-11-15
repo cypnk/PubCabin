@@ -216,7 +216,7 @@ CREATE TABLE user_auth(
 	CONSTRAINT fk_auth_provider
 		FOREIGN KEY ( provider_id ) 
 		REFERENCES providers ( id )
-		ON DELETE RESTRICT
+		ON DELETE SET NULL
 );-- --
 CREATE UNIQUE INDEX idx_user_email ON user_auth( email );-- --
 CREATE INDEX idx_user_pin ON user_auth( mobile_pin ) 
@@ -463,6 +463,24 @@ CREATE TABLE area_render (
 		ON DELETE SET NULL
 );-- --
 CREATE INDEX idx_area_render_settings ON area_render ( settings_id );-- --
+
+CREATE VIEW area_view AS SELECT
+	a.id AS id,
+	a.label AS label,
+	a.site_id AS site_id,
+	a.permissions AS permissions, 
+	a.settings AS settings_override,
+	ag.settings AS settings,
+	ar.render AS render,
+	ar.status AS status,
+	ar.settings AS render_settings_override,
+	rg.settings AS render_settings
+	
+	FROM area_render ar
+	JOIN areas a ON ar.area_id = a.id 
+	LEFT JOIN settings ag ON a.settings_id = ag.id
+	LEFT JOIN settings rg ON ar.settings_id = rg.id;-- --
+
 
 CREATE TABLE pages (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -713,6 +731,35 @@ CREATE TABLE page_revisions (
 );-- --
 CREATE INDEX idx_page_revision_user ON page_revisions ( user_id );-- --
 CREATE INDEX idx_page_revision_text ON page_revisions ( text_id );-- --
+
+CREATE VIEW page_area_view AS SELECT
+	p.id AS id,
+	p.uuid AS uuid,
+	p.site_id AS site_id,
+	p.is_home AS is_home,
+	p.render AS render,
+	p.ptype AS ptype,
+	p.allow_children AS allow_children,
+	p.allow_comments AS allow_comments,
+	p.sort_order AS sort_order,
+	p.child_count AS child_count,
+	p.comment_count AS comment_count,
+	p.created AS created,
+	p.updated AS updated,
+	p.published AS published,
+	
+	p.settings AS settings_override,
+	g.settings AS settings,
+	
+	pa.area_id AS area_id,
+	a.label AS area_label,
+	a.permissions AS permissions
+	
+	FROM pages p
+	LEFT JOIN page_area pa ON pa.page_id = p.id
+	LEFT JOIN areas a ON pa.area_id = a.id
+	LEFT JOIN settings g ON p.settings_id = g.id;-- --
+
 
 -- Page text searching
 CREATE VIRTUAL TABLE page_search 
