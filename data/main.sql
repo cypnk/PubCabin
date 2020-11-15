@@ -62,6 +62,19 @@ CREATE UNIQUE INDEX idx_site_path ON sites ( basename, basepath );-- --
 CREATE INDEX idx_site_label ON sites ( label );-- --
 CREATE INDEX idx_site_settings ON sites ( settings_id );-- --
 
+CREATE VIEW sites_enabled AS SELECT 
+	s.id AS id, 
+	s.label AS label, 
+	s.basename AS basename, 
+	s.basepath AS basepath, 
+	s.is_active AS is_active,
+	s.is_maintenance AS is_maintenance,
+	s.settings AS settings_override,
+	g.settings AS settings
+	
+	FROM sites s 
+	LEFT JOIN settings g ON p.settings_id = g.id;
+
 
 CREATE TABLE languages (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
