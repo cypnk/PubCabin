@@ -1526,6 +1526,19 @@ CREATE TABLE module_access(
 		ON DELETE CASCADE
 );-- --
 
+CREATE VIEW module_load AS SELECT 
+	m.id AS id,
+	m.label AS label,
+	m.src AS src,
+	m.sort_order AS sort_order,
+	m.created AS created,
+	ma.auth AS auth,
+	ma.reference AS auth_reference,
+	ma.created AS auth_created
+	
+	FROM modules m
+	LEFT JOIN module_access ma ON m.id = ma.module_id;-- --
+
 
 
 CREATE TABLE redirects (
