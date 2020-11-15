@@ -73,7 +73,7 @@ CREATE VIEW sites_enabled AS SELECT
 	g.settings AS settings
 	
 	FROM sites s 
-	LEFT JOIN settings g ON p.settings_id = g.id;
+	LEFT JOIN settings g ON p.settings_id = g.id;-- --
 
 
 CREATE TABLE languages (
@@ -753,12 +753,36 @@ CREATE VIEW page_area_view AS SELECT
 	
 	pa.area_id AS area_id,
 	a.label AS area_label,
-	a.permissions AS permissions
+	a.permissions AS permissions,
+	
+	t.title AS title,
+	t.slug AS slug,
+	pp.url AS url
 	
 	FROM pages p
+	LEFT JOIN page_texts t ON p.id = t.page_id
+	LEFT JOIN page_paths pp ON t.path_id = pp.id
 	LEFT JOIN page_area pa ON pa.page_id = p.id
 	LEFT JOIN areas a ON pa.area_id = a.id
 	LEFT JOIN settings g ON p.settings_id = g.id;-- --
+
+CREATE VIEW page_text_view AS SELECT 
+	t.id AS id,
+	t.page_id AS page_id,
+	t.lang_id AS lang_id,
+	t.path_id AS path_id,
+	t.title AS title,
+	t.slug AS slug,
+	t.body AS body,
+	ts.url AS remote_url,
+	ts.ttl AS remote_ttl,
+	ts.created AS remote_created,
+	ts.updated AS remote_updated,
+	pp.url AS url
+	
+	FROM page_texts t
+	LEFT JOIN page_paths pp ON t.path_id = pp.id
+	LEFT JOIN text_sources ts ON t.id = ts.text_id;-- --
 
 
 -- Page text searching
