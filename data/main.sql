@@ -1279,7 +1279,7 @@ CREATE TABLE comment_places(
 );-- --
 CREATE INDEX idx_comment_place_sort ON comment_places( sort_order );-- --
 
-CREATE VIEW page_place_view AS SELECT
+CREATE VIEW comment_place_view AS SELECT
 	l.place_id AS place_id,
 	l.comment_id AS comment_id,
 	p.geo_lat AS geo_lat,
@@ -1324,6 +1324,51 @@ CREATE TABLE event_triggers (
 );-- -- 
 CREATE UNIQUE INDEX idx_event_trigger ON event_triggers( callback );-- --
 
+-- Global actions events
+CREATE TABLE global_events (
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	event_id INTEGER NOT NULL,
+	trigger_id INTEGER NOT NULL,
+	sort_order INTEGER NOT NULL DEFAULT 0,
+	
+	-- Serialized JSON parameters
+	settings TEXT NOT NULL DEFAULT '{}',
+	settings_id INTEGER DEFAULT NULL,
+	
+	CONSTRAINT fk_global_events_trigger 
+		FOREIGN KEY ( trigger_id ) 
+		REFERENCES triggers ( id ) 
+		ON DELETE CASCADE,
+		
+	CONSTRAINT fk_global_events_event
+		FOREIGN KEY ( event_id ) 
+		REFERENCES events ( id ) 
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_global_events_settings
+		FOREIGN KEY ( settings_id ) 
+		REFERENCES settings ( id )
+		ON DELETE SET NULL
+);-- --
+CREATE INDEX idx_global_event_sort ON global_events ( sort_order ASC );-- --
+CREATE INDEX idx_global_event_settings ON global_events ( settings_id );-- --
+
+CREATE VIEW global_event_view AS SELECT
+	o.id AS id,
+	o.event_id AS event_id, 
+	o.sort_order AS sort_order,
+	e.label AS event_label, 
+	o.trigger_id AS trigger_id, 
+	GROUP_CONCAT( DISTINCT t.callback, ',' ) AS callback,
+	o.settings AS settings_override,
+	g.settings AS settings
+	
+	FROM global_events o
+	LEFT JOIN events e ON o.event_id = e.id
+	LEFT JOIN triggers t ON o.trigger_id = t.id
+	LEFT JOIN settings g ON o.settings_id = g.id;-- --
+
+-- Site specific action events
 CREATE TABLE site_events (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	site_id INTEGER NOT NULL,
@@ -1373,8 +1418,7 @@ CREATE VIEW site_event_view AS SELECT
 	LEFT JOIN triggers t ON s.trigger_id = t.id
 	LEFT JOIN settings g ON s.settings_id = g.id;-- --
 
-
-
+-- User specific action events
 CREATE TABLE user_events (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	user_id INTEGER NOT NULL,
@@ -1423,7 +1467,7 @@ CREATE VIEW user_event_view AS SELECT
 	LEFT JOIN triggers t ON u.trigger_id = t.id
 	LEFT JOIN settings g ON u.settings_id = g.id;-- --
 
-
+-- Page specific action events
 CREATE TABLE page_events (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	page_id INTEGER NOT NULL,
@@ -1472,7 +1516,7 @@ CREATE VIEW page_event_view AS SELECT
 	LEFT JOIN triggers t ON p.trigger_id = t.id
 	LEFT JOIN settings g ON p.settings_id = g.id;-- --
 
-
+-- Comment specific action events
 CREATE TABLE comment_events (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	comment_id INTEGER NOT NULL,
@@ -1521,7 +1565,7 @@ CREATE VIEW comment_event_view AS SELECT
 	LEFT JOIN triggers t ON c.trigger_id = t.id
 	LEFT JOIN settings g ON c.settings_id = g.id;-- --
 
-
+-- Menu specific action events
 CREATE TABLE menu_events (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	menu_id INTEGER NOT NULL,
@@ -1531,7 +1575,7 @@ CREATE TABLE menu_events (
 	settings TEXT NOT NULL DEFAULT '{}',
 	settings_id INTEGER DEFAULT NULL,
 	
-	CONSTRAINT fk_menu_events_user 
+	CONSTRAINT fk_menu_events_menu
 		FOREIGN KEY ( menu_id ) 
 		REFERENCES menues ( id ) 
 		ON DELETE CASCADE,
@@ -1625,6 +1669,7 @@ CREATE TABLE redirects (
 );-- --
 CREATE UNIQUE INDEX idx_redirect ON redirects( old_src, new_src );-- --
 
+-- Redirect specific action events
 CREATE TABLE redirect_events (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	redirect_id INTEGER NOT NULL,
