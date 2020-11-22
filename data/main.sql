@@ -84,7 +84,7 @@ CREATE TABLE languages (
 	
 	-- CMS Default interface language
 	is_default INTEGER NOT NULL DEFAULT 0,
-	lang_group TEXT
+	lang_group TEXT NOT NULL DEFAULT ''
 );-- --
 CREATE UNIQUE INDEX idx_lang_label ON languages ( label );-- --
 CREATE UNIQUE INDEX idx_lang_iso ON languages ( iso_code );-- --
@@ -481,7 +481,6 @@ CREATE VIEW area_view AS SELECT
 	LEFT JOIN settings ag ON a.settings_id = ag.id
 	LEFT JOIN settings rg ON ar.settings_id = rg.id;-- --
 
-
 CREATE TABLE pages (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	uuid TEXT DEFAULT NULL,
@@ -522,6 +521,7 @@ CREATE TABLE pages (
 CREATE UNIQUE INDEX idx_page_uuid ON pages ( uuid );-- --
 CREATE INDEX idx_page_parent ON pages ( parent_id );-- --
 CREATE INDEX idx_page_site ON pages ( site_id );-- --
+CREATE INDEX idx_page_ptype ON pages ( ptype );-- --
 CREATE INDEX idx_page_home ON pages ( is_home );-- --
 CREATE INDEX idx_page_type ON pages ( ptype );-- --
 CREATE INDEX idx_page_sort ON pages ( sort_order );-- --
@@ -531,6 +531,13 @@ CREATE INDEX idx_page_status ON pages ( status );-- --
 CREATE INDEX idx_page_published ON pages ( published );-- --
 CREATE INDEX idx_page_settings ON pages ( settings_id );-- --
 
+-- Page type templates
+CREATE TABLE ptype_render (
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+	label TEXT NOT NULL COLLATE NOCASE
+	render TEXT NOT NULL DEFAULT '' COLLATE NOCASE
+);-- --
+CREATE INDEX idx_ptype_label ON ptype_render ( label );-- --
 
 -- Unset previous default hompage
 CREATE TRIGGER page_default_insert BEFORE INSERT ON 
