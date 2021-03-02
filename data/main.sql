@@ -1,11 +1,14 @@
 
 -- Database presets
+PRAGMA trusted_schema = OFF;	-- Preemptive defense
+PRAGMA cell_size_check = ON;	-- Integrity check
 PRAGMA encoding = "UTF-8";	-- Default encoding set to UTF-8
 PRAGMA page_size = "16384";	-- Blob performance improvement
 PRAGMA auto_vacuum = "2";	-- File size improvement
 PRAGMA temp_store = "2";	-- Memory temp storage for performance
 PRAGMA journal_mode = "WAL";	-- Performance improvement
 PRAGMA secure_delete = "1";	-- Privacy improvement
+
 
 
 -- Generate a random unique string
@@ -30,7 +33,9 @@ CREATE VIEW uuid AS SELECT lower(
 CREATE TABLE settings(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	label TEXT NOT NULL COLLATE NOCASE,
-	info TEXT NOT NULL DEFAULT '{}'	-- serialized JSON
+	
+	-- serialized JSON
+	info TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE
 );-- --
 CREATE UNIQUE INDEX idx_settings_label ON settings( label );-- --
 
@@ -47,7 +52,7 @@ CREATE TABLE sites (
 	basepath TEXT NOT NULL, 
 	
 	-- Serialized JSON
-	settings TEXT NOT NULL DEFAULT '{}',
+	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
 	settings_id INTEGER DEFAULT NULL,
 	
 	is_active INTEGER NOT NULL DEFAULT 1,
@@ -59,7 +64,7 @@ CREATE TABLE sites (
 		ON DELETE SET NULL
 );-- --
 CREATE UNIQUE INDEX idx_site_path ON sites ( basename, basepath );-- --
-CREATE INDEX idx_site_label ON sites ( label );-- --
+CREATE UNIQUE INDEX idx_site_label ON sites ( label );-- --
 CREATE INDEX idx_site_settings ON sites ( settings_id );-- --
 
 CREATE VIEW sites_enabled AS SELECT 
@@ -84,7 +89,7 @@ CREATE TABLE languages (
 	
 	-- CMS Default interface language
 	is_default INTEGER NOT NULL DEFAULT 0,
-	lang_group TEXT NOT NULL DEFAULT ''
+	lang_group TEXT NOT NULL DEFAULT '' COLLATE NOCASE
 );-- --
 CREATE UNIQUE INDEX idx_lang_label ON languages ( label );-- --
 CREATE UNIQUE INDEX idx_lang_iso ON languages ( iso_code );-- --
@@ -108,21 +113,32 @@ BEGIN
 		WHERE is_default IS NOT 0 AND id IS NOT NEW.id;
 END;-- --
 
-CREATE TABLE date_formats(
+CREATE TABLE translations (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 	locale TEXT NOT NULL COLLATE NOCASE,
 	lang_id INTEGER NOT NULL,
 	
-	 -- Excluding pipe ( | )
-	render TEXT NOT NULL COLLATE NOCASE,
-		
+	definitions TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
+	
 	CONSTRAINT fk_date_language
 		FOREIGN KEY ( lang_id ) 
 		REFERENCES languages ( id )
 		ON DELETE CASCADE
 );-- --
-CREATE UNIQUE INDEX idx_date_locals ON date_formats( locale );-- --
-CREATE UNIQUE INDEX idx_date_format ON date_formats( render );-- --
+CREATE UNIQUE INDEX idx_translation_local ON translations( locale );-- --
+CREATE INDEX idx_translation_lang ON translations( lang_id );-- --
+
+CREATE VIEW locale_view AS SELECT
+	t.id AS id,
+	l.label AS label,
+	l.iso_code AS iso_code,
+	l.is_default AS is_default,
+	l.lang_group AS lang_group,
+	t.label AS locale,
+	t.definitions AS definitions
+	
+	FROM translations t
+	JOIN languages l ON t.lang_id = l.id;-- --
 
 
 -- User profiles
@@ -135,7 +151,7 @@ CREATE TABLE users (
 	bio TEXT DEFAULT NULL COLLATE NOCASE,
 	created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	settings TEXT NOT NULL DEFAULT '{}',
+	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
 	settings_id INTEGER DEFAULT NULL,
 	status INTEGER NOT NULL DEFAULT 0,
 	
@@ -177,7 +193,7 @@ CREATE TABLE id_providers(
 	sort_order INTEGER NOT NULL DEFAULT 0,
 	
 	-- Serialized JSON
-	settings TEXT NOT NULL DEFAULT '{}'
+	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE
 );-- --
 CREATE UNIQUE INDEX idx_provider_label ON id_providers( label );-- --
 CREATE INDEX idx_provider_sort ON id_providers( sort_order ASC );-- --
@@ -384,7 +400,7 @@ CREATE TABLE role_privileges(
 	role_id INTEGER NOT NULL,
 	
 	-- Serialized JSON
-	settings TEXT NOT NULL DEFAULT '{}',
+	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
 	settings_id INTEGER DEFAULT NULL,
 	
 	CONSTRAINT fk_privilege_role 
@@ -425,8 +441,8 @@ CREATE TABLE areas (
 	label TEXT NOT NULL COLLATE NOCASE,
 	site_id INTEGER NOT NULL,
 	
-	permissions TEXT NOT NULL DEFAULT '{}',
-	settings TEXT NOT NULL DEFAULT '{}',
+	permissions TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
+	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
 	settings_id INTEGER DEFAULT NULL,
 	
 	CONSTRAINT fk_pages_site 
@@ -448,7 +464,7 @@ CREATE TABLE area_render (
 	area_id INTEGER NOT NULL,
 	
 	render TEXT NOT NULL DEFAULT '' COLLATE NOCASE,
-	settings TEXT NOT NULL DEFAULT '{}',
+	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
 	settings_id INTEGER DEFAULT NULL,
 	status INTEGER NOT NULL DEFAULT 0,
 	
@@ -500,7 +516,7 @@ CREATE TABLE pages (
 	updated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	published DATETIME DEFAULT NULL,
 	status INTEGER NOT NULL DEFAULT 0,
-	settings TEXT NOT NULL DEFAULT '{}',
+	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
 	settings_id INTEGER DEFAULT NULL,
 	
 	CONSTRAINT fk_pages_site 
@@ -534,7 +550,7 @@ CREATE INDEX idx_page_settings ON pages ( settings_id );-- --
 -- Page type templates
 CREATE TABLE ptype_render (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
-	label TEXT NOT NULL COLLATE NOCASE
+	label TEXT NOT NULL COLLATE NOCASE,
 	render TEXT NOT NULL DEFAULT '' COLLATE NOCASE
 );-- --
 CREATE INDEX idx_ptype_label ON ptype_render ( label );-- --
@@ -583,7 +599,7 @@ END;-- --
 -- URL Slug prefix paths
 CREATE TABLE page_paths (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
-	url TEXT NOT NULL DEFAULT '/'
+	url TEXT NOT NULL DEFAULT '/' COLLATE NOCASE
 );
 CREATE UNIQUE INDEX idx_page_paths ON page_paths ( url ASC );
 
@@ -1169,7 +1185,7 @@ CREATE TABLE menues(
 	url TEXT NOT NULL COLLATE NOCASE,
 	
 	 -- Serialized JSON
-	permissions TEXT NOT NULL DEFAULT '{}',
+	permissions TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
 	
 	CONSTRAINT fk_menu_site 
 		FOREIGN KEY ( site_id ) 
@@ -1207,7 +1223,7 @@ CREATE UNIQUE INDEX idx_menu_lang ON
 -- Content locations
 CREATE TABLE places(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-	settings TEXT NOT NULL DEFAULT '{}',
+	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
 	settings_id INTEGER DEFAULT NULL,
 	geo_lat REAL NOT NULL DEFAULT 0, 
 	geo_lon REAL NOT NULL DEFAULT 0
@@ -1339,7 +1355,7 @@ CREATE TABLE global_events (
 	sort_order INTEGER NOT NULL DEFAULT 0,
 	
 	-- Serialized JSON parameters
-	settings TEXT NOT NULL DEFAULT '{}',
+	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
 	settings_id INTEGER DEFAULT NULL,
 	
 	CONSTRAINT fk_global_events_trigger 
@@ -1384,7 +1400,7 @@ CREATE TABLE site_events (
 	sort_order INTEGER NOT NULL DEFAULT 0,
 	
 	-- Serialized JSON parameters
-	settings TEXT NOT NULL DEFAULT '{}',
+	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
 	settings_id INTEGER DEFAULT NULL,
 	
 	CONSTRAINT fk_site_events_site 
@@ -1432,7 +1448,7 @@ CREATE TABLE user_events (
 	event_id INTEGER NOT NULL,
 	trigger_id INTEGER NOT NULL,
 	sort_order INTEGER NOT NULL DEFAULT 0,
-	settings TEXT NOT NULL DEFAULT '{}',
+	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
 	settings_id INTEGER DEFAULT NULL,
 	
 	CONSTRAINT fk_user_events_user 
@@ -1481,7 +1497,7 @@ CREATE TABLE page_events (
 	event_id INTEGER NOT NULL,
 	trigger_id INTEGER NOT NULL,
 	sort_order INTEGER NOT NULL DEFAULT 0,
-	settings TEXT NOT NULL DEFAULT '{}',
+	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
 	settings_id INTEGER DEFAULT NULL,
 	
 	CONSTRAINT fk_page_events_page 
@@ -1530,7 +1546,7 @@ CREATE TABLE comment_events (
 	event_id INTEGER NOT NULL,
 	trigger_id INTEGER NOT NULL,
 	sort_order INTEGER NOT NULL DEFAULT 0,
-	settings TEXT NOT NULL DEFAULT '{}',
+	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
 	settings_id INTEGER DEFAULT NULL,
 	
 	CONSTRAINT fk_comment_events_comment
@@ -1579,7 +1595,7 @@ CREATE TABLE menu_events (
 	event_id INTEGER NOT NULL,
 	trigger_id INTEGER NOT NULL,
 	sort_order INTEGER NOT NULL DEFAULT 0,
-	settings TEXT NOT NULL DEFAULT '{}',
+	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
 	settings_id INTEGER DEFAULT NULL,
 	
 	CONSTRAINT fk_menu_events_menu
@@ -1675,6 +1691,7 @@ CREATE TABLE redirects (
 		ON DELETE CASCADE
 );-- --
 CREATE UNIQUE INDEX idx_redirect ON redirects( old_src, new_src );-- --
+CREATE UNIQUE INDEX idx_redirect_reverse ON redirects( new_src, old_src );-- --
 
 -- Redirect specific action events
 CREATE TABLE redirect_events (
@@ -1683,7 +1700,7 @@ CREATE TABLE redirect_events (
 	event_id INTEGER NOT NULL,
 	trigger_id INTEGER NOT NULL,
 	sort_order INTEGER NOT NULL DEFAULT 0,
-	settings TEXT NOT NULL DEFAULT '{}',
+	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
 	settings_id INTEGER DEFAULT NULL,
 	
 	CONSTRAINT fk_redirect_events_redirect 
