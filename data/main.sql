@@ -1757,7 +1757,7 @@ CREATE TABLE metadata (
 	-- Full text searchable
 	is_fulltext INTEGER NOT NULL DEFAULT 1,
 	
-	CONSTRAINT fk_attachment_texts_lang 
+	CONSTRAINT fk_meta_lang 
 		FOREIGN KEY ( lang_id ) 
 		REFERENCES languages ( id ) 
 		ON DELETE CASCADE
@@ -1771,10 +1771,9 @@ CREATE INDEX idx_meta_fulltext ON metadata( is_fulltext );-- --
 -- Metadata content
 
 -- Page meta
-CREATE TABLE page_meta (
+CREATE TABLE meta_content (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	meta_id INTEGER NOT NULL,
-	page_id INTEGER NOT NULL,
 	sort_order INTEGER NOT NULL DEFAULT 0,
 	bare TEXT DEFAULT NULL COLLATE NOCASE,
 	content TEXT NOT NULL DEFAULT '' COLLATE NOCASE,
@@ -1782,97 +1781,192 @@ CREATE TABLE page_meta (
 	created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	
-	CONSTRAINT fk_page_meta 
+	CONSTRAINT fk_meta_field
 		FOREIGN KEY ( meta_id ) 
 		REFERENCES metadata ( id ) 
-		ON DELETE CASCADE,
-	
-	CONSTRAINT fk_page_meta_page
-		FOREIGN KEY ( page_id ) 
-		REFERENCES pages ( id ) 
 		ON DELETE CASCADE
 );-- --
-CREATE INDEX idx_page_meta_field ON page_meta( meta_id );-- --
-CREATE INDEX idx_page_meta_page ON page_meta( page_id );-- --
-CREATE INDEX idx_page_meta_sort ON page_meta( sort_order );-- --
-CREATE INDEX idx_page_meta_created ON page_meta( created );-- --
-CREATE INDEX idx_page_meta_updated ON page_meta( updated );-- --
+CREATE INDEX idx_meta_content_field ON meta_content( meta_id );-- --
+CREATE INDEX idx_meta_content_sort ON meta_content( sort_order );-- --
+CREATE INDEX idx_meta_content_created ON meta_content( created );-- --
+CREATE INDEX idx_meta_content_updated ON meta_content( updated );-- --
 
 -- Skip full text content and index only smaller values
-CREATE INDEX idx_meta_content ON page_meta( content ) 
+CREATE INDEX idx_meta_content ON meta_content( content ) 
 	WHERE bare IS NULL;-- --
 
--- Page meta search
-CREATE VIRTUAL TABLE page_meta_search 
+-- Meta data search
+CREATE VIRTUAL TABLE meta_content_search 
 	USING fts4( body, tokenize=unicode61 );-- --
 
-CREATE VIEW page_meta_view AS SELECT
-	p.id AS id, 
-	p.page_id AS page_id, 
-	p.meta_id AS meta_id, 
-	p.sort_order AS sort_order,
-	p.bare AS bare, 
-	p.content AS content, 
+CREATE VIEW meta_content_view AS SELECT
+	c.id AS id, 
+	c.meta_id AS meta_id, 
+	c.sort_order AS sort_order,
+	c.bare AS bare, 
+	c.content AS content, 
 	m.label AS meta_label,
 	m.format AS format,
 	m.is_fulltext AS is_fulltext
 	
-	FROM page_meta p
-	LEFT JOIN matadata m ON p.meta_id = m.id;-- --
+	FROM meta_content c
+	LEFT JOIN metadata m ON c.meta_id = m.id;-- --
 
 -- Intercept page meta data insert
-CREATE TRIGGER page_meta_insert INSTEAD OF INSERT ON page_meta_view 
+CREATE TRIGGER meta_content_insert INSTEAD OF INSERT ON meta_content_view 
 WHEN is_fulltext IS NOT 1 
 BEGIN
-	INSERT INTO page_meta 
-		( meta_id, page_id, bare, content, sort_order ) 
-		VALUES 
-		( NEW.meta_id, NEW.page_id, NULL, NEW.content, 
-			COALESCE( NEW.sort_order, 0 ) );
+	INSERT INTO meta_content ( meta_id, bare, content, sort_order ) 
+	VALUES ( NEW.meta_id, NULL, NEW.content, COALESCE( NEW.sort_order, 0 ) );
 END;-- --
 
--- Inercept page meta data insert with full text
-CREATE TRIGGER page_meta_search_insert INSTEAD OF INSERT ON page_meta_view
+-- Inercept meta data insert with full text
+CREATE TRIGGER meta_content_search_insert INSTEAD OF INSERT ON meta_content_view
 WHEN is_fulltext IS 1 
 BEGIN
-	INSERT INTO page_meta 
-		( meta_id, page_id, sort_order, bare, content ) 
+	INSERT INTO meta_content 
+		( meta_id, sort_order, bare, content ) 
 		VALUES 
-		( NEW.meta_id, NEW.page_id, NEW.sort_order, 
+		( NEW.meta_id, NEW.sort_order, 
 			COALESCE( NEW.bare, '' ), NEW.content, 
 			COALESCE( NEW.sort_order, 0 ) );
 END;-- --
 
-CREATE TRIGGER page_meta_search_content_insert AFTER INSERT ON page_meta FOR EACH ROW
+CREATE TRIGGER meta_content_search_content_insert AFTER INSERT ON meta_content FOR EACH ROW
 WHEN NEW.bare IS NOT NULL
 BEGIN
-	INSERT INTO page_meta_search( docid, body ) 
+	INSERT INTO meta_content_search( docid, body ) 
 		VALUES ( NEW.id, NEW.bare );
 END;-- --
 
-CREATE TRIGGER page_meta_search_update INSTEAD OF UPDATE ON page_meta_view
+CREATE TRIGGER meta_content_search_update INSTEAD OF UPDATE ON meta_content_view
 WHEN is_fulltext IS 1
 BEGIN
-	UPDATE page_meta_search SET body = NEW.bare 
+	UPDATE meta_content_search SET body = NEW.bare 
 		WHERE docid = NEW.id;
 	
-	UPDATE page_meta SET bare = NEW.bare, content = NEW.content, 
+	UPDATE meta_content SET bare = NEW.bare, content = NEW.content, 
 		sort_order = COALESCE( NEW.sort_order, 0 ), 
 		updated = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;-- --
 
-CREATE TRIGGER page_meta_update INSTEAD OF UPDATE ON page_meta_view
+CREATE TRIGGER meta_content_update INSTEAD OF UPDATE ON meta_content_view
 WHEN is_fulltext IS NOT 1
 BEGIN
-	UPDATE page_meta SET content = NEW.content, 
+	UPDATE meta_content SET content = NEW.content, 
 		sort_order = COALESCE( NEW.sort_order, 0 ), 
 		updated = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;-- --
 
-CREATE TRIGGER page_meta_search_delete BEFORE DELETE ON page_meta FOR EACH ROW 
+CREATE TRIGGER meta_content_search_delete BEFORE DELETE ON meta_content FOR EACH ROW 
 BEGIN
-	DELETE FROM page_meta_search WHERE docid = OLD.id;
-END;
+	DELETE FROM meta_content_search WHERE docid = OLD.id;
+END;-- --
+
+
+-- User metadata
+CREATE TABLE user_meta (
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	metacontent_id INTEGER NOT NULL,
+	user_id INTEGER NOT NULL,
+	
+	CONSTRAINT fk_meta_user_meta
+		FOREIGN KEY ( metacontent_id ) 
+		REFERENCES meta_content ( id ) 
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_meta_content_user
+		FOREIGN KEY ( user_id ) 
+		REFERENCES users ( id ) 
+		ON DELETE CASCADE
+);-- --
+CREATE INDEX idx_meta_user ON user_meta( metacontent_id );-- --
+CREATE INDEX idx_meta_user_data ON user_meta( user_id );-- --
+
+CREATE VIEW user_meta_view AS SELECT
+	c.id AS id, 
+	c.meta_id AS meta_id, 
+	c.sort_order AS sort_order,
+	c.bare AS bare, 
+	c.content AS content, 
+	m.label AS meta_label,
+	m.format AS format,
+	m.is_fulltext AS is_fulltext,
+	r.user_id AS user_id
+	
+	FROM meta_content c
+	LEFT JOIN metadata m ON c.meta_id = m.id
+	LEFT JOIN user_meta r ON c.id = r.metacontent_id;-- --
+
+
+-- Page metadata
+CREATE TABLE page_meta (
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	metacontent_id INTEGER NOT NULL,
+	page_id INTEGER NOT NULL,
+	
+	CONSTRAINT fk_meta_page_meta
+		FOREIGN KEY ( metacontent_id ) 
+		REFERENCES meta_content ( id ) 
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_meta_content_page
+		FOREIGN KEY ( page_id ) 
+		REFERENCES pages ( id ) 
+		ON DELETE CASCADE
+);-- --
+CREATE INDEX idx_meta_page ON page_meta( metacontent_id );-- --
+CREATE INDEX idx_meta_page_data ON page_meta( page_id );-- --
+
+CREATE VIEW page_meta_view AS SELECT
+	c.id AS id, 
+	c.meta_id AS meta_id, 
+	c.sort_order AS sort_order,
+	c.bare AS bare, 
+	c.content AS content, 
+	m.label AS meta_label,
+	m.format AS format,
+	m.is_fulltext AS is_fulltext,
+	r.page_id AS page_id
+	
+	FROM meta_content c
+	LEFT JOIN metadata m ON c.meta_id = m.id
+	LEFT JOIN page_meta r ON c.id = r.metacontent_id;-- --
+
+
+-- Comment metadata
+CREATE TABLE comment_meta (
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	metacontent_id INTEGER NOT NULL,
+	comment_id INTEGER NOT NULL,
+	
+	CONSTRAINT fk_meta_page_meta
+		FOREIGN KEY ( metacontent_id ) 
+		REFERENCES meta_content ( id ) 
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_meta_content_comment
+		FOREIGN KEY ( comment_id ) 
+		REFERENCES comments ( id ) 
+		ON DELETE CASCADE
+);-- --
+CREATE INDEX idx_meta_comment ON comment_meta( metacontent_id );-- --
+CREATE INDEX idx_meta_comment_data ON comment_meta( comment_id );-- --
+
+CREATE VIEW comment_meta_view AS SELECT
+	c.id AS id, 
+	c.meta_id AS meta_id, 
+	c.sort_order AS sort_order,
+	c.bare AS bare, 
+	c.content AS content, 
+	m.label AS meta_label,
+	m.format AS format,
+	m.is_fulltext AS is_fulltext,
+	r.comment_id AS comment_id
+	
+	FROM meta_content c
+	LEFT JOIN metadata m ON c.meta_id = m.id
+	LEFT JOIN comment_meta r ON c.id = r.metacontent_id;-- --
 
 
 
