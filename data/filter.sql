@@ -52,4 +52,9 @@ BEGIN
 	UPDATE filter_search SET body = NEW.term WHERE docid = NEW.id;
 END;-- --
 
+-- Filter search delete
+CREATE TRIGGER filter_delete BEFORE DELETE ON filters FOR EACH ROW
+BEGIN
+	DELETE FROM filter_search WHERE docid = OLD.id;
+END;-- --
 
