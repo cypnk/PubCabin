@@ -1739,7 +1739,67 @@ CREATE VIEW redirect_event_view AS SELECT
 	FROM redirect_events r
 	LEFT JOIN events e ON r.event_id = e.id
 	LEFT JOIN triggers t ON r.trigger_id = t.id
-	LEFT JOIN settings g ON r.settings_id = g.id;
+	LEFT JOIN settings g ON r.settings_id = g.id;-- --
+
+
+-- Subject metadata fields
+CREATE TABLE metadata (
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	label TEXT NOT NULL DEFAULT '' COLLATE NOCASE,
+	summary TEXT NOT NULL DEFAULT '' COLLATE NOCASE,
+	sort_order INTEGER NOT NULL DEFAULT 0,
+	lang_id INTEGER NOT NULL,
+	
+	-- E.G. int, bool, text, html etc...
+	format TEXT NOT NULL DEFAULT 'text' COLLATE NOCASE,
+	
+	-- Full text searchable
+	is_fulltext INTEGER NOT NULL DEFAULT 1,
+	
+	CONSTRAINT fk_attachment_texts_lang 
+		FOREIGN KEY ( lang_id ) 
+		REFERENCES languages ( id ) 
+		ON DELETE CASCADE
+);-- --
+CREATE UNIQUE INDEX idx_meta_label ON metadata( label );-- --
+CREATE INDEX idx_meta_sort ON metadata( sort_order );-- --
+CREATE INDEX idx_meta_format ON metadata( format );-- --
+CREATE INDEX idx_meta_lang ON metadata( lang_id );-- --
+CREATE INDEX idx_meta_fulltext ON metadata( is_fulltext );-- --
+
+-- Skip full text content and index only smaller values
+CREATE INDEX idx_meta_content ON metadata( content ) 
+	WHERE is_fulltext IS NOT 1;-- --
+
+-- Metadata content
+
+-- Page meta
+CREATE TABLE page_meta (
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	meta_id INTEGER NOT NULL,
+	page_id INTEGER NOT NULL,
+	sort_order INTEGER NOT NULL DEFAULT 0,
+	bare TEXT DEFAULT NULL COLLATE NOCASE,
+	content TEXT NOT NULL DEFAULT '' COLLATE NOCASE,
+	
+	created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	
+	CONSTRAINT fk_page_meta 
+		FOREIGN KEY ( meta_id ) 
+		REFERENCES metadata ( id ) 
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_page_meta_page
+		FOREIGN KEY ( page_id ) 
+		REFERENCES pages ( id ) 
+		ON DELETE CASCADE
+);-- --
+CREATE INDEX idx_page_meta_field ON page_meta( meta_id );-- --
+CREATE INDEX idx_page_meta_page ON page_meta( page_id );-- --
+CREATE INDEX idx_page_meta_sort ON page_meta( sort_order );-- --
+CREATE INDEX idx_page_meta_created ON page_meta( created );-- --
+CREATE INDEX idx_page_meta_updated ON page_meta( updated );
 
 
 
