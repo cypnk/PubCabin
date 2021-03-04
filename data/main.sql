@@ -80,7 +80,7 @@ CREATE VIEW sites_enabled AS SELECT
 	FROM sites s 
 	LEFT JOIN settings g ON p.settings_id = g.id;-- --
 
-
+-- Localization
 CREATE TABLE languages (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 	label TEXT NOT NULL COLLATE NOCASE,
@@ -93,6 +93,7 @@ CREATE TABLE languages (
 );-- --
 CREATE UNIQUE INDEX idx_lang_label ON languages ( label );-- --
 CREATE UNIQUE INDEX idx_lang_iso ON languages ( iso_code );-- --
+CREATE INDEX idx_lang_default ON languages ( is_default );-- --
 CREATE INDEX idx_lang_sort ON languages ( sort_order );-- --
 CREATE INDEX idx_lang_group ON languages ( lang_group );-- --
 
@@ -1798,12 +1799,80 @@ CREATE INDEX idx_page_meta_created ON page_meta( created );-- --
 CREATE INDEX idx_page_meta_updated ON page_meta( updated );-- --
 
 -- Skip full text content and index only smaller values
-CREATE INDEX idx_meta_content ON metadata( content ) 
+CREATE INDEX idx_meta_content ON page_meta( content ) 
 	WHERE bare IS NULL;-- --
 
 -- Page meta search
 CREATE VIRTUAL TABLE page_meta_search 
-	USING fts4( body, tokenize=unicode61 );
+	USING fts4( body, tokenize=unicode61 );-- --
+
+CREATE VIEW page_meta_view AS SELECT
+	p.id AS id, 
+	p.page_id AS page_id, 
+	p.meta_id AS meta_id, 
+	p.sort_order AS sort_order,
+	p.bare AS bare, 
+	p.content AS content, 
+	m.label AS meta_label,
+	m.format AS format,
+	m.is_fulltext AS is_fulltext
+	
+	FROM page_meta p
+	LEFT JOIN matadata m ON p.meta_id = m.id;-- --
+
+-- Intercept page meta data insert
+CREATE TRIGGER page_meta_insert INSTEAD OF INSERT ON page_meta_view 
+WHEN is_fulltext IS NOT 1 
+BEGIN
+	INSERT INTO page_meta 
+		( meta_id, page_id, bare, content, sort_order ) 
+		VALUES 
+		( NEW.meta_id, NEW.page_id, NULL, NEW.content, 
+			COALESCE( NEW.sort_order, 0 ) );
+END;-- --
+
+-- Inercept page meta data insert with full text
+CREATE TRIGGER page_meta_search_insert INSTEAD OF INSERT ON page_meta_view
+WHEN is_fulltext IS 1 
+BEGIN
+	INSERT INTO page_meta 
+		( meta_id, page_id, sort_order, bare, content ) 
+		VALUES 
+		( NEW.meta_id, NEW.page_id, NEW.sort_order, 
+			COALESCE( NEW.bare, '' ), NEW.content, 
+			COALESCE( NEW.sort_order, 0 ) );
+END;-- --
+
+CREATE TRIGGER page_meta_search_content_insert AFTER INSERT ON page_meta FOR EACH ROW
+WHEN NEW.bare IS NOT NULL
+BEGIN
+	INSERT INTO page_meta_search( docid, body ) 
+		VALUES ( NEW.id, NEW.bare );
+END;-- --
+
+CREATE TRIGGER page_meta_search_update INSTEAD OF UPDATE ON page_meta_view
+WHEN is_fulltext IS 1
+BEGIN
+	UPDATE page_meta_search SET body = NEW.bare 
+		WHERE docid = NEW.id;
+	
+	UPDATE page_meta SET bare = NEW.bare, content = NEW.content, 
+		sort_order = COALESCE( NEW.sort_order, 0 ), 
+		updated = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;-- --
+
+CREATE TRIGGER page_meta_update INSTEAD OF UPDATE ON page_meta_view
+WHEN is_fulltext IS NOT 1
+BEGIN
+	UPDATE page_meta SET content = NEW.content, 
+		sort_order = COALESCE( NEW.sort_order, 0 ), 
+		updated = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;-- --
+
+CREATE TRIGGER page_meta_search_delete BEFORE DELETE ON page_meta FOR EACH ROW 
+BEGIN
+	DELETE FROM page_meta_search WHERE docid = OLD.id;
+END;
 
 
 
