@@ -1767,10 +1767,6 @@ CREATE INDEX idx_meta_format ON metadata( format );-- --
 CREATE INDEX idx_meta_lang ON metadata( lang_id );-- --
 CREATE INDEX idx_meta_fulltext ON metadata( is_fulltext );-- --
 
--- Skip full text content and index only smaller values
-CREATE INDEX idx_meta_content ON metadata( content ) 
-	WHERE is_fulltext IS NOT 1;-- --
-
 -- Metadata content
 
 -- Page meta
@@ -1799,7 +1795,15 @@ CREATE INDEX idx_page_meta_field ON page_meta( meta_id );-- --
 CREATE INDEX idx_page_meta_page ON page_meta( page_id );-- --
 CREATE INDEX idx_page_meta_sort ON page_meta( sort_order );-- --
 CREATE INDEX idx_page_meta_created ON page_meta( created );-- --
-CREATE INDEX idx_page_meta_updated ON page_meta( updated );
+CREATE INDEX idx_page_meta_updated ON page_meta( updated );-- --
+
+-- Skip full text content and index only smaller values
+CREATE INDEX idx_meta_content ON metadata( content ) 
+	WHERE bare IS NULL;-- --
+
+-- Page meta search
+CREATE VIRTUAL TABLE page_meta_search 
+	USING fts4( body, tokenize=unicode61 );
 
 
 
