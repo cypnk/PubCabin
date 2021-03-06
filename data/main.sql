@@ -1874,7 +1874,7 @@ BEGIN
 			COALESCE( NEW.bare, '' ), NEW.content, 
 			COALESCE( NEW.sort_order, 0 ) );
 	INSERT INTO meta_content_search( docid, body ) 
-		VALUES ( SELECT last_insert_rowid(), NEW.bare );
+		VALUES ( ( SELECT last_insert_rowid() ), NEW.bare );
 END;-- --
 
 CREATE TRIGGER meta_content_search_update INSTEAD OF UPDATE ON meta_content_view
