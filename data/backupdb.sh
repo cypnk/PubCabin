@@ -24,4 +24,8 @@ if [ -f cache.db ]; then
 	sqlite3 cache.db .dump > backup/cache-$DATE.sql
 fi
 
+if [ -f logs.db ]; then
+	sqlite3 logs.db .dump > backup/logs-$DATE.sql
+fi
+
 exit
