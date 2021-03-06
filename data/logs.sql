@@ -9,13 +9,35 @@ PRAGMA temp_store = "2";	-- Memory temp storage for performance
 PRAGMA journal_mode = "WAL";	-- Performance improvement
 PRAGMA secure_delete = "1";	-- Privacy improvement
 
+CREATE TABLE logfiles(
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	title TEXT NOT NULL COLLATE NOCASE,
+	appname TEXT NOT NULL COLLATE NOCASE,
+	created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);-- --
+CREATE UNIQUE INDEX idx_log_title ON logfiles ( title );-- --
+
+CREATE TRIGGER logfile_update AFTER UPDATE ON logfiles FOR EACH ROW
+BEGIN
+	UPDATE logfiles SET updated = CURRENT_TIMESTAMP
+		WHERE id = NEW.id;
+END;-- --
 
 CREATE TABLE logfields(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	label TEXT NOT NULL COLLATE NOCASE,
-	description TEXT DEFAULT NULL COLLATE NOCASE
+	file_id INTEGER NOT NULL,
+	sort_order INTEGER NOT NULL DEFAULT 0,
+	description TEXT DEFAULT NULL COLLATE NOCASE,
+	
+	CONSTRAINT fk_log_file
+		FOREIGN KEY ( file_id ) 
+		REFERENCES logfiles ( id )
+		ON DELETE CASCADE
 );-- --
-CREATE UNIQUE INDEX idx_log_label ON logfields ( label );-- --
+CREATE UNIQUE INDEX idx_log_label ON logfields ( file_id, label );-- --
+CREATE INDEX idx_log_sort ON logfields( sort_order ASC );-- --
 
 CREATE TABLE logdata(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -43,7 +65,9 @@ CREATE VIEW log_content_view AS SELECT
 	d.content AS content, 
 	d.is_fulltext AS is_fulltext,
 	f.label AS label,
-	f.description AS description
+	f.file_id AS file_id,
+	f.description AS description,
+	f.sort_order AS sort_order
 	
 	FROM logdata d
 	LEFT JOIN logfields f ON d.label_id = f.id;-- --
