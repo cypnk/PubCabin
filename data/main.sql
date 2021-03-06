@@ -1883,7 +1883,7 @@ BEGIN
 END;-- --
 
 CREATE TRIGGER meta_content_search_update INSTEAD OF UPDATE ON meta_content_view
-WHEN is_fulltext IS 1
+WHEN NEW.is_fulltext IS 1
 BEGIN
 	UPDATE meta_content_search SET body = NEW.bare 
 		WHERE docid = NEW.id;
@@ -1894,7 +1894,7 @@ BEGIN
 END;-- --
 
 CREATE TRIGGER meta_content_update INSTEAD OF UPDATE ON meta_content_view
-WHEN is_fulltext IS NOT 1
+WHEN NEW.is_fulltext IS NOT 1
 BEGIN
 	UPDATE meta_content SET content = NEW.content, 
 		sort_order = COALESCE( NEW.sort_order, 0 ), 
