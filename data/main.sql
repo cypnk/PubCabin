@@ -1873,13 +1873,8 @@ BEGIN
 		( NEW.meta_id, NEW.sort_order, 
 			COALESCE( NEW.bare, '' ), NEW.content, 
 			COALESCE( NEW.sort_order, 0 ) );
-END;-- --
-
-CREATE TRIGGER meta_content_search_content_insert AFTER INSERT ON meta_content FOR EACH ROW
-WHEN NEW.bare IS NOT NULL
-BEGIN
 	INSERT INTO meta_content_search( docid, body ) 
-		VALUES ( NEW.id, NEW.bare );
+		VALUES ( SELECT last_insert_rowid(), NEW.bare );
 END;-- --
 
 CREATE TRIGGER meta_content_search_update INSTEAD OF UPDATE ON meta_content_view
