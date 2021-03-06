@@ -56,12 +56,12 @@ BEGIN
 	
 END;-- --
 
-CREATE TRIGGER log_content_insert INSTEAD OF INSERT ON log_content_view 
+CREATE TRIGGER log_content_search_insert INSTEAD OF INSERT ON log_content_view 
 WHEN NEW.is_fulltext IS 1
 BEGIN
 	INSERT INTO logdata ( label_id ) VALUES ( NEW.label_id );
 	INSERT INTO log_content_insert( docid, body ) 
-		VALUES( SELECT last_insert_rowid(), NEW.content );
+		VALUES( ( SELECT last_insert_rowid() ), NEW.content );
 END;-- --
 
 
