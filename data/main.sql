@@ -65,7 +65,8 @@ CREATE TABLE sites (
 );-- --
 CREATE UNIQUE INDEX idx_site_path ON sites ( basename, basepath );-- --
 CREATE UNIQUE INDEX idx_site_label ON sites ( label );-- --
-CREATE INDEX idx_site_settings ON sites ( settings_id );-- --
+CREATE INDEX idx_site_settings ON sites ( settings_id )
+	WHERE settings_id IS NOT NULL;-- --
 
 CREATE VIEW sites_enabled AS SELECT 
 	s.id AS id, 
@@ -162,8 +163,10 @@ CREATE TABLE users (
 		ON DELETE SET NULL
 );-- --
 CREATE UNIQUE INDEX idx_username ON users( username );-- --
-CREATE UNIQUE INDEX idx_user_uuid ON users( uuid );-- --
-CREATE INDEX idx_user_settings ON users ( settings_id );-- --
+CREATE UNIQUE INDEX idx_user_uuid ON users( uuid )
+	WHERE uuid IS NOT NULL;-- --
+CREATE INDEX idx_user_settings ON users ( settings_id )
+	WHERE settings_id IS NOT NULL;-- --
 
 -- User searching
 CREATE VIRTUAL TABLE user_search 
@@ -185,6 +188,8 @@ CREATE TABLE logins(
 );-- --
 CREATE UNIQUE INDEX idx_login_user ON logins( user_id );-- --
 CREATE UNIQUE INDEX idx_login_lookup ON logins( lookup );-- --
+CREATE INDEX idx_login_hash ON logins( hash )
+	WHERE hash IS NOT NULL;-- --
 
 
 -- Secondary identity providers E.G. two-factor
@@ -236,6 +241,9 @@ CREATE TABLE user_auth(
 		ON DELETE SET NULL
 );-- --
 CREATE UNIQUE INDEX idx_user_email ON user_auth( email );-- --
+CREATE INDEX idx_user_auth_user ON user_auth( user_id );-- --
+CREATE INDEX idx_user_provider ON user_auth( provider_id )
+	WHERE provider_id IS NOT NULL;-- --
 CREATE INDEX idx_user_pin ON user_auth( mobile_pin ) 
 	WHERE mobile_pin IS NOT NULL;-- --
 CREATE INDEX idx_user_ip ON user_auth( last_ip )
@@ -415,7 +423,8 @@ CREATE TABLE role_privileges(
 		ON DELETE SET NULL
 );-- --
 CREATE INDEX idx_privilege_role ON role_privileges( role_id );-- --
-CREATE INDEX idx_privilege_settings ON role_privileges ( settings_id );-- --
+CREATE INDEX idx_privilege_settings ON role_privileges ( settings_id )
+	WHERE settings_id IS NOT NULL;-- --
 
 CREATE TABLE user_roles(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -457,7 +466,8 @@ CREATE TABLE areas (
 		ON DELETE SET NULL
 );-- --
 CREATE UNIQUE INDEX idx_area_label ON areas ( label );-- --
-CREATE INDEX idx_area_settings ON areas ( settings_id );-- --
+CREATE INDEX idx_area_settings ON areas ( settings_id )
+	WHERE settings_id IS NOT NULL;-- --
 
 -- Area render template HTML
 CREATE TABLE area_render (
@@ -479,7 +489,8 @@ CREATE TABLE area_render (
 		REFERENCES settings ( id )
 		ON DELETE SET NULL
 );-- --
-CREATE INDEX idx_area_render_settings ON area_render ( settings_id );-- --
+CREATE INDEX idx_area_render_settings ON area_render ( settings_id )
+	WHERE settings_id IS NOT NULL;-- --
 
 CREATE VIEW area_view AS SELECT
 	a.id AS id,
@@ -535,7 +546,8 @@ CREATE TABLE pages (
 		REFERENCES settings ( id )
 		ON DELETE SET NULL
 );-- --
-CREATE UNIQUE INDEX idx_page_uuid ON pages ( uuid );-- --
+CREATE UNIQUE INDEX idx_page_uuid ON pages ( uuid )
+	WHERE uuid IS NOT NULL;-- --
 CREATE INDEX idx_page_parent ON pages ( parent_id );-- --
 CREATE INDEX idx_page_site ON pages ( site_id );-- --
 CREATE INDEX idx_page_ptype ON pages ( ptype );-- --
@@ -546,7 +558,8 @@ CREATE INDEX idx_page_created ON pages ( created );-- --
 CREATE INDEX idx_page_updated ON pages ( updated );-- --
 CREATE INDEX idx_page_status ON pages ( status );-- --
 CREATE INDEX idx_page_published ON pages ( published );-- --
-CREATE INDEX idx_page_settings ON pages ( settings_id );-- --
+CREATE INDEX idx_page_settings ON pages ( settings_id )
+	WHERE settings_id IS NOT NULL;-- --
 
 -- Page type templates
 CREATE TABLE ptype_render (
@@ -601,8 +614,8 @@ END;-- --
 CREATE TABLE page_paths (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 	url TEXT NOT NULL DEFAULT '/' COLLATE NOCASE
-);
-CREATE UNIQUE INDEX idx_page_paths ON page_paths ( url ASC );
+);-- --
+CREATE UNIQUE INDEX idx_page_paths ON page_paths ( url ASC );-- --
 
 -- Render clusters
 CREATE TABLE page_area(
@@ -946,7 +959,8 @@ CREATE TABLE comments (
 		REFERENCES languages ( id ) 
 		ON DELETE CASCADE
 );-- --
-CREATE UNIQUE INDEX idx_comment_uuid ON comments( uuid );-- --
+CREATE UNIQUE INDEX idx_comment_uuid ON comments( uuid )
+	WHERE uuid IS NOT NULL;-- --
 CREATE INDEX idx_comment_user_id ON comments( user_id ) 
 	WHERE user_id IS NOT NULL;-- --
 CREATE INDEX idx_comment_created ON comments ( created );-- --
@@ -1045,7 +1059,7 @@ CREATE TABLE attachments (
 	mime_type TEXT NOT NULL COLLATE NOCASE,
 	meta TEXT NOT NULL DEFAULT '' COLLATE NOCASE,
 	
-	preview TEXT DEFAULT NULL, 
+	preview TEXT DEFAULT NULL COLLATE NOCASE, 
 	sort_order INTEGER NOT NULL DEFAULT 0,
 	created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -1198,6 +1212,9 @@ CREATE TABLE menues(
 		REFERENCES menues ( id ) 
 		ON DELETE CASCADE
 );-- --
+CREATE INDEX idx_menu_site ON menues( site_id );-- --
+CREATE INDEX idx_menu_parent ON menues( parent_id );-- --
+CREATE INDEX idx_menu_url ON menues( url );-- --
 
 CREATE TABLE menu_texts (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
@@ -1230,7 +1247,8 @@ CREATE TABLE places(
 	geo_lon REAL NOT NULL DEFAULT 0
 );-- --
 CREATE UNIQUE INDEX idx_places ON places( geo_lat, geo_lon );-- --
-CREATE INDEX idx_place_settings ON places( settings_id );-- --
+CREATE INDEX idx_place_settings ON places( settings_id )
+	WHERE settings_id IS NOT NULL;-- --
 
 CREATE TABLE place_labels(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -1375,7 +1393,10 @@ CREATE TABLE global_events (
 		ON DELETE SET NULL
 );-- --
 CREATE INDEX idx_global_event_sort ON global_events ( sort_order ASC );-- --
-CREATE INDEX idx_global_event_settings ON global_events ( settings_id );-- --
+CREATE INDEX idx_global_event_event ON global_events( event_id );-- --
+CREATE INDEX idx_global_event_trigger ON global_events( trigger_id );-- --
+CREATE INDEX idx_global_event_settings ON global_events ( settings_id )
+	WHERE settings_id IS NOT NULL;-- --
 
 CREATE VIEW global_event_view AS SELECT
 	o.id AS id,
@@ -1425,7 +1446,11 @@ CREATE TABLE site_events (
 		ON DELETE SET NULL
 );-- --
 CREATE INDEX idx_site_event_sort ON site_events ( sort_order ASC );-- --
-CREATE INDEX idx_site_event_settings ON site_events ( settings_id );-- --
+CREATE INDEX idx_site_event_site ON site_events( site_id );-- --
+CREATE INDEX idx_site_event_event ON site_events( event_id );-- --
+CREATE INDEX idx_site_event_trigger ON site_events( trigger_id );-- --
+CREATE INDEX idx_site_event_settings ON site_events ( settings_id )
+	WHERE settings_id IS NOT NULL;-- --
 
 CREATE VIEW site_event_view AS SELECT
 	s.id AS site_id, 
@@ -1473,7 +1498,11 @@ CREATE TABLE user_events (
 		ON DELETE SET NULL
 );-- --
 CREATE INDEX idx_user_event_sort ON user_events ( sort_order ASC );-- --
-CREATE INDEX idx_user_event_settings ON user_events ( settings_id );-- --
+CREATE INDEX idx_user_event_user ON user_events( user_id );-- --
+CREATE INDEX idx_user_event_event ON user_events( event_id );-- --
+CREATE INDEX idx_user_event_trigger ON user_events( trigger_id );-- --
+CREATE INDEX idx_user_event_settings ON user_events ( settings_id )
+	WHERE settings_id IS NOT NULL;-- --
 
 
 CREATE VIEW user_event_view AS SELECT
@@ -1522,7 +1551,11 @@ CREATE TABLE page_events (
 		ON DELETE SET NULL
 );-- --
 CREATE INDEX idx_page_event_sort ON page_events ( sort_order ASC );-- --
-CREATE INDEX idx_page_event_settings ON page_events ( settings_id );-- --
+CREATE INDEX idx_page_event_page ON page_events( page_id );-- --
+CREATE INDEX idx_page_event_event ON page_events( event_id );-- --
+CREATE INDEX idx_page_event_trigger ON page_events( trigger_id );-- --
+CREATE INDEX idx_page_event_settings ON page_events ( settings_id )
+	WHERE settings_id IS NOT NULL;-- --
 
 
 CREATE VIEW page_event_view AS SELECT
@@ -1570,8 +1603,12 @@ CREATE TABLE comment_events (
 		REFERENCES settings ( id )
 		ON DELETE SET NULL
 );-- --
-CREATE INDEX idx_comments_event_sort ON comment_events ( sort_order ASC );-- --
-CREATE INDEX idx_comments_event_settings ON comment_events ( settings_id );-- --
+CREATE INDEX idx_comment_event_sort ON comment_events ( sort_order ASC );-- --
+CREATE INDEX idx_comment_event_comment ON comment_events( comment_id );-- --
+CREATE INDEX idx_comment_event_event ON comment_events( event_id );-- --
+CREATE INDEX idx_comment_event_trigger ON comment_events( trigger_id );-- --
+CREATE INDEX idx_comment_event_settings ON comment_events ( settings_id )
+	WHERE settings_id IS NOT NULL;-- --
 
 
 CREATE VIEW comment_event_view AS SELECT
@@ -1620,7 +1657,10 @@ CREATE TABLE menu_events (
 		ON DELETE SET NULL
 );-- --
 CREATE INDEX idx_menu_event_sort ON menu_events ( sort_order ASC );-- --
-CREATE INDEX idx_menu_event_settings ON menu_events ( settings_id );-- --
+CREATE INDEX idx_menu_event_event ON menu_events( event_id );-- --
+CREATE INDEX idx_menu_event_trigger ON menu_events( trigger_id );-- --
+CREATE INDEX idx_menu_event_settings ON menu_events ( settings_id )
+	WHERE settings_id IS NOT NULL;-- --
 
 
 CREATE VIEW menu_event_view AS SELECT
@@ -1725,7 +1765,10 @@ CREATE TABLE redirect_events (
 		ON DELETE SET NULL
 );-- --
 CREATE INDEX idx_redirect_event_sort ON redirect_events ( sort_order ASC );-- --
-CREATE INDEX idx_redirect_event_settings ON redirect_events ( settings_id );-- --
+CREATE INDEX idx_redirect_event_event ON redirect_events( event_id );-- --
+CREATE INDEX idx_redirect_event_trigger ON redirect_events( trigger_id );-- --
+CREATE INDEX idx_redirect_event_settings ON redirect_events ( settings_id )
+	WHERE settings_id IS NOT NULL;-- --
 
 CREATE VIEW redirect_event_view AS SELECT
 	r.id AS user_id, 
