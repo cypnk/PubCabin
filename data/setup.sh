@@ -55,6 +55,12 @@ else
 	sqlite3 cache.db < cache.sql
 fi
 
+if [ -f logs.db ]; then
+	sqlite3 logs.db .dump > backup/logs-$DATE.sql
+else
+	sqlite3 logs.db < logs.sql
+fi
+
 
 # If a user is supplied, set as owner
 if [ -n "$W_USER" ]; then
