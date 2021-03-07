@@ -19,18 +19,14 @@ mkdir -p modules
 # Language folder
 mkdir -p lang
 
-# Custom config
-touch config.json
-
 # Default language file
 touch lang/en-US.json
 
-# Error logs
-touch errors.log
-touch visitor_errors.log
-
-
 # Make a backup if a database exists, instead of overwriting
+if [ -f config.db ]; then
+	sqlite3 config.db .dump > backup/config-$DATE.sql
+else
+
 if [ -f main.db ]; then
 	sqlite3 main.db .dump > backup/site-$DATE.sql
 else
