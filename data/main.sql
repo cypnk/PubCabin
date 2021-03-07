@@ -142,6 +142,28 @@ CREATE VIEW locale_view AS SELECT
 	FROM translations t
 	JOIN languages l ON t.lang_id = l.id;-- --
 
+-- Localized date presentation formats
+CREATE TABLE date_formats(
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+	lang_id INTEGER NOT NULL,
+	locale_id INTEGER NOT NULL,
+	
+	 -- Excluding pipe ( | )
+	render TEXT NOT NULL COLLATE NOCASE,
+		
+	CONSTRAINT fk_date_language
+		FOREIGN KEY ( lang_id ) 
+		REFERENCES languages ( id )
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_date_locale
+		FOREIGN KEY ( locale_id ) 
+		REFERENCES translations ( id )
+		ON DELETE CASCADE
+);-- --
+CREATE INDEX idx_date_lang ON date_formats( lang_id );-- --
+CREATE INDEX idx_date_locals ON date_formats( locale_id );-- --
+
 
 -- User profiles
 CREATE TABLE users (
