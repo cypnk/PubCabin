@@ -8,6 +8,10 @@ DATE=`date +%Y-%m-%d-%H-%M-%S`
 # Prepare backup folder if it doesn't exist
 mkdir -p backup
 
+if [ -f config.db ]; then
+	sqlite3 config.db .dump > backup/config-$DATE.sql
+fi
+
 if [ -f main.db ]; then
 	sqlite3 main.db .dump > backup/site-$DATE.sql
 fi
