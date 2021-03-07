@@ -16,7 +16,7 @@ CREATE TABLE configs (
 	setting TEXT NOT NULL,
 	render TEXT NOT NULL DEFAULT 'text',
 	description TEXT NOT NULL DEFAULT ''
-);
+);-- --
 CREATE UNIQUE INDEX idx_config_label ON configs ( label );-- --
 
 -- Core init
@@ -24,7 +24,7 @@ INSERT INTO configs ( label, setting, render ) VALUES
 	( 'APP_NAME', 'PubCabin', 'text' ),
 	( 'CACHE', '', 'text' ), 
 	( 'CACHE_TTL', '3200', 'int' ),
-	( 'FILE_PATH', '', 'text' ),
+	( 'FILE_PATH', '/', 'text' ),
 	( 'ERROR', '', 'text' ), 
 	( 'NOTICE', '', 'text' ), 
 	( 'ERROR_ROOT', '', 'text' ), 
