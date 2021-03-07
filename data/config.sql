@@ -22,21 +22,28 @@ CREATE UNIQUE INDEX idx_config_label ON configs ( label );-- --
 -- Core init
 INSERT INTO configs ( label, setting, render ) VALUES 
 	( 'APP_NAME', 'PubCabin', 'text' ),
-	( 'CACHE', '', 'text' ), 
+	( 'CACHE', '{path}cache/', 'text' ), 
 	( 'CACHE_TTL', '3200', 'int' ),
-	( 'FILE_PATH', '/', 'text' ),
-	( 'ERROR', '', 'text' ), 
-	( 'NOTICE', '', 'text' ), 
-	( 'ERROR_ROOT', '', 'text' ), 
-	( 'PLUGINS', '', 'text' ), 
+	( 'FILE_PATH', '{path}htdocs/', 'text' ),
+	( 'ERROR', '{cache}error.log', 'text' ), 
+	( 'NOTICE', '{cache}notice.log', 'text' ), 
+	( 'ERROR_ROOT', '{path}errors/', 'text' ), 
+	( 'ERROR_visit', '{cache}visitor_errors.log', 'text' ), 
+	( 'PLUGINS', '{path}plugins/', 'text' ), 
 	( 'PLUGINS_ENABLED', '', 'text' ), 
-	( 'PLUGIN_DATA', '', 'text' ),
-	( 'PLUGIN_ASSETS', '', 'text' ),
+	( 'PLUGIN_DATA', '{cache}plugins/', 'text' ),
+	( 'PLUGIN_ASSETS', 'assets/', 'text' ),
 	( 'SITE_WHITE', 
 '{
 	"localhost" : []
 }', 'json' ), 
-	( 'DEFAULT_BASEPATH', '{}', 'json' ),
+	( 'DEFAULT_BASEPATH', 
+'{
+	"basepath"		: "\/",
+	"is_active"		: 1,
+	"is_maintenance"	: 0,
+	"settings"		: []
+}', 'json' ),
 	( 'MAIL_WHITELIST', '', 'text' ), 
 	( 'MAIL_FROM', 'www@localhost', 'text' ), 
 	( 'MAX_URL_SIZE', '512', 'int' ),
@@ -63,7 +70,13 @@ INSERT INTO configs ( label, setting, render ) VALUES
 	( 'FRAME_WHITELIST', '', 'text' ),
 	( 'DEFAULT_STYLESHEETS', '', 'text' ),
 	( 'DEFAULT_SCRIPTS', '', 'text' ),
-	( 'DEFAULT_META', '{}', 'json' ),
+	( 'DEFAULT_META', 
+'{
+	"meta" : [
+		{ "name" : "generator", "content" : 
+			"Bare; https:\/\/github.com\/cypnk\/PubCabin" }
+	]
+}', 'json' ),
 	( 'DEFAULT_CLASSES', 
 '{
 	"body_classes"			: "",
