@@ -1882,7 +1882,12 @@ CREATE TRIGGER meta_content_insert INSTEAD OF INSERT ON meta_content_view
 WHEN is_fulltext IS NOT 1 
 BEGIN
 	INSERT INTO meta_content ( meta_id, bare, content, sort_order ) 
-	VALUES ( NEW.meta_id, NULL, NEW.content, COALESCE( NEW.sort_order, 0 ) );
+	VALUES ( 
+		NEW.meta_id, 
+		NULL, 
+		NEW.content, 
+		COALESCE( NEW.sort_order, 0 ) 
+	);
 END;-- --
 
 -- Inercept meta data insert with full text
@@ -1891,12 +1896,28 @@ WHEN is_fulltext IS 1
 BEGIN
 	INSERT INTO meta_content 
 		( meta_id, sort_order, bare, content ) 
-		VALUES 
-		( NEW.meta_id, NEW.sort_order, 
-			COALESCE( NEW.bare, '' ), NEW.content, 
-			COALESCE( NEW.sort_order, 0 ) );
+		VALUES ( 
+			NEW.meta_id, 
+			COALESCE( NEW.sort_order, 0 ), 
+			COALESCE( NEW.bare, '' ), 
+			NEW.content 
+		);
+	
 	INSERT INTO meta_content_search( docid, body ) 
 		VALUES ( ( SELECT last_insert_rowid() ), NEW.bare );
+	
+	-- For SQLite 3.35+
+	--INSERT INTO meta_content_search( docid, body ) 
+	--	VALUES ( ( 
+	--		INSERT INTO meta_content 
+	--			( meta_id, sort_order, bare, content ) 
+	--		VALUES ( 
+	--			NEW.meta_id, 
+	--			COALESCE( NEW.sort_order, 0 ) ), 
+	--			COALESCE( NEW.bare, '' ), 
+	--			NEW.content 
+	--		) returning id
+	--	), NEW.bare );
 END;-- --
 
 CREATE TRIGGER meta_content_search_update INSTEAD OF UPDATE ON meta_content_view
@@ -1922,6 +1943,41 @@ CREATE TRIGGER meta_content_search_delete BEFORE DELETE ON meta_content FOR EACH
 BEGIN
 	DELETE FROM meta_content_search WHERE docid = OLD.id;
 END;-- --
+
+
+-- Site metadata
+CREATE TABLE site_meta (
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	metacontent_id INTEGER NOT NULL,
+	site_id INTEGER NOT NULL,
+	
+	CONSTRAINT fk_meta_site_meta
+		FOREIGN KEY ( metacontent_id ) 
+		REFERENCES meta_content ( id ) 
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_meta_content_site
+		FOREIGN KEY ( site_id ) 
+		REFERENCES sites ( id ) 
+		ON DELETE CASCADE
+);-- --
+CREATE INDEX idx_meta_site ON site_meta( metacontent_id );-- --
+CREATE INDEX idx_meta_site_data ON site_meta( site_id );-- --
+
+CREATE VIEW site_meta_view AS SELECT
+	c.id AS id, 
+	c.meta_id AS meta_id, 
+	c.sort_order AS sort_order,
+	c.bare AS bare, 
+	c.content AS content, 
+	m.label AS meta_label,
+	m.format AS format,
+	m.is_fulltext AS is_fulltext,
+	r.page_id AS page_id
+	
+	FROM meta_content c
+	LEFT JOIN metadata m ON c.meta_id = m.id
+	LEFT JOIN site_meta r ON c.id = r.metacontent_id;-- --
 
 
 -- User metadata
