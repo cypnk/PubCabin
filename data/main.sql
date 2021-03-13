@@ -467,6 +467,30 @@ CREATE UNIQUE INDEX idx_user_role ON
 	user_roles( role_id, user_id );-- --
 
 
+-- Template style groups
+CREATE TABLE styles(
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+	label TEXT NOT NULL COLLATE NOCASE,
+	description TEXT NOT NULL COLLATE NOCASE
+);-- --
+CREATE UNIQUE INDEX idx_styles_label ON styles ( label );-- --
+
+-- HTML render templates
+CREATE TABLE style_template(
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+	label TEXT NOT NULL COLLATE NOCASE, 
+	render TEXT NOT NULL DEFAULT '' COLLATE NOCASE,
+	style_id INTEGER NOT NULL, 
+	
+	CONSTRAINT fk_render_style
+		FOREIGN KEY ( style_id ) 
+		REFERENCES styles ( id ) 
+		ON DELETE CASCADE
+);-- --
+CREATE INDEX idx_template_style ON style_template ( style_id );-- --
+CREATE INDEX idx_template_label ON style_template ( label );-- --
+
+
 -- Site content regions/paged collections
 CREATE TABLE areas (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
@@ -477,7 +501,7 @@ CREATE TABLE areas (
 	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
 	settings_id INTEGER DEFAULT NULL,
 	
-	CONSTRAINT fk_pages_site 
+	CONSTRAINT fk_area_site 
 		FOREIGN KEY ( site_id ) 
 		REFERENCES sites ( id )
 		ON DELETE CASCADE,
@@ -491,12 +515,12 @@ CREATE UNIQUE INDEX idx_area_label ON areas ( label );-- --
 CREATE INDEX idx_area_settings ON areas ( settings_id )
 	WHERE settings_id IS NOT NULL;-- --
 
--- Area render template HTML
+-- Area render regions
 CREATE TABLE area_render (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 	area_id INTEGER NOT NULL,
+	style_id INTEGER DEFAULT NULL,
 	
-	render TEXT NOT NULL DEFAULT '' COLLATE NOCASE,
 	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
 	settings_id INTEGER DEFAULT NULL,
 	status INTEGER NOT NULL DEFAULT 0,
@@ -506,11 +530,18 @@ CREATE TABLE area_render (
 		REFERENCES areas ( id )
 		ON DELETE CASCADE,
 	
+	CONSTRAINT fk_area_render_style
+		FOREIGN KEY ( style_id ) 
+		REFERENCES styles ( id )
+		ON DELETE SET NULL,
+	
 	CONSTRAINT fk_area_render_settings
 		FOREIGN KEY ( settings_id ) 
 		REFERENCES settings ( id )
 		ON DELETE SET NULL
 );-- --
+CREATE INDEX idx_area_render_style ON area_render ( style_id )
+	WHERE style_id IS NOT NULL;-- --
 CREATE INDEX idx_area_render_settings ON area_render ( settings_id )
 	WHERE settings_id IS NOT NULL;-- --
 
@@ -521,13 +552,16 @@ CREATE VIEW area_view AS SELECT
 	a.permissions AS permissions, 
 	a.settings AS settings_override,
 	ag.settings AS settings,
-	ar.render AS render,
+	GROUP_CONCAT( st.label, '|' ) AS templates,
+	GROUP_CONCAT( st.render, '|' ) AS template_render,
 	ar.status AS status,
 	ar.settings AS render_settings_override,
 	rg.settings AS render_settings
 	
 	FROM area_render ar
 	JOIN areas a ON ar.area_id = a.id 
+	LEFT JOIN styles sy ON ar.style_id = sy.id 
+	LEFT JOIN style_template st ON sy.id = st.style_id 
 	LEFT JOIN settings ag ON a.settings_id = ag.id
 	LEFT JOIN settings rg ON ar.settings_id = rg.id;-- --
 
