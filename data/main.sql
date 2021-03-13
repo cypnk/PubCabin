@@ -2114,6 +2114,30 @@ CREATE INDEX idx_vote_user ON content_votes ( user_id )
 	WHERE user_id IS NOT NULL;-- --
 CREATE INDEX idx_vote_type ON content_votes ( vote_type );-- --
 CREATE INDEX idx_vote_score ON content_votes ( score );-- --
+CREATE INDEX idx_vote_created ON content_votes ( created );-- --
+
+CREATE VIRTUAL TABLE vote_search 
+	USING fts4( body, tokenize=unicode61 );-- --
+
+CREATE TRIGGER vote_insert AFTER INSERT ON content_votes FOR EACH ROW 
+WHEN NEW.note IS NOT NULL
+BEGIN
+	INSERT INTO vote_search( docid, body ) 
+		VALUES ( NEW.id, NEW.note );
+END;-- --
+
+CREATE TRIGGER vote_update AFTER UPDATE ON content_votes FOR EACH ROW 
+WHEN NEW.note IS NOT NULL
+BEGIN
+	UPDATE vote_search SET body = NEW.note
+		WHERE docid = NEW.id;
+END;-- --
+
+CREATE TRIGGER vote_delete BEFORE DELETE ON content_votes FOR EACH ROW 
+BEGIN
+	DELETE FROM vote_search WHERE docid = OLD.id;
+END;-- --
+
 
 CREATE TABLE page_votes (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
