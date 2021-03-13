@@ -1061,7 +1061,7 @@ CREATE VIEW comment_view AS SELECT
 	
 	FROM comments c
 	LEFT JOIN languages l ON c.lang_id = l.id
-	LEFT JOIN users u ON p.user_id = u.id
+	LEFT JOIN users u ON c.user_id = u.id
 	LEFT JOIN user_auth e ON e.user_id = u.id;-- --
 
 
@@ -1973,7 +1973,7 @@ CREATE VIEW site_meta_view AS SELECT
 	m.label AS meta_label,
 	m.format AS format,
 	m.is_fulltext AS is_fulltext,
-	r.page_id AS page_id
+	r.site_id AS site_id
 	
 	FROM meta_content c
 	LEFT JOIN metadata m ON c.meta_id = m.id
@@ -2083,6 +2083,123 @@ CREATE VIEW comment_meta_view AS SELECT
 	FROM meta_content c
 	LEFT JOIN metadata m ON c.meta_id = m.id
 	LEFT JOIN comment_meta r ON c.id = r.metacontent_id;-- --
+
+
+
+-- Content voting and feedback
+CREATE TABLE content_votes (
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+	user_id INTEGER DEFAULT NULL, 
+	
+	-- E.G. poll, election, survey, flag etc...
+	vote_type TEXT DEFAULT NULL COLLATE NOCASE,
+	score REAL NOT NULL DEFAULT 0, 
+	
+	-- Additional comment or feedback E.G. report or reason
+	note TEXT DEFAULT NULL COLLATE NOCASE,
+	lang_id INTEGER NOT NULL,
+	created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	
+	CONSTRAINT fk_vote_user 
+		FOREIGN KEY ( user_id ) 
+		REFERENCES users ( id ) 
+		ON DELETE CASCADE,
+		
+	CONSTRAINT fk_vote_lang 
+		FOREIGN KEY ( lang_id ) 
+		REFERENCES languages ( id ) 
+		ON DELETE CASCADE
+);-- --
+CREATE INDEX idx_vote_user ON content_votes ( user_id )
+	WHERE user_id IS NOT NULL;-- --
+CREATE INDEX idx_vote_type ON content_votes ( vote_type );-- --
+CREATE INDEX idx_vote_score ON content_votes ( score );-- --
+
+CREATE TABLE page_votes (
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+	page_id INTEGER DEFAULT NULL, 
+	vote_id INTEGER DEFAULT NULL, 
+		
+	CONSTRAINT fk_vote_page 
+		FOREIGN KEY ( page_id ) 
+		REFERENCES pages ( id ) 
+		ON DELETE CASCADE, 
+		
+	CONSTRAINT fk_vote_page_vote 
+		FOREIGN KEY ( vote_id ) 
+		REFERENCES content_votes ( id ) 
+		ON DELETE CASCADE
+);-- --
+CREATE INDEX idx_page_vote ON page_votes ( vote_id, page_id );-- --
+
+CREATE VIEW page_vote_view AS SELECT 
+	c.id AS id, 
+	c.page_id AS page_id, 
+	c.created AS created, 
+	v.vote_type AS vote_type, 
+	v.score AS score, 
+	v.note AS note, 
+	v.created AS created, 
+	l.iso_code AS lang_iso, 
+	l.label AS lang_label, 
+	
+	-- Authorship
+	COALESCE( u.display, u.username, '.' ) AS voter_name,
+	COALESCE( e.email, '@' ) AS voter_email,
+	COALESCE( e.last_ip, '::' ) AS voter_ip,
+	COALESCE( e.last_active, '0' ) AS voter_last_active,
+	COALESCE( e.last_login, '0' ) AS voter_last_login,
+	COALESCE( u.user_id, 0 ) AS voter_id
+	
+	FROM page_votes c
+	LEFT JOIN content_votes v ON v.id = c.vote_id
+	LEFT JOIN languages l ON v.lang_id = l.id
+	LEFT JOIN users u ON v.user_id = u.id
+	LEFT JOIN user_auth e ON e.user_id = u.id;-- --
+
+
+CREATE TABLE comment_votes (
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+	comment_id INTEGER DEFAULT NULL, 
+	vote_id INTEGER DEFAULT NULL, 
+		
+	CONSTRAINT fk_vote_comment 
+		FOREIGN KEY ( comment_id ) 
+		REFERENCES comments ( id ) 
+		ON DELETE CASCADE, 
+		
+	CONSTRAINT fk_vote_comment_vote
+		FOREIGN KEY ( vote_id ) 
+		REFERENCES content_votes ( id ) 
+		ON DELETE CASCADE
+);-- --
+CREATE INDEX idx_comment_vote ON comment_votes ( vote_id, comment_id );-- --
+
+
+CREATE VIEW comment_vote_view AS SELECT 
+	c.id AS id, 
+	c.comment_id AS comment_id, 
+	c.created AS created, 
+	v.vote_type AS vote_type, 
+	v.score AS score, 
+	v.note AS note, 
+	v.created AS created, 
+	l.iso_code AS lang_iso, 
+	l.label AS lang_label, 
+	
+	-- Authorship
+	COALESCE( u.display, u.username, '.' ) AS voter_name,
+	COALESCE( e.email, '@' ) AS voter_email,
+	COALESCE( e.last_ip, '::' ) AS voter_ip,
+	COALESCE( e.last_active, '0' ) AS voter_last_active,
+	COALESCE( e.last_login, '0' ) AS voter_last_login,
+	COALESCE( u.user_id, 0 ) AS voter_id
+	
+	FROM comment_votes c
+	LEFT JOIN content_votes v ON v.id = c.vote_id
+	LEFT JOIN languages l ON v.lang_id = l.id
+	LEFT JOIN users u ON v.user_id = u.id
+	LEFT JOIN user_auth e ON e.user_id = u.id;-- --
 
 
 
