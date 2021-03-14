@@ -22,16 +22,17 @@ CREATE UNIQUE INDEX idx_config_label ON configs ( label );-- --
 -- Core init
 INSERT INTO configs ( label, setting, render ) VALUES 
 	( 'APP_NAME', 'PubCabin', 'text' ),
-	( 'CACHE', '{path}cache/', 'text' ), 
+	( 'APP_START', CURRENT_TIMESTAMP, 'text' ),
+	( 'CACHE', '{store}cache/', 'text' ), 
 	( 'CACHE_TTL', '3200', 'int' ),
 	( 'FILE_PATH', '{path}htdocs/', 'text' ),
-	( 'ERROR', '{cache}error.log', 'text' ), 
-	( 'NOTICE', '{cache}notice.log', 'text' ), 
+	( 'ERROR', '{store}cache/error.log', 'text' ), 
+	( 'NOTICE', '{store}cache/notice.log', 'text' ), 
 	( 'ERROR_ROOT', '{path}errors/', 'text' ), 
 	( 'ERROR_visit', '{cache}visitor_errors.log', 'text' ), 
 	( 'PLUGINS', '{path}plugins/', 'text' ), 
 	( 'PLUGINS_ENABLED', '', 'text' ), 
-	( 'PLUGIN_DATA', '{cache}plugins/', 'text' ),
+	( 'PLUGIN_DATA', '{store}cache/plugins/', 'text' ),
 	( 'PLUGIN_ASSETS', 'assets/', 'text' ),
 	( 'SITE_WHITE', 
 '{
