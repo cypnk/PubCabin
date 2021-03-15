@@ -613,7 +613,8 @@ CREATE INDEX idx_page_sort ON pages ( sort_order );-- --
 CREATE INDEX idx_page_created ON pages ( created );-- --
 CREATE INDEX idx_page_updated ON pages ( updated );-- --
 CREATE INDEX idx_page_status ON pages ( status );-- --
-CREATE INDEX idx_page_published ON pages ( published );-- --
+CREATE INDEX idx_page_published ON pages ( published )
+	WHERE published IS NOT NULL;-- --
 CREATE INDEX idx_page_settings ON pages ( settings_id )
 	WHERE settings_id IS NOT NULL;-- --
 
@@ -850,7 +851,27 @@ CREATE VIEW page_area_view AS SELECT
 	
 	t.title AS title,
 	t.slug AS slug,
-	pp.url AS url
+	pp.url AS url,
+	
+	-- Previously published sibling
+	( SELECT id FROM pages prev
+		WHERE prev.published IS NOT NULL AND
+			strftime( '%s', prev.published ) < 
+			strftime( '%s', 
+				COALESCE( p.published, p.created ) 
+			)
+			ORDER BY prev.published DESC LIMIT 1 
+	) AS prev_id, 
+	
+	-- Next published sibling
+	( SELECT id FROM pages nxt 
+		WHERE nxt.published IS NOT NULL AND 
+			strftime( '%s', nxt.published ) > 
+			strftime( '%s', 
+				COALESCE( p.published, p.created ) 
+			)
+			ORDER BY nxt.published ASC LIMIT 1 
+	) AS next_id
 	
 	FROM pages p
 	LEFT JOIN page_texts t ON p.id = t.page_id
@@ -911,7 +932,10 @@ END;-- --
 -- Content tagging and categorizing
 CREATE TABLE terms (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+	
+	-- Any set of letter/number characters excluding "=", ",", "&"
 	taxonomy TEXT NOT NULL COLLATE NOCASE,
+	
 	sort_order INTEGER NOT NULL DEFAULT 0,
 	created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -925,6 +949,8 @@ CREATE TABLE term_texts (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 	term_id INTEGER NOT NULL,
 	lang_id INTEGER NOT NULL,
+	
+	-- Same character set as terms.taxonomy for slug, title, body
 	slug TEXT NOT NULL COLLATE NOCASE,
 	title TEXT COLLATE NOCASE,
 	body TEXT NOT NULL COLLATE NOCASE,
@@ -985,6 +1011,30 @@ CREATE TABLE page_terms (
 CREATE UNIQUE INDEX idx_page_term_slug ON 
 	page_terms ( page_id, term_id );-- --
 CREATE INDEX idx_page_term_sort ON page_terms ( sort_order );-- --
+
+-- Page taxonomy
+CREATE VIEW page_taxonomy_view AS SELECT
+	pt.id AS id,
+	pt.page_id AS page_id,
+	pt.term_id AS term_id,
+	terms.taxonomy AS term_label,
+	pt.sort_order AS sort_order, 
+	
+	GROUP_CONCAT(
+		'id='		|| texts.id		|| '&' || 
+		'tid='		|| terms.id		|| '&' || 
+		'label='	|| terms.taxonomy	|| '&' || 
+		'term='		|| texts.body		|| '&' || 
+		'title='	|| COALESCE( texts.title, '' ) || '&' || 
+		'lang='		|| l.iso_code		|| '&' ||
+		'slug='		|| texts.slug		|| '&' ||
+		'sort='		|| pt.sort_order
+	) AS taxonomy
+	
+	FROM page_terms pt
+	JOIN terms ON terms.id = pt.term_id 
+	LEFT JOIN term_texts texts ON texts.term_id = terms.id
+	LEFT JOIN languages l ON l.id = texts.lang_id;-- --
 
 
 -- Page feedback
