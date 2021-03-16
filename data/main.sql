@@ -2311,6 +2311,122 @@ CREATE VIEW comment_vote_view AS SELECT
 	LEFT JOIN users u ON v.user_id = u.id
 	LEFT JOIN user_auth e ON e.user_id = u.id;-- --
 
+-- Input forms
+CREATE TABLE forms(
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	title TEXT NOT NULL COLLATE NOCASE, 
+	enctype TEXT NOT NULL DEFAULT 'multipart/form-data' COLLATE NOCASE,
+	form_method TEXT NOT NULL DEFAULT 'post' COLLATE NOCASE,
+	
+	-- Submission path
+	path_id INTEGER NOT NULL, 
+	
+	created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, 
+	updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	
+	CONSTRAINT fk_form_page_path
+		FOREIGN KEY ( path_id ) 
+		REFERENCES page_paths ( id ) 
+		ON DELETE CASCADE
+);-- --
+CREATE UNIQUE INDEX idx_form_title ON forms( title );-- --
+CREATE INDEX idx_form_path ON forms( path_id );-- --
+CREATE INDEX idx_form_created ON forms( created );-- --
+CREATE INDEX idx_form_updated ON forms( updated );-- --
+
+CREATE TRIGGER form_update AFTER UPDATE ON forms FOR EACH ROW 
+BEGIN
+	UPDATE forms SET updated = CURRENT_TIMESTAMP 
+		WHERE id = NEW.id;
+END;-- --
+
+-- Form specific action events
+CREATE TABLE form_events (
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	form_id INTEGER NOT NULL,
+	event_id INTEGER NOT NULL,
+	trigger_id INTEGER NOT NULL,
+	sort_order INTEGER NOT NULL DEFAULT 0,
+	
+	-- Serialized JSON parameters
+	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
+	settings_id INTEGER DEFAULT NULL,
+	
+	CONSTRAINT fk_form_events_form
+		FOREIGN KEY ( form_id ) 
+		REFERENCES forms ( id ) 
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_form_events_trigger 
+		FOREIGN KEY ( trigger_id ) 
+		REFERENCES triggers ( id ) 
+		ON DELETE CASCADE,
+		
+	CONSTRAINT fk_form_events_event
+		FOREIGN KEY ( event_id ) 
+		REFERENCES events ( id ) 
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_form_events_settings
+		FOREIGN KEY ( settings_id ) 
+		REFERENCES settings ( id )
+		ON DELETE SET NULL
+);-- --
+CREATE INDEX idx_form_event_sort ON form_events( sort_order ASC );-- --
+CREATE INDEX idx_form_event_form ON form_events( form_id );-- --
+CREATE INDEX idx_form_event_event ON form_events( event_id );-- --
+CREATE INDEX idx_form_event_trigger ON form_events( trigger_id );-- --
+CREATE INDEX idx_form_event_settings ON form_events ( settings_id )
+	WHERE settings_id IS NOT NULL;-- --
+
+-- Property render templates for input fields
+CREATE TABLE form_fields(
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+	form_id INTEGER NOT NULL, 
+	field_name TEXT NOT NULL COLLATE NOCASE, 
+	filter TEXT NOT NULL DEFAULT '' COLLATE NOCASE, 
+	style_id INTEGER NOT NULL, 
+	
+	-- HTML templates
+	create_template TEXT NOT NULL, 
+	edit_template TEXT NOT NULL, 
+	view_template TEXT NOT NULL,
+	
+	CONSTRAINT fk_field_form
+		FOREIGN KEY ( form_id ) 
+		REFERENCES forms ( id ) 
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_field_style
+		FOREIGN KEY ( style_id ) 
+		REFERENCES styles ( id )
+		ON DELETE RESTRICT
+);-- --
+CREATE INDEX idx_form_field_form ON form_fields( form_id );-- --
+CREATE INDEX idx_form_field_name ON form_fields( field_name );-- --
+
+-- Form field descriptions
+CREATE TABLE field_language(
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+	field_id INTEGER NOT NULL,
+	lang_id INTEGER NOT NULL,
+	title TEXT NOT NULL COLLATE NOCASE, 
+	label TEXT NOT NULL COLLATE NOCASE, 
+	special TEXT NOT NULL DEFAULT '' COLLATE NOCASE, 
+	description TEXT NOT NULL DEFAULT '' COLLATE NOCASE,
+	
+	CONSTRAINT fk_field_template
+		FOREIGN KEY ( field_id ) 
+		REFERENCES form_fields ( id ) 
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_field_lang
+		FOREIGN KEY ( lang_id ) 
+		REFERENCES languages ( id ) 
+		ON DELETE CASCADE 
+);-- --
+CREATE INDEX idx_form_lang_field ON field_language( field_id );-- --
+CREATE INDEX idx_form_lang ON field_language( lang_id );-- --
 
 
 
