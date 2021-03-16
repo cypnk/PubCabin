@@ -3,7 +3,11 @@
 # Create the databases from schema files and create folders
 
 # Set the web user and group (used by PHP to read/write to these)
-W_USER=www
+# On Arch linux:
+W_USER=http
+
+# On OpenBSD:
+# W_USER=www
 
 # Timestamp
 DATE=`date +%Y-%m-%d-%H-%M-%S`
