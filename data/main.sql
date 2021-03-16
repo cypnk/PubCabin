@@ -1913,7 +1913,7 @@ CREATE TABLE metadata (
 		REFERENCES languages ( id ) 
 		ON DELETE CASCADE
 );-- --
-CREATE UNIQUE INDEX idx_meta_label ON metadata( label );-- --
+CREATE UNIQUE INDEX idx_meta_label ON metadata( lang_id, label );-- --
 CREATE INDEX idx_meta_sort ON metadata( sort_order );-- --
 CREATE INDEX idx_meta_format ON metadata( format );-- --
 CREATE INDEX idx_meta_lang ON metadata( lang_id );-- --
