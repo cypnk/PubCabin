@@ -12,6 +12,10 @@ if [ -f config.db ]; then
 	sqlite3 config.db .dump > backup/config-$DATE.sql
 fi
 
+if [ -f config.json ]; then
+	cp config.json > backup/config-$DATE.json
+fi
+
 if [ -f main.db ]; then
 	sqlite3 main.db .dump > backup/site-$DATE.sql
 fi
