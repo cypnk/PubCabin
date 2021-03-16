@@ -45,8 +45,50 @@ define( 'PUBCABIN_ERRORS',	PUBCABIN_DATA . 'errors.log' );
 define( 'PUBCABIN_PREFIX',	'PubCabin\\' );
 define( 'PUBCABIN_MODPREFIX',	'PubCabin\\Modules\\' );
 
+/**
+ *  Isolated error holder
+ */
+function errors( string $message, bool $ret = false ) {
+	static $log	= [];
+	
+	if ( $ret ) {
+		return $log;
+	}
+	
+	$log[] = 
+	\preg_replace( 
+		'/[\x00-\x08\x0B\x0C\x0E-\x1F\x80-\x9F[\x{fdd0}-\x{fdef}\p{Cs}\p{Cf}\p{Cn}]/u', 
+		'', 
+		$message 
+	);
+}
 
-spl_autoload_register( function( $class ) {
+/**
+ *  Internal error logger
+ */
+\register_shutdown_function( function() {
+	$msgs = errors( '', true );
+	
+	if ( empty( $msgs ) ) {
+		return;
+	}
+	
+	if ( !\is_readable( \PUBCABIN_ERRORS ) ) {
+		return;
+	}
+	
+	\error_log( 
+		\gmdate( 'D, d M Y H:i:s T', time() ) . "\n" . 
+			implode( "\n", $msgs ) . "\n\n\n\n", 
+		3, 
+		\PUBCABIN_ERRORS 
+	);
+} );
+
+/**
+ *  Class loader
+ */
+\spl_autoload_register( function( $class ) {
 	static $rpl	= [ '\\' => '/' ];
 	static $len;
 	static $mlen;
@@ -72,7 +114,10 @@ spl_autoload_register( function( $class ) {
 	
 	if ( \is_readable( $file ) ) {
 		require $file;
+	} else {
+		errors( 'Unable to read file ' . $file );
 	}
 } );
+
 
 
