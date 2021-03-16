@@ -22,6 +22,9 @@ mkdir -p lang
 # Default language file
 touch lang/en-US.json
 
+# Error log file
+touch errors.log
+
 # Make a backup if a database exists, instead of overwriting
 if [ -f config.db ]; then
 	sqlite3 config.db .dump > backup/config-$DATE.sql
@@ -84,6 +87,7 @@ chmod 755 filter.db
 chmod 755 sessions.db
 chmod 755 cache.db
 chmod 755 config.json
+chmod 755 errors.log
 
 exit
 
