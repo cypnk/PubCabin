@@ -76,7 +76,6 @@ if id "$W_USER" >/dev/null 2>&1; then
 	chown $W_USER filter.db
 	chown $W_USER sessions.db
 	chown $W_USER cache.db
-	chown $W_USER config.json
 	
 	# Set permissions
 	chmod -R 0600 backup
@@ -92,6 +91,7 @@ if id "$W_USER" >/dev/null 2>&1; then
 	chmod 0755 errors.log
 	
 	if [ -f config.json ]; then
+		chown $W_USER config.json
 		chmod 0755 config.json
 	fi
 fi
