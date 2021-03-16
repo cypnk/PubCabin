@@ -3,7 +3,7 @@
 # Create the databases from schema files and create folders
 
 # Set the web user and group (used by PHP to read/write to these)
-# W_USER=www
+W_USER=www
 
 # Timestamp
 DATE=`date +%Y-%m-%d-%H-%M-%S`
@@ -29,6 +29,8 @@ touch errors.log
 if [ -f config.db ]; then
 	sqlite3 config.db .dump > backup/config-$DATE.sql
 else
+	sqlite3 config.db < config.sql
+fi
 
 if [ -f main.db ]; then
 	sqlite3 main.db .dump > backup/site-$DATE.sql
@@ -60,9 +62,8 @@ else
 	sqlite3 logs.db < logs.sql
 fi
 
-
-# If a user is supplied, set as owner
-if [ -n "$W_USER" ]; then
+# If a user is supplied and exists, set as owner
+if id "$W_USER" >/dev/null 2>&1; then
 	chown -R $W_USER backup
 	chown -R $W_USER uploads
 	chown -R $W_USER lang
@@ -72,22 +73,24 @@ if [ -n "$W_USER" ]; then
 	chown $W_USER sessions.db
 	chown $W_USER cache.db
 	chown $W_USER config.json
+	
+	# Set permissions
+	chmod -R 0600 backup
+	chmod -R 0755 uploads
+	chmod -R 0755 cache
+	chmod -R 0755 modules
+	chmod -R 0755 lang
+	
+	chmod 0755 main.db
+	chmod 0755 filter.db
+	chmod 0755 sessions.db
+	chmod 0755 cache.db
+	chmod 0755 errors.log
+	
+	if [ -f config.json ]; then
+		chmod 0755 config.json
+	fi
 fi
-
-
-# Set permissions
-chmod -R 600 backup
-chmod -R 755 uploads
-chmod -R 755 cache
-chmod -R 755 modules
-chmod -R 755 lang
-
-chmod 755 main.db
-chmod 755 filter.db
-chmod 755 sessions.db
-chmod 755 cache.db
-chmod 755 config.json
-chmod 755 errors.log
 
 exit
 
