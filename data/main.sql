@@ -274,6 +274,8 @@ CREATE INDEX idx_user_active ON user_auth( last_active )
 	WHERE last_active IS NOT NULL;-- --
 CREATE INDEX idx_user_login ON user_auth( last_login )
 	WHERE last_login IS NOT NULL;-- --
+CREATE INDEX idx_user_failed_last ON user_auth( failed_last_attempt )
+	WHERE failed_last_attempt IS NOT NULL;-- --
 
 
 -- User auth last activity
