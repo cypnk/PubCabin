@@ -10,18 +10,5 @@ class Module extends \PubCabin\Modules\Module {
 	public function dependencies() : array {
 		return [ 'Hooks' ];
 	}
-	
-	public function __construct( string $_store, array $_data ) {
-		parent::__construct( $store );
-		
-		// TODO: Load site specific configuration from current 
-		// request and override default config options
-		$config	= $this->getConfig();
-		
-		if ( !isset( static::$data ) ) {
-			static::$data		= 
-			new \PubCabin\Data( $_data, $config );
-		}
-	}
 }
 
