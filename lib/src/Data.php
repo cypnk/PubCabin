@@ -164,10 +164,9 @@ class Data {
 			$db[$dsn]	= 
 			new \PDO( 'sqlite:' . $dsn, null, null, $opts );
 		} catch ( \PDOException $e ) {
-			logError( 
+			$this->_err[] = 
 				'Error connecting to database ' . $dsn . 
-				' Messsage: ' . $e->getMessage() ?? 'PDO Exception'
-			);
+				' Messsage: ' . $e->getMessage() ?? 'PDO Exception';
 			die();
 		}
 		
