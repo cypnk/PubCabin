@@ -277,5 +277,43 @@ final class FileUtil {
 		static::$texts[$key]	= $data;
 		return $data;
 	}
+	
+	/**
+	 *  Adjust text mime-type based on path extension
+	 *  
+	 *  @param mixed	$mime		Discovered mime-type
+	 *  @param string	$path		File name or path name
+	 *  @param mixed	$ext		Given extension (optional)
+	 *  @return string			Adjusted mime type
+	 */
+	public static function adjustMime( 
+				$mime, 
+		string		$path, 
+				$ext		= null 
+	) : string {
+		if ( false === $mime ) {
+			return 'application/octet-stream';
+		}
+		
+		// Override text types with special extensions
+		// Required on some OSes like OpenBSD
+		if ( 0 === \strcasecmp( $mime, 'text/plain' ) ) {
+			$e	= 
+			$ext ?? \pathinfo( $path, \PATHINFO_EXTENSION ) ?? '';
+			
+			switch( \strtolower( $e ) ) {
+				case 'css':
+					return 'text/css';
+					
+				case 'js':
+					return 'text/javascript';
+					
+				case 'svg':
+					return 'image/svg+xml';
+			}
+		}
+		
+		return \strtolower( $mime );
+	}
 }
 
