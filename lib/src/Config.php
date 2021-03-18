@@ -215,6 +215,12 @@ JSON
 		'form_expire'		=> 7200
 	];
 	
+	/**
+	 *  Overriden configuration during runtime
+	 *  @var array
+	 */
+	private static $options		= []
+	
 	public function __construct( string $store ) {
 		$this->store = $store;
 		foreach ( static::$defaults as $k => $v ) {
@@ -224,11 +230,30 @@ JSON
 				'{store}'	=> $store
 			] );
 		}
+		
+		// Default options loaded first
+		static::$options = static::$defaults;
 	}
 	
-	// TODO: Load default configuration, including preset and from database
+	/**
+	 *  Overriden configuration, if set
+	 * 
+	 *  @return array
+	 */
 	public function getConfig() : array {
-		return [];
+		return static::$options;
+	}
+	
+	/**
+	 *  Override default configuration with new runtime defaults
+	 *  E.G. From database
+	 * 
+	 *  @param array	$options	New configuration
+	 *  @return array
+	 */
+	public function overrideDefaults( array $options ) {
+		static::$options = 
+		\array_merge( static::$defaults, $options );
 	}
 	
 	/**
@@ -243,18 +268,12 @@ JSON
 		string		$name, 
 		string		$type		= 'string' 
 	) {
-		if ( !isset( static::$defaults[$name] ) ) {
-			return null;
-		}
-		
-		$config  = $this->getConfig();
-		
 		switch( $type ) {
 			case 'int':
 			case 'integer':
 				return 
 				( int ) ( 
-					$config[$name] ?? 
+					static::$options[$name] ?? 
 					static::$defaults[$name]
 				);
 				
@@ -262,14 +281,16 @@ JSON
 			case 'boolean':
 				return 
 				( bool ) ( 
-					$config[$name] ?? 
+					static::$options[$name] ?? 
 					static::$defaults[$name]
 				);
 			
+			// Core configuration setting fallback
 			default:
 				return 
-				$config[$name] ?? 
-				static::$defaults[$name];
+				static::$options[$name] ?? 
+				static::$defaults[$name] ?? 
+				null;
 		}
 	}
 }
