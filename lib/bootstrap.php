@@ -11,10 +11,10 @@ define( 'PUBCABIN_PATH',	\realpath( \dirname( __FILE__ ) ) . '/' );
 define( 'PUBCABIN_DATA',	\realpath( \dirname( __FILE__, 2 ) ) . '/data/' );
 
 // Uploaded and editable file directory
-define( 'PUBCABIN_FILES',	PUBCABIN_DATA . 'uploads/' );
+define( 'PUBCABIN_FILES',	\PUBCABIN_DATA . 'uploads/' );
 
 // Temporary data directory
-define( 'PUBCABIN_CACHE',	PUBCABIN_DATA . 'cache/' );
+define( 'PUBCABIN_CACHE',	\PUBCABIN_DATA . 'cache/' );
 
 
 
@@ -24,22 +24,22 @@ define( 'PUBCABIN_CACHE',	PUBCABIN_DATA . 'cache/' );
  */
 
 // Core class location
-define( 'PUBCABIN_BASE',	PUBCABIN_PATH . 'src/' );
+define( 'PUBCABIN_BASE',	\PUBCABIN_PATH . 'src/' );
 
 // Plugin and extension class location
-define( 'PUBCABIN_MODBASE',	PUBCABIN_PATH . 'modules/' );
+define( 'PUBCABIN_MODBASE',	\PUBCABIN_PATH . 'modules/' );
 
 // Language and translation files
-define( 'PUBCABIN_LANG',	PUBCABIN_DATA . 'lang/' );
+define( 'PUBCABIN_LANG',	\PUBCABIN_DATA . 'lang/' );
 
 // Backup folder
-define( 'PUBCABIN_BACKUP',	PUBCABIN_DATA . 'backup/' );
+define( 'PUBCABIN_BACKUP',	\PUBCABIN_DATA . 'backup/' );
 
 // Module created files
-define( 'PUBCABIN_MODSTORE',	PUBCABIN_DATA . 'modules/' );
+define( 'PUBCABIN_MODSTORE',	\PUBCABIN_DATA . 'modules/' );
 
 // Error log file
-define( 'PUBCABIN_ERRORS',	PUBCABIN_DATA . 'errors.log' );
+define( 'PUBCABIN_ERRORS',	\PUBCABIN_DATA . 'errors.log' );
 
 // Class name prefixes
 define( 'PUBCABIN_PREFIX',	'PubCabin\\' );
@@ -74,14 +74,15 @@ function errors( string $message, bool $ret = false ) {
 	}
 	
 	if ( !\is_readable( \PUBCABIN_ERRORS ) ) {
-		return;
+		touch( \PUBCABIN_ERRORS );
+		chmod( \PUBCABIN_ERRORS, 0755 );
 	}
 	
 	\error_log( 
 		\gmdate( 'D, d M Y H:i:s T', time() ) . "\n" . 
 			implode( "\n", $msgs ) . "\n\n\n\n", 
 		3, 
-		\PUBCABIN_ERRORS 
+		\PUBCABIN_ERRORS
 	);
 } );
 
@@ -98,17 +99,16 @@ function errors( string $message, bool $ret = false ) {
 		$mlen		= \strlen( \PUBCABIN_MODPREFIX );	
 	}
 	
-	// Core class file
-	if ( 0 === \strncmp( \PUBCABIN_PREFIX, $class, $len ) ) {
-		$file	= 
-		\PUBCABIN_BASE . \strtr( \substr( $class, $len ), $rpl ) . '.php';
-	
 	// Module file
-	} elseif ( 0 === \strncmp( \PUBCABIN_MODPREFIX, $class, $mlen ) ) {
+	if ( 0 === \strncmp( \PUBCABIN_MODPREFIX, $class, $mlen ) ) {
 		$file	= 
 		\PUBCABIN_MODBASE . \strtr( \substr( $class, $mlen ), $rpl ) . '.php';
-		
-	} else {
+	
+	// Core class file
+	} elseif ( 0 === \strncmp( \PUBCABIN_PREFIX, $class, $len ) ) {
+		$file	= 
+		\PUBCABIN_BASE . \strtr( \substr( $class, $len ), $rpl ) . '.php';
+	}  else {
 		return;
 	}
 	
@@ -134,7 +134,6 @@ new \PubCabin\Modules\Cabin\Module(
 		'main.db'
 	]
 );
-
 
 
 
