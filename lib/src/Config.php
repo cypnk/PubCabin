@@ -311,6 +311,14 @@ JSON
 					static::$defaults[$name]
 				);
 			
+			case 'json':
+				$json = static::$options[$name] ?? 
+					static::$defaults[$name] ?? '';
+				
+				return 
+					\is_array( $json ) $json : 
+					Util::decode( ( string ) $json );
+				
 			// Core configuration setting fallback
 			default:
 				return 
