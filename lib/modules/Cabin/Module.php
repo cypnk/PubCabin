@@ -23,7 +23,7 @@ class Module extends \PubCabin\Modules\Module {
 		if ( !isset( static::$data ) ) {
 			static::$data		= 
 			new \PubCabin\Data( 
-				$this->data, 
+				$_data, 
 				static::$config 
 			);
 		}
