@@ -146,7 +146,7 @@ final class FileUtil {
 		}
 		
 		// Relative path to storage
-		$fname	= \STORE . $name;
+		$fname	= \PUBCABIN_DATA . $name;
 		if ( !\file_exists( $fname ) ) {
 			return '';
 		}
@@ -194,7 +194,7 @@ final class FileUtil {
 		int	$fx		= 0,
 		bool	$append		= false
 	) : bool {
-		$file = \STORE . $name;
+		$file = \PUBCABIN_DATA . $name;
 		
 		// Backup failed? Don't overwrite
 		if ( !static::backupFile( $file, true, 'bkp', $fx ) ) {
