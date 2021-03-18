@@ -8,6 +8,20 @@ namespace PubCabin;
 class Util {
 	
 	/**
+	 *  URL validation regular expressions
+	 */
+	const RX_URL	= 
+	'~^(http|ftp)(s)?\:\/\/((([\pL\pN\-]{1,25})(\.)?){2,9})($|\/.*$){4,255}$~i';
+	
+	/**
+	 *  Low-key XSS tests
+	 */
+	const RX_XSS2	= '/(<(s(?:cript|tyle)).*?)/ism';
+	const RX_XSS3	= '/(document\.|window\.|eval\(|\(\))/ism';
+	const RX_XSS4	= '/(\\~\/|\.\.|\\\\|\-\-)/sm';
+	
+	
+	/**
 	 *  String to list helper
 	 *  
 	 *  @param string	$text	Input text to break into items
@@ -183,6 +197,109 @@ class Util {
 		
 		return \trim( $html );
 	}
+	
+	/**
+	 *  HTML safe character entities in UTF-8
+	 *  
+	 *  @param string	$v	Raw text to turn to HTML entities
+	 *  @param bool		$quotes	Convert quotes (defaults to true)
+	 *  @param bool		$spaces	Convert spaces to "&nbsp;*" (defaults to true)
+	 *  @return string
+	 */
+	public static function entities( 
+		string		$v, 
+		bool		$quotes	= true,
+		bool		$spaces	= true
+	) : string {
+		
+		$v = $quotes ? 
+		\htmlentities( 
+			static::utf( $v, false ), 
+			\ENT_QUOTES | \ENT_SUBSTITUTE, 
+			'UTF-8'
+		) : 
+		\htmlentities( 
+			static::utf( $v, false ), 
+			\ENT_NOQUOTES | \ENT_SUBSTITUTE, 
+			'UTF-8'
+		);
+		
+		return $spaces ? 
+		\strtr( $v, [ 
+			' ' => '&nbsp;',
+			'	' => '&nbsp;&nbsp;&nbsp;&nbsp;'
+		] ) : $v;
+	}
+	
+	/**
+	 *  Filter URL
+	 *  This is not a 100% foolproof method, but it's better than nothing
+	 *  
+	 *  @param string	$txt	Raw URL attribute value
+	 *  @param bool		$xss	Filter XSS possibilities
+	 *  @return string
+	 */
+	public static function cleanUrl( 
+		string		$txt, 
+		bool		$xss		= true
+	) : string {
+		// Nothing to clean
+		if ( empty( $txt ) ) {
+			return '';
+		}
+		
+		// Default filter
+		if ( \filter_var( $txt, \FILTER_VALIDATE_URL ) ) {
+			// XSS filter
+			if ( $xss ) {
+				if ( !\preg_match( self::RX_URL, $txt ) ){
+					return '';
+				}	
+			}
+			
+			if ( 
+				\preg_match( self::RX_XSS2, $txt ) || 
+				\preg_match( self::RX_XSS3, $txt ) || 
+				\preg_match( self::RX_XSS4, $txt ) 
+			) {
+				return '';
+			}
+			
+			// Return as/is
+			return  $txt;
+		}
+		
+		return static::entities( $txt, false, false );
+	}
+	
+	/**
+	 *  Simple email address filter helper
+	 *  
+	 *  @param string	$email	Raw email (currently doesn't support Unicode domains)
+	 *  @return string
+	 */
+	public static function cleanEmail( string $email ) : string {
+		if ( \filter_var( $email, \FILTER_VALIDATE_EMAIL ) ) {
+			return $email;
+		}
+		
+		return '';
+	}
+	
+	/**
+	 *  Prepend given prefix to URLs starting with '/'
+	 *  
+	 *  @param string	$url	Raw URL path
+	 *  @param string	$prefix	Prefix to prepend if $url starts with '/'
+	 *  @return string
+	 */
+	public static function prependPath( string $v, string $prefix ) : string {
+		$v = trim( $v, '"\'' );
+		return \preg_match( '/^\//', $v ) ?
+			static::cleanUrl( $prefix . $v ) : 
+			static::cleanUrl( $v );
+	}
+	
 	
 	
 	/**
