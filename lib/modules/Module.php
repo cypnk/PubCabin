@@ -16,12 +16,6 @@ abstract class Module {
 	protected static $config;
 	
 	/**
-	 *  Storage folder location
-	 *  @var string
-	 */
-	protected static $store;
-	
-	/**
 	 *  Database storage and access
 	 *  @var \PubCabin\Data
 	 */
@@ -35,12 +29,8 @@ abstract class Module {
 	
 	abstract public function dependencies() : array;
 	
-	public function __construct( string $_store ) {
+	public function __construct() {
 		$this->loadModules();
-		
-		if ( !isset( static::$store ) ) {
-			static::$store = $_store;
-		}
 	}
 	
 	protected function loadModules() {
@@ -66,18 +56,10 @@ abstract class Module {
 		return static::$loaded[$module] ?? null;
 	}
 	
-	protected function getStore() {
-		return static::$store ?? null;
-	}
-	
 	protected function getConfig() {
 		if ( !isset( static::$config ) ) {
-			$store = $this->getStore();
-			if ( empty( $store ) ) {
-				return null;
-			}
 			static::$config		= 
-			new \PubCabin\Config( $store );
+			new \PubCabin\Config();
 		}
 		return static::$config;
 	}
@@ -98,11 +80,12 @@ abstract class Module {
 	protected function getData() {
 		if ( !isset( static::$data ) ) {
 			$config	= $this->getConfig();
-			$_data	= 
-			\PubCabin\Util::trimmedList( \PUBCABIN_BASES );
+			if ( empty( $config ) ) {
+				return null;
+			}
 			
 			static::$data		= 
-			new \PubCabin\Data( $_data, $config );
+			new \PubCabin\Data( $config );
 		}
 		
 		return static::$data;
