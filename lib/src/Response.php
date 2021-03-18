@@ -70,6 +70,34 @@ class Response extends Message {
 	}
 	
 	/**
+	 *  Prepare to send a file instead of an HTTP response
+	 *  
+	 *  @param string	$path		File path to send
+	 *  @param int		$code		HTTP Status code
+	 *  @param bool		$verify		Verify mime content type
+	 */
+	public function sendFilePrep( 
+		string		$path, 
+		int		$code		= 200, 
+		bool		$verify		= true 
+	) {
+		$this->scrubOutput();
+		$this->httpCode( $code );
+		
+		// Set content type if mime is found
+		if ( $verify ) {
+			$mime	= 
+			FileUtil::adjustMime( \mime_content_type( $path ), $path );
+			$this->headers[] = "Content-Type: {$mime}";
+		}
+		$this->headers[] = 
+		"Content-Security-Policy: default-src 'self'";
+		
+		// Setup content security
+		$this->preamble( '', false, false );
+	}
+	
+	/**
 	 *  Check If-None-Match header against given ETag
 	 *  
 	 *  @return true if header not set or if ETag doesn't match
@@ -82,6 +110,49 @@ class Response extends Message {
 		}
 		
 		return ( 0 !== \strcmp( $etag, $mod ) );
+	}
+	
+	/**
+	 *  Finish file sending functionality
+	 *  
+	 *  @param string	$path		File path to send
+	 */
+	public function sendFileFinish( $path ) {
+		// Prepare content length and etag headers
+		$tags	= $this->genEtag( $path );
+		$fsize	= $tags['fsize'];
+		$etag	= $tags['etag'];
+		if ( false !== $tags['fsize'] ) {
+			$this->headers[] = "Content-Length: {$fsize}";
+			if ( !empty( $etag ) ) {
+				$this->headers[] = "ETag: {$etag}";
+			}
+			
+			if ( $this->config->setting( 'show_modified', 'int' ) ) {
+				$fmod	= $tags['fmod'];
+				if ( !empty( $fmod ) ) {
+					$this->headers[]  =
+						'Last-Modified: ', 
+						Util::dateRfcFile( $fmod );
+				}
+			}
+		}
+		
+		// TODO: Cleanup and flush before readfile
+		
+		$headers = \array_unique( $this->headers );
+		foreach ( $headers as $h ) {
+			\header( $h, true );
+		}
+		
+		// Send any headers and end buffering
+		while ( \ob_get_level() > 0 ) {
+			\ob_end_flush();
+		}
+		
+		if ( $this->ifModified( $etag ) ) {
+			\readfile( $path );
+		}
 	}
 	
 	/**
@@ -110,6 +181,59 @@ class Response extends Message {
 	}
 	
 	/**
+	 *  Prepare to send back a dynamically generated file (E.G. Captcha)
+	 *  This function is a plugin helper
+	 *  
+	 *  @param string	$mime		Generated file's mime content-type
+	 *  @param string	$fname		File name
+	 *  @param int		$code		HTTP Status code
+	 *  @param bool		$cache		Cache generated file if true
+	 */
+	public function sendGenFilePrep( 
+		string		$mime, 
+		string		$fname, 
+		int		$code		= 200, 
+		bool		$cache		= false 
+	) {
+		$this->sendFilePrep( $fname, $code, false );
+		$this->headers[] = "Content-Type: {$mime}";
+		$this->sendFileHeaders( 'inline', $fname, $cache );
+	}
+	
+	/**
+	 *  Send a physical file if it exists
+	 *  
+	 *  @param string	$path		Physical path relative to script
+	 *  @param bool		$down		Prompt download if true
+	 *  @param int		$code		HTTP Status code
+	 */
+	public function sendFile(
+		string		$path,
+		bool		$down		= false, 
+		bool		$cache		= true,
+		int		$code		= 200
+	) : bool {
+		// No file found
+		if ( !\is_readable( $path ) || !\is_file( $path ) ) {
+			return false;
+		}
+		
+		// Client save path
+		$fname	= \basename( $path );
+		
+		// Show inline or prompt download
+		$dsp	= $down ? 'attachment' : 'inline';
+		
+		// Prepare to send file
+		$this->sendFilePrep( $path, $code );
+		$this->sendFileHeaders( $dsp, $fname, $cache );
+		
+		// Finish sending file
+		$this->sendFileFinish( $path );
+		return true;
+	}
+	
+	/**
 	 *  Remove previously set headers, output
 	 */
 	public function scrubOutput() {
@@ -120,6 +244,66 @@ class Response extends Message {
 		// This is best done in php.ini : expose_php = Off
 		\header( 'X-Powered-By: nil', true );
 		\header_remove( 'X-Powered-By' );
+	}
+	
+	/**
+	 *  Print headers, content, and end execution
+	 *  
+	 *  @param int		$code		HTTP Status code
+	 *  @param string	$content	Page data to send to client
+	 *  @param bool		$cache		Cache page data if true
+	 */
+	public function send(
+		int		$code		= 200,
+		string		$content	= '',
+		bool		$cache		= false,
+		bool		$feed		= false
+	) {
+		$this->scrubOutput();
+		$this->httpCode( $code );
+		
+		if ( $feed ) {
+			$this->headers[] = 
+			'Content-Type: application/xml; charset=utf-8';
+			
+			$this->headers[] = 
+			'Content-Disposition: inline';
+			$this->preamble( '', true, false );
+		} else {
+			$this->preamble();
+		}
+		
+		// Also save to cache?
+		if ( $cache ) {
+			$ex	= 
+			$this->config->setting( 'cache_ttl', \CACHE_TTL, 'int' );
+			
+			$this->setCacheExp( $ex );
+			// TODO: Schedule 'saveCache' with full URI
+		}
+		
+		// TODO: Trigger 'contentsend' hook and schedule 'ob_end_flush'
+		
+		// Check gzip prerequisites
+		if ( $code != 304 && \extension_loaded( 'zlib' ) ) {
+			\ob_start( 'ob_gzhandler' );
+		}
+		
+		$headers = \array_unique( $this->headers );
+		foreach ( $headers as $h ) {
+			\header( $h, true );
+		}
+		
+		// Send to visitor
+		echo $content;
+		
+		// Flush and end all output buffers
+		while ( \ob_get_level() > 0 ) {
+			\ob_end_flush();
+		}
+		
+		// End
+		die();
 	}
 	
 	/**
@@ -148,7 +332,9 @@ class Response extends Message {
 			$frl = 
 			$this->config->setting( 'frame_whitelist' );
 			$raw = \is_array( $frl ) ? 
-					\array_map( 'cleanUrl', $frl ) : 
+					\array_map( 
+						'\PubCabin\Util::cleanUrl', $frl 
+					) : 
 					FileUtil::lineSettings( 
 						$frl, -1, 
 						'\PubCabin\Util::cleanUrl' 
