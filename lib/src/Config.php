@@ -27,11 +27,11 @@ class Config {
 		'app_name'		=> 'PubCabin',
 		'app_start'		=> '2017-03-14T04:30:55Z',
 		'skip_local'		=> 1,
-		'cache'			=> STORE . 'cache/',
+		'cache'			=> '{store}cache/',
 		'cache_ttl'		=> 3200,
-		'file_path'		=> PATH . 'htdocs/',
-		'error'			=> STORE . 'error.log',
-		'notice'		=> STORE . 'notice.log',
+		'file_path'		=> '{path}htdocs/',
+		'error'			=> '{store}error.log',
+		'notice'		=> '{store}notice.log',
 		
 		'default_basepath'	=> <<<JSON
 {
@@ -180,13 +180,31 @@ JSON
 	"require-trusted-types-for" : "'script'"
 }
 JSON
+,
+		'session_exp'		=> 300,
+		'session_bytes'		=> 12,
+		'session_limit_count'	=> 5,
+		'session_limit_medium'	=> 3,
+		'session_limit_heavy'	=> 1,
+		'cookie_exp'		=> 86400,
+		'cookie_path'		=> '/',
+		'cookie_restrict'	=> 1,
+		'form_delay'		=> 30,
+		'form_expire'		=> 7200
 	];
 	
 	public function __construct( string $store ) {
 		$this->store = $store;
+		foreach ( static::$defaults as $k => $v ) {
+			static::$defaults[$k] = 
+			\strtr( $v, [
+				'{path}'	=> \PUBCABIN_PATH
+				'{store}'	=> \PUBCABIN_DATA
+			] );
+		}
 	}
 	
-	// TODO
+	// TODO: Load default configuration, including preset and from database
 	public function getConfig() : array {
 		return [];
 	}
