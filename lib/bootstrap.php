@@ -16,6 +16,9 @@ define( 'PUBCABIN_FILES',	\PUBCABIN_DATA . 'uploads/' );
 // Temporary data directory
 define( 'PUBCABIN_CACHE',	\PUBCABIN_DATA . 'cache/' );
 
+// List of initial databases
+define( 'PUBCABIN_BASES',	
+	'logs.db, config.db, sessions.db, filter.db, cache.db, main.db' );
 
 
 
@@ -122,18 +125,8 @@ function errors( string $message, bool $ret = false ) {
 /**
  *  Begin
  */
-$cabin	= 
-new \PubCabin\Modules\Cabin\Module(
-	\PUBCABIN_DATA, 
-	[
-		'logs.db',
-		'config.db',
-		'sessions.db',
-		'filter.db',
-		'cache.db',
-		'main.db'
-	]
-);
+$cabin	= new \PubCabin\Modules\Cabin\Module( \PUBCABIN_DATA );
+
 
 
 
