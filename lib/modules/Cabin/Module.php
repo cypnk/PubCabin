@@ -8,42 +8,25 @@ namespace PubCabin\Modules\Cabin;
 class Module extends \PubCabin\Modules\Module {
 	
 	/**
-	 *  Storage folder location
-	 *  @var string
-	 */
-	protected $store;
-	
-	/**
-	 *  Base configuration loader
-	 *  @var \PubCabin\Config
-	 */
-	protected $config;
-	
-	/**
 	 *  Initial client request
 	 *  @var \PubCabin\Request
 	 */
 	protected $request;
 	
-	/**
-	 *  Database storage and access
-	 *  @var \PubCabin\Data
-	 */
-	protected $data;
-	
 	public function dependencies() : array {
-		return [];
+		return [ 'Hooks' ];
 	}
 	
 	public function __construct( string $_store, array $_data ) {
-		parent::__construct();
+		parent::__construct( $store );
 		
-		$this->store		= $_store;
-		$this->config		= 
-		new \PubCabin\Config( $_store );
-		
-		$this->data	= 
-		new \PubCabin\Data( $_data, $this->config );
+		if ( !isset( static::$data ) ) {
+			static::$data		= 
+			new \PubCabin\Data( 
+				$this->data, 
+				static::$config 
+			);
+		}
 		
 		$this->request	= 
 		new \PubCabin\Request( $this->config );
@@ -51,14 +34,6 @@ class Module extends \PubCabin\Modules\Module {
 	
 	public function getRequest() {
 		return $this->request;
-	}
-	
-	public function getStore() {
-		return $this->store;
-	}
-	
-	public function getData() {
-		return $this->data;
 	}
 }
 
