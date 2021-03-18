@@ -29,7 +29,7 @@ class Module extends \PubCabin\Modules\Module {
 		}
 		
 		$this->request	= 
-		new \PubCabin\Request( static::config );
+		new \PubCabin\Request( static::$config );
 	}
 	
 	public function getRequest() {
