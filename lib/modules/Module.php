@@ -27,6 +27,12 @@ abstract class Module {
 	 */
 	protected static $data;
 	
+	/**
+	 *  Initial client request
+	 *  @var \PubCabin\Request
+	 */
+	protected static $request;
+	
 	abstract public function dependencies() : array;
 	
 	public function __construct( string $_store ) {
@@ -76,6 +82,19 @@ abstract class Module {
 			new \PubCabin\Config( $store );
 		}
 		return static::$config;
+	}
+	
+	public function getRequest() {
+		if ( !isset( static::$request ) ) {
+			$config = $this->getConfig();
+			if ( empty( $config ) ) {
+				return null;
+			}
+			
+			static::$request	= 
+			new \PubCabin\Request( $config );
+		}
+		return static::$request;
 	}
 }
 
