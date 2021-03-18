@@ -7,12 +7,6 @@ namespace PubCabin\Modules\Cabin;
 
 class Module extends \PubCabin\Modules\Module {
 	
-	/**
-	 *  Initial client request
-	 *  @var \PubCabin\Request
-	 */
-	protected $request;
-	
 	public function dependencies() : array {
 		return [ 'Hooks' ];
 	}
@@ -24,16 +18,10 @@ class Module extends \PubCabin\Modules\Module {
 			static::$data		= 
 			new \PubCabin\Data( 
 				$_data, 
-				static::$config 
+				$this->getConfig()
 			);
 		}
-		
-		$this->request	= 
-		new \PubCabin\Request( static::$config );
 	}
 	
-	public function getRequest() {
-		return $this->request;
-	}
 }
 
