@@ -56,7 +56,9 @@ abstract class Module {
 				continue;
 			}
 			
-			static::$loaded[$k] = new "$k\Module";
+			$cls = 
+			'\\PubCabin\\Modules\\' . $k . '\\Module';
+			static::$loaded[$k] = new $cls();
 		}
 	}
 	
