@@ -1,15 +1,9 @@
 <?php declare( strict_types = 1 );
 /**
- *  @file	/lib/src/File.php
+ *  @file	/lib/src/FileUtil.php
  *  @brief	File loading and saving helper
  */
-final class File {
-	
-	/**
-	 *  Storage directory
-	 *  @var string
-	 */
-	private $store;
+final class FileUtil {
 	
 	/**
 	 *  Loaded file contents as strings
@@ -29,9 +23,6 @@ final class File {
 	 */
 	private static $presets	= [];
 	
-	public function __construct( string $_store ) {
-		$this->store	= $_store;
-	}
 	
 	/**
 	 *  Split a block of text into an array of lines
@@ -41,7 +32,7 @@ final class File {
 	 *  @param bool		$tr	Also trim lines if true
 	 *  @return array
 	 */
-	public function lines( 
+	public static function lines( 
 		string		$text, 
 		int		$lim = -1, 
 		bool		$tr = true 
@@ -64,12 +55,12 @@ final class File {
 	 *  @param string	$filter	Optional filter name to apply
 	 *  @return array
 	 */
-	public function lineSettings( 
+	public static function lineSettings( 
 		string		$text, 
 		int		$lim, 
 		string		$filter = '' 
 	) : array {
-		$ln = \array_unique( $this->lines( $text ) );
+		$ln = \array_unique( static::lines( $text ) );
 		
 		$rt = ( ( count( $ln ) > $lim ) && $lim > -1 ) ? 
 			\array_slice( $ln, 0, $lim ) : $ln;
@@ -88,7 +79,7 @@ final class File {
 	 *  @param string	$data		String block of items
 	 *  @param sint		$lim		Maximum number of lines
 	 */ 
-	public function linePresets(
+	public static function linePresets(
 		string		$label,
 		string		$base,
 				$default, 
@@ -100,7 +91,7 @@ final class File {
 		}
 		
 		// Maximum number of items
-		static::$presets[$label]	= $this->lineSettings( $data, $lim );
+		static::$presets[$label]	= static::lineSettings( $data, $lim );
 		return static::$presets[$label];
 	}
 	
@@ -115,7 +106,7 @@ final class File {
 	 *  
 	 *  @return bool		True if no action needed or action successful
 	 */
-	public function backupFile(
+	public static function backupFile(
 		string		$file,
 		bool		$copy, 
 		string		$ext	= 'bkp',
@@ -159,7 +150,7 @@ final class File {
 		}
 		
 		// Relative path to storage
-		$fname	= $this->store . $name;
+		$fname	= \STORE . $name;
 		if ( !\file_exists( $fname ) ) {
 			return '';
 		}
@@ -201,16 +192,16 @@ final class File {
 	 *  @param int		$fx		Prefix 'bkp.', suffix '.bkp', or nothing
 	 *  @param bool		$append		Append to file instead of replacing it
 	 */
-	public function saveFile( 
+	public static function saveFile( 
 		string	$name, 
 		string	$data, 
 		int	$fx		= 0,
 		bool	$append		= false
 	) : bool {
-		$file = $this->store . $name;
+		$file = \STORE . $name;
 		
 		// Backup failed? Don't overwrite
-		if ( !$this->backupFile( $file, true, 'bkp', $fx ) ) {
+		if ( !static::backupFile( $file, true, 'bkp', $fx ) ) {
 			return false;
 		}
 		
@@ -233,7 +224,7 @@ final class File {
 	 *  @param bool		$fl	Content is in a file
 	 *  @param bool		$skip	Skip empty lines when loading
 	 */
-	public function loadText(
+	public static function loadText(
 				$raw, 
 		bool		$fl	= true, 
 		bool		$skip	= false 
