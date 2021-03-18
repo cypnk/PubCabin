@@ -72,6 +72,8 @@ if id "$W_USER" >/dev/null 2>&1; then
 	chown -R $W_USER uploads
 	chown -R $W_USER lang
 	
+	chown $W_USER logs.db
+	chown $W_USER config.db
 	chown $W_USER main.db
 	chown $W_USER filter.db
 	chown $W_USER sessions.db
@@ -84,6 +86,8 @@ if id "$W_USER" >/dev/null 2>&1; then
 	chmod -R 0755 modules
 	chmod -R 0755 lang
 	
+	chmod 0755 logs.db
+	chmod 0755 config.db
 	chmod 0755 main.db
 	chmod 0755 filter.db
 	chmod 0755 sessions.db
