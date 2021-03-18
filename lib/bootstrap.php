@@ -119,5 +119,22 @@ function errors( string $message, bool $ret = false ) {
 	}
 } );
 
+/**
+ *  Begin
+ */
+$cabin	= 
+new \PubCabin\Modules\Cabin\Module(
+	\PUBCABIN_DATA, 
+	[
+		'logs.db',
+		'config.db',
+		'sessions.db',
+		'filter.db',
+		'cache.db',
+		'main.db'
+	]
+);
+
+
 
 
