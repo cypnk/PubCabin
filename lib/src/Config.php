@@ -241,6 +241,7 @@ JSON
 	 *  Replace relative paths and other placeholder values
 	 *  
 	 *  @param mixed	$settings	Raw configuration
+	 *  @return mixed
 	 */
 	public function placeholders( $settings ) {
 		// Replace if string
@@ -249,11 +250,12 @@ JSON
 			\strtr( $settings, static::$replacements );
 		
 		// Keep going if an array
-		} elseif( \is_array( $settings ) ) {
+		} elseif ( \is_array( $settings ) ) {
 			return $this->placeholders( $settings );
-		} else {
-			return $settings;
 		}
+		
+		// Everything else as-is
+		return $settings;
 	}
 	
 	/**
@@ -270,7 +272,6 @@ JSON
 	 *  E.G. From database
 	 * 
 	 *  @param array	$options	New configuration
-	 *  @return array
 	 */
 	public function overrideDefaults( array $options ) {
 		static::$options = 
@@ -288,12 +289,21 @@ JSON
 	 *  @param string	$name		Configuration setting name
 	 *  @param mixed	$default	If not set, fallback value
 	 *  @param string	$type		String, integer, or boolean
+	 *  @param string	$filter		Optional parse function
 	 *  @return mixed
 	 */
 	public function setting( 
 		string		$name, 
-		string		$type		= 'string' 
+		string		$type		= 'string',
+		string		$filter		= ''
 	) {
+		if ( 
+			!isset( static::$options[$name] ) || 
+			!isset( static::$defaults[$name] )
+		) { 
+			return null;
+		}
+		
 		switch( $type ) {
 			case 'int':
 			case 'integer':
@@ -312,19 +322,33 @@ JSON
 				);
 			
 			case 'json':
-				$json = static::$options[$name] ?? 
-					static::$defaults[$name] ?? '';
+				$json	= 
+				static::$options[$name] ?? 
+				static::$defaults[$name];
 				
 				return 
-					\is_array( $json ) $json : 
+				\is_array( $json ) ? 
+					$json : 
 					Util::decode( ( string ) $json );
+					
+			case 'lines':
+				$lines	= 
+				static::$options[$name] ?? 
+				static::$defaults[$name];
 				
+				return 
+				\is_array( $lines ) ? 
+					$lines : 
+					FileUtil::lineSettings( 
+						( string ) $lines, 
+						$filter
+					);
+			
 			// Core configuration setting fallback
 			default:
 				return 
 				static::$options[$name] ?? 
-				static::$defaults[$name] ?? 
-				null;
+				static::$defaults[$name];
 		}
 	}
 }
