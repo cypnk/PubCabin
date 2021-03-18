@@ -8,10 +8,10 @@ namespace PubCabin;
 class Data {
 	
 	/**
-	 *  Database connection strings
+	 *  Database connections
 	 *  @var array
 	 */
-	protected $dsns;
+	protected static $db	= [];
 	
 	/**
 	 *  Retrieval or other errors
@@ -28,15 +28,10 @@ class Data {
 	/**
 	 *  Data class begin
 	 *  
-	 *  @param array		$_data	Whitelisted database names
 	 *  @param \PubCabin\Config	$config	Main configuration handler
 	 */
-	public function __construct( 
-		array		$_data,
-		Config		$config
-	) {
+	public function __construct( Config $config ) {
 		$this->config	= $config;
-		$this->dsns	= $_data;
 	}
 	
 	/**
@@ -58,10 +53,6 @@ class Data {
 	 *  @return array
 	 */
 	public function loadSQL( string $dsn ) : array {
-		if ( !\in_array( $dsn, $this->dsns ) ) {
-			return [];
-		}
-		
 		// Get the first component from the definition
 		// E.G. "main" from "main.db"
 		$def	= \explode( '.', $dsn )[0];
@@ -118,20 +109,18 @@ class Data {
 	 *  @return mixed		PDO object if successful or else null
 	 */
 	public function getDb( string $dsn, string $mode = 'get' ) {
-		static $db	= [];
-		
 		switch( $mode ) {
 			case 'close':	
-				if ( isset( $db[$dsn] ) ) {
-					$db[$dsn] = null;
-					unset( $db[$dsn] );
+				if ( isset( static::$db[$dsn] ) ) {
+					static::$db[$dsn] = null;
+					unset( static::$db[$dsn] );
 				}
 				return;
 			
 			case 'closeall':
-				foreach( $db as $k => $v  ) {
-					$db[$k] = null;
-					unset( $db[$k] );
+				foreach( static::$db as $k => $v  ) {
+					static::$db[$k] = null;
+					unset( static::$db[$k] );
 				}
 				return;
 				
@@ -141,8 +130,8 @@ class Data {
 				}
 		}
 		
-		if ( isset( $db[$dsn] ) ) {
-			return $db[$dsn];
+		if ( isset( static::$db[$dsn] ) ) {
+			return static::$db[$dsn];
 		}
 		
 		// First time? SQLite database will be created
@@ -161,7 +150,7 @@ class Data {
 		];
 		
 		try {
-			$db[$dsn]	= 
+			static::$db[$dsn]	= 
 			new \PDO( 'sqlite:' . $dsn, null, null, $opts );
 		} catch ( \PDOException $e ) {
 			$this->_err[] = 
@@ -171,34 +160,34 @@ class Data {
 		}
 		
 		// Preemptive defense
-		$db[$dsn]->exec( 'PRAGMA quick_check;' );
-		$db[$dsn]->exec( 'PRAGMA trusted_schema = OFF;' );
-		$db[$dsn]->exec( 'PRAGMA cell_size_check = ON;' );
+		static::$db[$dsn]->exec( 'PRAGMA quick_check;' );
+		static::$db[$dsn]->exec( 'PRAGMA trusted_schema = OFF;' );
+		static::$db[$dsn]->exec( 'PRAGMA cell_size_check = ON;' );
 		
 		// Prepare defaults if first run
 		if ( $first_run ) {
-			$db[$dsn]->exec( 'PRAGMA encoding = "UTF-8";' );
-			$db[$dsn]->exec( 'PRAGMA page_size = "16384";' );
-			$db[$dsn]->exec( 'PRAGMA auto_vacuum = "2";' );
-			$db[$dsn]->exec( 'PRAGMA temp_store = "2";' );
-			$db[$dsn]->exec( 'PRAGMA secure_delete = "1";' );
+			static::$db[$dsn]->exec( 'PRAGMA encoding = "UTF-8";' );
+			static::$db[$dsn]->exec( 'PRAGMA page_size = "16384";' );
+			static::$db[$dsn]->exec( 'PRAGMA auto_vacuum = "2";' );
+			static::$db[$dsn]->exec( 'PRAGMA temp_store = "2";' );
+			static::$db[$dsn]->exec( 'PRAGMA secure_delete = "1";' );
 			
 			// Load and process SQL
-			$this->installSQL( $db[$dsn], $dsn );
+			$this->installSQL( static::$db[$dsn], $dsn );
 			
 			// Instalation check
-			$db[$dsn]->exec( 'PRAGMA integrity_check;' );
-			$db[$dsn]->exec( 'PRAGMA foreign_key_check;' );
+			static::$db[$dsn]->exec( 'PRAGMA integrity_check;' );
+			static::$db[$dsn]->exec( 'PRAGMA foreign_key_check;' );
 		}
 		
-		$db[$dsn]->exec( 'PRAGMA journal_mode = WAL;' );
-		$db[$dsn]->exec( 'PRAGMA foreign_keys = ON;' );
+		static::$db[$dsn]->exec( 'PRAGMA journal_mode = WAL;' );
+		static::$db[$dsn]->exec( 'PRAGMA foreign_keys = ON;' );
 		
 		if ( $first_run ) {
 			// TODO Hooks
 		}
 		
-		return $db[$dsn];
+		return static::$db[$dsn];
 	}
 	
 	
