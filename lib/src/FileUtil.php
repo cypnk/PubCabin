@@ -74,15 +74,11 @@ final class FileUtil {
 	 *  Get presets as lined items (one item per line)
 	 *  
 	 *  @param string	$label		Preset unique identifier
-	 *  @param string	$base		Setting name in config.json
-	 *  @param mixed	$default	Defined configuration
 	 *  @param string	$data		String block of items
 	 *  @param sint		$lim		Maximum number of lines
 	 */ 
 	public static function linePresets(
 		string		$label,
-		string		$base,
-				$default, 
 		string		$data,
 		int		$lim		= 2000
 	) {
