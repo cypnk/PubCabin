@@ -39,7 +39,7 @@ abstract class Module {
 		$this->loadModules();
 		
 		if ( !isset( static::$store ) ) {
-			static::$store		= $_store;
+			static::$store = $_store;
 		}
 	}
 	
@@ -70,10 +70,6 @@ abstract class Module {
 		return static::$store ?? null;
 	}
 	
-	protected function getData() {
-		return static::$data ?? null;
-	}
-	
 	protected function getConfig() {
 		if ( !isset( static::$config ) ) {
 			$store = $this->getStore();
@@ -97,6 +93,19 @@ abstract class Module {
 			new \PubCabin\Request( $config );
 		}
 		return static::$request;
+	}
+	
+	protected function getData() {
+		if ( !isset( static::$data ) ) {
+			$config	= $this->getConfig();
+			$_data	= 
+			\PubCabin\Util::trimmedList( \PUBCABIN_BASES );
+			
+			static::$data		= 
+			new \PubCabin\Data( $_data, $config );
+		}
+		
+		return static::$data;
 	}
 }
 
