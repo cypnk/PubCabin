@@ -64,6 +64,15 @@ class Module extends \PubCabin\Modules\Module {
 		$name			= 
 		\strtolower( \array_shift( $params ) );
 		
+		// Filter event
+		$name			= 
+		\PubCabin\Util::lowercase(
+			\strtr( 
+				\PubCabin\Util::unifySpaces( $name ), 
+				[ ' ' => '', '.' => '' ] 
+			)
+		);
+		
 		// Prepare event to receive handlers
 		if ( !isset( $this->handlers[$name] ) ) {
 			$this->handlers[$name]	= [];
