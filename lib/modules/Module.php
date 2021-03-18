@@ -9,10 +9,37 @@ abstract class Module {
 	
 	protected static $loaded	= [];
 	
+	/**
+	 *  Base configuration loader
+	 *  @var \PubCabin\Config
+	 */
+	protected static $config;
+	
+	/**
+	 *  Storage folder location
+	 *  @var string
+	 */
+	protected static $store;
+	
+	/**
+	 *  Database storage and access
+	 *  @var \PubCabin\Data
+	 */
+	protected static $data;
+	
 	abstract public function dependencies() : array;
 	
-	public function __construct() {
+	public function __construct( string $_store ) {
 		$this->loadModules();
+		
+		if ( !isset( static::$store ) ) {
+			static::$store		= $_store;
+		}
+		
+		if ( !isset( static::$config ) ) {
+			static::$config		= 
+			new \PubCabin\Config( $_store );
+		}
 	}
 	
 	protected function loadModules() {
@@ -35,5 +62,14 @@ abstract class Module {
 	protected function getModule( string $module ) {
 		return static::$loaded[$module] ?? null;
 	}
+	
+	protected function getStore() {
+		return static::$store ?? null;
+	}
+	
+	protected function getData() {
+		return static::$data ?? null;
+	}
 }
+
 
