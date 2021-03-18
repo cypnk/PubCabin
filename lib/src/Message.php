@@ -49,18 +49,8 @@ class Message {
 	 */
 	protected $config;
 	
-	/**
-	 *  Main cabin
-	 *  @var PubCabin\Cabin
-	 */
-	protected $cabin;
-	
-	public function __construct( 
-		\PubCabin\Config	$_config, 
-		\PubCabin\Cabin		$_cabin 
-	) {
+	public function __construct( \PubCabin\Config $_config ) {
 		$this->config	= $_config;
-		$this->cabin	= $_cabin;
 	}
 	
 	/**
