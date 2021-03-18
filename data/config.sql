@@ -29,7 +29,7 @@ INSERT INTO configs ( label, setting, render ) VALUES
 	( 'ERROR', '{store}cache/error.log', 'text' ), 
 	( 'NOTICE', '{store}cache/notice.log', 'text' ), 
 	( 'ERROR_ROOT', '{path}errors/', 'text' ), 
-	( 'ERROR_visit', '{cache}visitor_errors.log', 'text' ), 
+	( 'ERROR_visit', '{store}cache/visitor_errors.log', 'text' ), 
 	( 'PLUGINS', '{path}plugins/', 'text' ), 
 	( 'PLUGINS_ENABLED', '', 'text' ), 
 	( 'PLUGIN_DATA', '{store}cache/plugins/', 'text' ),
