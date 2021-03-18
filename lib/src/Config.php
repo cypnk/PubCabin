@@ -221,7 +221,7 @@ JSON
 			static::$defaults[$k] = 
 			\strtr( $v, [
 				'{path}'	=> \PUBCABIN_PATH
-				'{store}'	=> \PUBCABIN_DATA
+				'{store}'	=> $store
 			] );
 		}
 	}
