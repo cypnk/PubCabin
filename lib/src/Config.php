@@ -8,10 +8,18 @@ namespace PubCabin;
 class Config {
 	
 	/**
-	 *  Storage folder
-	 *  @var string
+	 *  Configuration placeholder replacements
+	 *  @var array
 	 */
-	private $store;
+	private static $replacements	= [
+		'{path}'	=> \PUBCABIN_PATH,
+		'{store}'	=> \PUBCABIN_DATA,
+		'{files}'	=> \PUBCABIN_FILES,
+		'{cache}'	=> \PUBCABIN_CACHE,
+		'{backup}'	=> \PUBCABIN_BACKUP,
+		'{modfiles}'	=> \PUBCABIN_MODSTORE,
+		'{error}'	=> \PUBCABIN_ERRORS
+	];
 	
 	/**
 	 *  Configuration presets
@@ -21,10 +29,12 @@ class Config {
 		'app_name'		=> 'PubCabin',
 		'app_start'		=> '2017-03-14T04:30:55Z',
 		'skip_local'		=> 1,
-		'cache'			=> '{store}cache/',
+		'cache'			=> '{cache}',
 		'cache_ttl'		=> 3200,
+		'uploads'		=> '{files}',
 		'file_path'		=> '{path}htdocs/',
-		'error'			=> '{store}error.log',
+		'mod_file_path'		=> '{modstore}',
+		'error'			=> '{error}',
 		'notice'		=> '{store}notice.log',
 		
 		'default_basepath'	=> <<<JSON
@@ -216,8 +226,7 @@ JSON
 	 */
 	private static $options		= [];
 	
-	public function __construct( string $store ) {
-		$this->store = $store;
+	public function __construct() {
 		
 		foreach ( static::$defaults as $k => $v ) {
 			static::$defaults[$k] = 
@@ -236,10 +245,8 @@ JSON
 	public function placeholders( $settings ) {
 		// Replace if string
 		if ( \is_string( $settings ) ) {
-			return \strtr( $settings, [
-				'{path}'	=> \PUBCABIN_PATH,
-				'{store}'	=> $this->store
-			] );
+			return 
+			\strtr( $settings, static::$replacements );
 		
 		// Keep going if an array
 		} elseif( \is_array( $settings ) ) {
