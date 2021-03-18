@@ -276,7 +276,7 @@ class Response extends Message {
 		// Also save to cache?
 		if ( $cache ) {
 			$ex	= 
-			$this->config->setting( 'cache_ttl', \CACHE_TTL, 'int' );
+			$this->config->setting( 'cache_ttl', 'int' );
 			
 			$this->setCacheExp( $ex );
 			// TODO: Schedule 'saveCache' with full URI
@@ -325,7 +325,8 @@ class Response extends Message {
 		
 		// If sending CSP and content checksum isn't used
 		if ( $send_csp ) {
-			$cjp = Util::decode( DEFAULT_JCSP );
+			$cjp = 
+			$this->config->setting( 'default_jcsp', 'json' );
 			$csp = 'Content-Security-Policy: ';
 			
 			// Approved frame ancestors ( for embedding media )
