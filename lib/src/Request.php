@@ -387,7 +387,7 @@ class Request extends Message {
 	 *  
 	 *  @return string
 	 */
-	public public function getQS() : string {
+	public function getQS() : string {
 		if ( isset( $this->querystring ) ) {
 			return $this->querystring;
 		}
