@@ -14,12 +14,6 @@ class Config {
 	private $store;
 	
 	/**
-	 *  Database index primary key (set once)
-	 *  @var int
-	 */
-	private $cabin;
-	
-	/**
 	 *  Configuration presets
 	 *  @var array
 	 */
@@ -146,6 +140,7 @@ JSON
 	"body"		: []
 }
 JSON
+,
 		'form_white'		=> <<<JSON
 {
 	"form"		: [ "id", "method", "action", "enctype", "style", "class" ], 
@@ -219,20 +214,39 @@ JSON
 	 *  Overriden configuration during runtime
 	 *  @var array
 	 */
-	private static $options		= []
+	private static $options		= [];
 	
 	public function __construct( string $store ) {
 		$this->store = $store;
+		
 		foreach ( static::$defaults as $k => $v ) {
 			static::$defaults[$k] = 
-			\strtr( $v, [
-				'{path}'	=> \PUBCABIN_PATH
-				'{store}'	=> $store
-			] );
+				$this->placeholders( $v );
 		}
 		
 		// Default options loaded first
 		static::$options = static::$defaults;
+	}
+	
+	/**
+	 *  Replace relative paths and other placeholder values
+	 *  
+	 *  @param mixed	$settings	Raw configuration
+	 */
+	public function placeholders( $settings ) {
+		// Replace if string
+		if ( \is_string( $settings ) ) {
+			return \strtr( $settings, [
+				'{path}'	=> \PUBCABIN_PATH,
+				'{store}'	=> $this->store
+			] );
+		
+		// Keep going if an array
+		} elseif( \is_array( $settings ) ) {
+			return $this->placeholders( $settings );
+		} else {
+			return $settings;
+		}
 	}
 	
 	/**
@@ -254,6 +268,11 @@ JSON
 	public function overrideDefaults( array $options ) {
 		static::$options = 
 		\array_merge( static::$defaults, $options );
+		
+		foreach ( static::$options as $k => $v ) {
+			static::$options[$k] = 
+				$this->placeholders( $v );
+		}
 	}
 	
 	/**
