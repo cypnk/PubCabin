@@ -35,11 +35,6 @@ abstract class Module {
 		if ( !isset( static::$store ) ) {
 			static::$store		= $_store;
 		}
-		
-		if ( !isset( static::$config ) ) {
-			static::$config		= 
-			new \PubCabin\Config( $_store );
-		}
 	}
 	
 	protected function loadModules() {
@@ -69,6 +64,18 @@ abstract class Module {
 	
 	protected function getData() {
 		return static::$data ?? null;
+	}
+	
+	protected function getConfig() {
+		if ( !isset( static::$config ) ) {
+			$store = $this->getStore();
+			if ( empty( $store ) ) {
+				return null;
+			}
+			static::$config		= 
+			new \PubCabin\Config( $store );
+		}
+		return static::$config;
 	}
 }
 
