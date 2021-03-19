@@ -28,6 +28,12 @@ define( 'PUBCABIN_BASE',	\PUBCABIN_PATH . 'src/' );
 // Plugin and extension class location
 define( 'PUBCABIN_MODBASE',	\PUBCABIN_PATH . 'modules/' );
 
+// Optional components
+define( 'PUBCABIN_OPTIONAL',	\PUBCABIN_PATH . 'opt/' );
+
+// Externally contributed code
+define( 'PUBCABIN_CONTRIB',	\PUBCABIN_PATH . 'contrib/' );
+
 // Language and translation files
 define( 'PUBCABIN_LANG',	\PUBCABIN_DATA . 'lang/' );
 
@@ -40,9 +46,6 @@ define( 'PUBCABIN_MODSTORE',	\PUBCABIN_DATA . 'modules/' );
 // Error log file
 define( 'PUBCABIN_ERRORS',	\PUBCABIN_DATA . 'errors.log' );
 
-// Class name prefixes
-define( 'PUBCABIN_PREFIX',	'PubCabin\\' );
-define( 'PUBCABIN_MODPREFIX',	'PubCabin\\Modules\\' );
 
 /**
  *  Isolated error holder
@@ -73,8 +76,7 @@ function errors( string $message, bool $ret = false ) {
 	}
 	
 	if ( !\is_readable( \PUBCABIN_ERRORS ) ) {
-		touch( \PUBCABIN_ERRORS );
-		chmod( \PUBCABIN_ERRORS, 0755 );
+		return;
 	}
 	
 	\error_log( 
@@ -85,36 +87,47 @@ function errors( string $message, bool $ret = false ) {
 	);
 } );
 
+
+/**
+ *  Older PHP polyfill
+ */
+if ( !\function_exists( 'str_starts_with' ) ) {
+	function str_starts_with( $h, $n ) {
+		return ( 0 === \strpos( $h, $n ) );
+	}
+}
+
+
 /**
  *  Class loader
  */
 \spl_autoload_register( function( $class ) {
-	static $rpl	= [ '\\' => '/' ];
-	static $len;
-	static $mlen;
+	// Path replacements
+	static $rpl	= [ '\\' => '/', '-' => '_' ];
 	
-	if ( !isset( $len ) ) {
-		$len		= \strlen( \PUBCABIN_PREFIX );
-		$mlen		= \strlen( \PUBCABIN_MODPREFIX );	
-	}
+	// Class prefix replacements
+	static $prefix	= [
+		'PubCabin\\Modules\\'	=> \PUBCABIN_MODBASE,
+		'PubCabin\\Contrib\\'	=> \PUBCABIN_CONTRIB,
+		'PubCabin\\Opt\\'	=> \PUBCABIN_OPTIONAL,
+		'PubCabin\\'		=> \PUBCABIN_BASE
+	];
 	
-	// Module file
-	if ( 0 === \strncmp( \PUBCABIN_MODPREFIX, $class, $mlen ) ) {
-		$file	= 
-		\PUBCABIN_MODBASE . \strtr( \substr( $class, $mlen ), $rpl ) . '.php';
-	
-	// Core class file
-	} elseif ( 0 === \strncmp( \PUBCABIN_PREFIX, $class, $len ) ) {
-		$file	= 
-		\PUBCABIN_BASE . \strtr( \substr( $class, $len ), $rpl ) . '.php';
-	}  else {
-		return;
-	}
-	
-	if ( \is_readable( $file ) ) {
-		require $file;
-	} else {
-		errors( 'Unable to read file ' . $file );
+	foreach ( $prefix as $k => $v ) {
+		if ( !\str_starts_with( $class, $k ) ) {
+			continue;
+		}
+		
+		// Build file path
+		$file	= $v . 
+		\strtr( \substr( $class, \strlen( $k ) ), $rpl ) . '.php';
+		
+		if ( \is_readable( $file ) ) {
+			require $file;
+		} else {
+			errors( 'Unable to read file: ' . $file );
+		}
+		break;
 	}
 } );
 
