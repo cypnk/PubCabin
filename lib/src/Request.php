@@ -56,6 +56,24 @@ class Request extends Message {
 	private $language;
 	
 	/**
+	 *  Current server host name
+	 *  @var string
+	 */
+	private $host;
+	
+	/**
+	 *  Prefix URL including hostname and protocol
+	 *  @var string
+	 */
+	private $web;
+	
+	/**
+	 *  Full request path
+	 *  @var string
+	 */
+	private $url;
+	
+	/**
 	 *  Process HTTP_* variables
 	 *  
 	 *  @param bool		$lower		Get array keys in lowercase
@@ -506,5 +524,74 @@ class Request extends Message {
 		) ? $found : [];
 		
 		return $this->language;
+	}
+	
+	/**
+	 *  Currently requested host server name
+	 *  
+	 *  @return string
+	 */
+	public function getHost() : string {
+		if ( isset( $this->host ) ) {
+			return $this->host;
+		}
+		
+		// Base host headers
+		$sh	= [ 'HTTP_HOST', 'SERVER_NAME', 'SERVER_ADDR' ];
+		
+		// Get forwarded host info from reverse proxy
+		$fd	= $this->getForwarded();
+		
+		// Check reverse proxy host name in whitelist
+		if ( \array_key_exists( 'host', $fd ) ) {
+			$host	= 
+			Util::lowercase( ( string ) $fd['host'] );
+			
+		// Check base host headers
+		} else {
+			foreach ( $sh as $h ) {
+				if ( empty( $_SERVER[$h] ) ) {
+					continue;
+				}
+				$host = Util::lowercase( 
+					( string ) $_SERVER[$h] 
+				);
+				break;
+			}
+		}
+		
+		$this->host = $host ?? '';
+		return $this->host;
+	}
+	
+	/**
+	 *  Current website with protocol prefix
+	 *  
+	 *  @return string
+	 */
+	public function website() : string {
+		if ( isset( $this->web ) ) {
+			return $this->web;
+		}
+		
+		$this->web	= 
+		( $this->isSecure() ? 
+			'https://' : 'http://' ) . $this->getHost();
+		
+		return $this->web;
+	}
+	
+	/**
+	 *  Current full URI including website
+	 */
+	public function fullURI() : string {
+		if ( isset( $this->url ) ) {
+			return $this->url;
+		}
+		
+		$this->url = 
+			$this->website() . 
+			Util::slashPath( $this->getURI() );
+		return $this->url;
 	}
 }
