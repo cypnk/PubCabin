@@ -851,6 +851,7 @@ CREATE VIEW page_area_view AS SELECT
 	a.label AS area_label,
 	a.permissions AS permissions,
 	
+	t.id AS text_id,
 	t.title AS title,
 	t.slug AS slug,
 	pp.url AS url,
