@@ -15,6 +15,12 @@ class PageText extends \PubCabin\Entity {
 	public $page_id;
 	
 	/**
+	 *  Text translation language
+	 *  @var int
+	 */
+	public $lang_id;
+	
+	/**
 	 *  Localized page content heading
 	 *  @var string
 	 */
@@ -97,6 +103,15 @@ class PageText extends \PubCabin\Entity {
 	public $remote_updated;
 	
 	// TODO
-	public function save() { }
-	
+	public function save( \PubCabin\Data $data ) : bool {
+		if ( isset( $this->id ) ) {
+			
+		} else {
+			
+		}
+		
+		return true;
+	}
 }
+
+
