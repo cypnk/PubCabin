@@ -39,7 +39,14 @@ class Site extends \PubCabin\Entity {
 	public $is_maintenance;
 	
 	// TODO
-	public function save() { }
-	
+	public function save( \PubCabin\Data $data ) : bool {
+		if ( isset( $this->id ) ) {
+			
+		} else {
+			
+		}
+		
+		return true;
+	}
 }
 
