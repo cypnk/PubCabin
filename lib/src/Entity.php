@@ -62,6 +62,12 @@ abstract class Entity {
 	private $status;
 	
 	/**
+	 *  Inherited or overriden base permissions
+	 *  @var array
+	 */
+	private $_permissions;
+	
+	/**
 	 *  Settings changed since first loading and needs saving
 	 *  @var bool
 	 */
@@ -141,6 +147,13 @@ abstract class Entity {
 			case 'sort_order':
 				$this->_sort_order = ( int ) $value;
 				break;
+				
+			case 'permissions':
+				$this->_permissions = 
+				\is_array( $value ) ? 
+					$value : 
+					Util::decode( ( string ) $value );
+				break;
 		}
 	}
 	
@@ -161,6 +174,9 @@ abstract class Entity {
 				
 			case 'sort_order':
 				return $this->_sort_order ?? 0;
+			
+			case 'permissions':
+				return $this->_permissions ?? [];
 		}
 		
 		return null;
