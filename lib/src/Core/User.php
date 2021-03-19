@@ -156,8 +156,14 @@ class User extends \PubCabin\Entity {
 	public $failed_last_attempt;
 	
 	// TODO
-	public function save() {
+	public function save( \PubCabin\Data $data ) : bool {
+		if ( isset( $this->id ) ) {
+			
+		} else {
+			
+		}
 		
+		return true;
 	}
 	
 	public function __set( $name, $value ) {
