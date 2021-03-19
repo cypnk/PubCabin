@@ -15,6 +15,12 @@ class Page extends \PubCabin\Entity {
 	public $site_id;
 	
 	/**
+	 *  Currently loaded text language
+	 *  @var int
+	 */
+	public $lang_id;
+	
+	/**
 	 *  Content anchor region
 	 *  @var int
 	 */
@@ -173,8 +179,14 @@ class Page extends \PubCabin\Entity {
 	}
 	
 	// TODO
-	public function save() {
+	public function save( \PubCabin\Data $data ) : bool {
+		if ( isset( $this->id ) ) {
+			
+		} else {
+			
+		}
 		
+		return true;
 	}
 	
 	/**
