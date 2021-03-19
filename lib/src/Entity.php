@@ -81,9 +81,12 @@ abstract class Entity {
 	protected $_total;
 	
 	/**
-	 *  Store changes
+	 *  Store changes by creating a new item or updating if ID is set
+	 *  
+	 *  @param \PubCabin\Data	$data	Storage class
+	 *  @return bool			True if successfully saved
 	 */
-	abstract public function save();
+	abstract public function save( \PubCabin\Data $data ) : bool;
 	
 	public function __construct() {
 		if ( isset( $this->_settings_id ) ) {
