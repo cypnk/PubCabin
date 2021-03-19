@@ -11,13 +11,13 @@ class Module extends \PubCabin\Modules\Module {
 	 *  Registered call methods
 	 *  @var array
 	 */
-	protected static $handlers	= [];
+	protected $handlers		= [];
 	
 	/**
 	 *  Post-trigger output store
 	 *  @var array
 	 */
-	protected static $output	= [];
+	protected $output		= [];
 	
 	/**
 	 *  Post duty last call methods
