@@ -85,4 +85,16 @@ class Language extends \PubCabin\Entity {
 				return parent::__get( $name );
 		}
 	}
+	
+	// TODO
+	public function save( \PubCabin\Data $data ) : bool {
+		if ( isset( $this->id ) ) {
+			
+		} else {
+			
+		}
+		
+		return true;
+	}
 }
+
