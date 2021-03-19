@@ -78,6 +78,7 @@ if id "$W_USER" >/dev/null 2>&1; then
 	chown $W_USER filter.db
 	chown $W_USER sessions.db
 	chown $W_USER cache.db
+	chown $W_USER errors.log
 	
 	# Set permissions
 	chmod -R 0600 backup
