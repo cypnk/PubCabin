@@ -2389,9 +2389,9 @@ CREATE TABLE form_fields(
 	style_id INTEGER NOT NULL, 
 	
 	-- HTML templates
-	create_template TEXT NOT NULL, 
-	edit_template TEXT NOT NULL, 
-	view_template TEXT NOT NULL,
+	create_template TEXT NOT NULL COLLATE NOCASE, 
+	edit_template TEXT NOT NULL COLLATE NOCASE, 
+	view_template TEXT NOT NULL COLLATE NOCASE,
 	
 	CONSTRAINT fk_field_form
 		FOREIGN KEY ( form_id ) 
