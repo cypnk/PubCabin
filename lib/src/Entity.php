@@ -50,6 +50,12 @@ abstract class Entity {
 	public $updated;
 	
 	/**
+	 *  Trigger events
+	 *  @var array
+	 */
+	public $events		= [];
+	
+	/**
 	 *  Sorting order
 	 *  @var int
 	 */
