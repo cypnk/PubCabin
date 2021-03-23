@@ -30,19 +30,23 @@ class Module extends \PubCabin\Modules\Module {
 		string		$path	= '/', 
 		bool		$form	= false
 	) : string {
+		$config	= $this->getConfig();
+		
 		// Base HTML whitelist
 		$white	= [
-			'html'	=> 
-			$this->getConfig()->setting( 'tag_white' )
+			'html'	=> $config->setting( 'tag_white', 'json' )
 		];
 		
 		// Add form tag whitelist if this is a form
 		if ( $form ) {
 			$white['form']	= 
-			$this->getConfig()->setting( 'form_white' );
+			\array_merge( 
+				$white['html'], 
+				$config->setting( 'form_white', 'json' )
+			);
 		}
 		
-		return Html::html( $html, '/', $white );
+		return Html::html( $html, $path, $white );
 	}
 }
 
