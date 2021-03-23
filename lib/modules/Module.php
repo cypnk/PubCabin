@@ -140,7 +140,13 @@ abstract class Module {
 	 *  @param string	$mode	Optional asset or template folder
 	 */
 	protected function moduleBase( string $mode = '' ) : string {
-		$dir = \PUBCABIN_MODBASE . \basename( __CLASS__ );
+		$cls	= new \ReflectionClass( __CLASS__ );
+		$dir	= 
+		\PUBCABIN_MODBASE . 
+		\substr( 
+			$cls->getNamespaceName(), 0, 
+			\strlen( 'PubCabin\\Modules\\' )
+		);
 		
 		// Specific subfolder?
 		switch ( \strtolower( $mode ) ) {
