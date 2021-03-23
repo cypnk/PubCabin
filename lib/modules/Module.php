@@ -52,6 +52,9 @@ abstract class Module {
 		$this->loadModules();
 	}
 	
+	/**
+	 *  Load module dependencies
+	 */
 	protected function loadModules() {
 		$deps = $this->dependencies();
 		if ( empty( $deps ) ) {
@@ -71,10 +74,21 @@ abstract class Module {
 		}
 	}
 	
+	/**
+	 *  Get already loaded dependency
+	 *  
+	 *  @param string	$module		Module short class name
+	 *  @return mixed
+	 */
 	protected function getModule( string $module ) {
 		return static::$loaded[$module] ?? null;
 	}
 	
+	/**
+	 *  Get or load current configuration
+	 *  
+	 *  @return \PubCabin\Config
+	 */
 	protected function getConfig() {
 		if ( !isset( static::$config ) ) {
 			static::$config		= 
@@ -83,6 +97,11 @@ abstract class Module {
 		return static::$config;
 	}
 	
+	/**
+	 *  Get or load current visitor request
+	 *  
+	 *  @return \PubCabin\Request
+	 */
 	public function getRequest() {
 		if ( !isset( static::$request ) ) {
 			$config = $this->getConfig();
@@ -96,6 +115,11 @@ abstract class Module {
 		return static::$request;
 	}
 	
+	/**
+	 *  Get or load database access class
+	 *  
+	 *  @return \PubCabin\Data
+	 */
 	protected function getData() {
 		if ( !isset( static::$data ) ) {
 			$config	= $this->getConfig();
@@ -110,11 +134,16 @@ abstract class Module {
 		return static::$data;
 	}
 	
+	/**
+	 *  Calling module's base file location
+	 *  
+	 *  @param string	$mode	Optional asset or template folder
+	 */
 	protected function moduleBase( string $mode = '' ) : string {
 		$dir = \PUBCABIN_MODBASE . \basename( __CLASS__ );
 		
 		// Specific subfolder?
-		switch ( $mode ) {
+		switch ( \strtolower( $mode ) ) {
 			case 'tpl':
 			case 'template':
 			case 'templates':
