@@ -7,6 +7,25 @@ namespace PubCabin\Modules;
 
 abstract class Module {
 	
+	/**
+	 *  Main database name
+	 */
+	const MAIN_DATA			= 'main.db';
+	
+	/**
+	 *  Base module's asset folder
+	 */
+	const ASSET_DIR			= '/assets';
+	
+	/**
+	 *  Base module's template folder
+	 */
+	const TEMPLATE_DIR		= '/templates';
+	
+	/**
+	 *  Already loaded modules
+	 *  @var array
+	 */
 	protected static $loaded	= [];
 	
 	/**
@@ -90,6 +109,25 @@ abstract class Module {
 		
 		return static::$data;
 	}
+	
+	protected function moduleBase( string $mode = '' ) : string {
+		$dir = \PUBCABIN_MODBASE . \basename( __CLASS__ );
+		
+		// Specific subfolder?
+		switch ( $mode ) {
+			case 'tpl':
+			case 'template':
+			case 'templates':
+				return $dir . self::TEMPLATE_DIR;
+			
+			case 'asset':
+			case 'assets':
+				return $dir . self::ASSET_DIR;
+		}
+		
+		return $dir;
+	}
 }
+
 
 
