@@ -117,23 +117,25 @@ class Response extends Message {
 	 *  
 	 *  @param string	$path		File path to send
 	 */
-	public function sendFileFinish( $path ) {
+	public function sendFileFinish( $path, bool $nosend = false ) {
 		// Prepare content length and etag headers
-		$tags	= $this->genEtag( $path );
-		$fsize	= $tags['fsize'];
-		$etag	= $tags['etag'];
-		if ( false !== $tags['fsize'] ) {
-			$this->headers[] = "Content-Length: {$fsize}";
-			if ( !empty( $etag ) ) {
-				$this->headers[] = "ETag: {$etag}";
-			}
-			
-			if ( $this->config->setting( 'show_modified', 'int' ) ) {
-				$fmod	= $tags['fmod'];
-				if ( !empty( $fmod ) ) {
-					$this->headers[]  =
-						'Last-Modified: ', 
-						Util::dateRfcFile( $fmod );
+		if ( !$nosend ) {
+			$tags	= $this->genEtag( $path );
+			$fsize	= $tags['fsize'];
+			$etag	= $tags['etag'];
+			if ( false !== $tags['fsize'] ) {
+				$this->headers[] = "Content-Length: {$fsize}";
+				if ( !empty( $etag ) ) {
+					$this->headers[] = "ETag: {$etag}";
+				}	
+				
+				if ( $this->config->setting( 'show_modified', 'int' ) ) {
+					$fmod	= $tags['fmod'];
+					if ( !empty( $fmod ) ) {
+						$this->headers[]  =
+							'Last-Modified: ', 
+							Util::dateRfcFile( $fmod );
+					}
 				}
 			}
 		}
@@ -150,7 +152,7 @@ class Response extends Message {
 			\ob_end_flush();
 		}
 		
-		if ( $this->ifModified( $etag ) ) {
+		if ( $this->ifModified( $etag ) && !$nosend ) {
 			\readfile( $path );
 		}
 	}
