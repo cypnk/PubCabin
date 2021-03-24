@@ -8,7 +8,7 @@ namespace PubCabin\Modules\Cabin;
 class Module extends \PubCabin\Modules\Module {
 	
 	public function dependencies() : array {
-		return [ 'Hooks' ];
+		return [ 'Hooks', 'Sessions', 'Sites' ];
 	}
 }
 
