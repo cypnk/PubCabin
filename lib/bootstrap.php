@@ -48,6 +48,12 @@ define( 'PUBCABIN_ERRORS',	\PUBCABIN_DATA . 'errors.log' );
 
 
 /**
+ *  Environment preparation
+ */
+\date_default_timezone_set( 'UTC' );
+
+
+/**
  *  Isolated error holder
  */
 function errors( string $message, bool $ret = false ) {
@@ -76,7 +82,7 @@ function errors( string $message, bool $ret = false ) {
 	}
 	
 	if ( !\is_readable( \PUBCABIN_ERRORS ) ) {
-		return;
+		\touch( \PUBCABIN_ERRORS );
 	}
 	
 	\error_log( 
