@@ -692,6 +692,37 @@ class Util {
 	}
 	
 	/**
+	 *  Limit between min and max range for each set, inclusive
+	 *  
+	 *  @param array	$items		Set range of integers
+	 *  @param int		$num		Total number required
+	 *  @param int		$min		Minimum set if item is less than this
+	 *  @param int		$max		Maximum set if item is greater than this
+	 */
+	public static function spanIntRange(
+		array		$items, 
+		int		$num,
+		int		$min,
+		int		$max,
+		string		$pad		= 'max'
+	) {
+		// Pad maximum or minimum values if array is too short
+		$items = 
+		( 0 === \strcasecmp( $pad, 'max' ) ?
+			\array_pad( $items, $num, $max ) : 
+			\array_pad( $items, $num, $min );
+		
+		if ( count( $items ) > $num ) {
+			$items = \array_slice( $items, 0, $num );
+		}
+		
+		return 
+		\array_map( function( $v ) {
+			return static::intRange( $v, $min, $max );
+		}, $items );
+	}
+	
+	/**
 	 *  Simple division helper for mixed content type numbers
 	 *  
 	 *  @param mixed	$n	Numerator value
