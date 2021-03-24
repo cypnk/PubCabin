@@ -10,5 +10,15 @@ class Module extends \PubCabin\Modules\Module {
 	public function dependencies() : array {
 		return [ 'Hooks', 'Sessions', 'Sites' ];
 	}
+	
+	public function __construct() {
+		parent::__construct();
+		
+		$hooks = $this->getModule( 'Hooks' );
+		
+		// Run request event
+		$hooks->event( [ 'request', '' ] );
+	}
+	
 }
 
