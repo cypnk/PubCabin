@@ -55,7 +55,7 @@ class Module extends \PubCabin\Modules\Module {
 	 *  
 	 *  @param array	$params		[ 'event', 'handler' ]
 	 */
-	public function register( array $params ) {
+	public function event( array $params ) {
 		
 		// Nothing to add?
 		if ( empty( $params ) ) { return; }
