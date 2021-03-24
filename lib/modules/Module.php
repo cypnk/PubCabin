@@ -23,6 +23,11 @@ abstract class Module {
 	const TEMPLATE_DIR		= '/templates';
 	
 	/**
+	 *  Base module's publicly accessible content E.G css, js etc...
+	 */
+	const PUBLIC_DIR		= '/public';
+	
+	/**
 	 *  Already loaded modules
 	 *  @var array
 	 */
@@ -158,6 +163,10 @@ abstract class Module {
 			case 'asset':
 			case 'assets':
 				return $dir . self::ASSET_DIR;
+			
+			case 'htdocs':
+			case 'public':
+				return $dir . self::PUBLIC_DIR;
 		}
 		
 		return $dir;
