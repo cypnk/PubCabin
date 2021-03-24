@@ -10,6 +10,9 @@ class Captcha {
 	// Captcha font file name in the module asset folder
 	const CAPTCHA_FONT	= 'VeraMono.ttf';
 	
+	// Captcha font size
+	const CAPTCHA_FSIZE	= 30;
+	
 	// Captcha image height
 	const CAPTCHA_HEIGHT	= 35;
 	
@@ -77,17 +80,29 @@ class Captcha {
 		}
 		
 		// Height of image
-		$sizey	= $config->setting( 'captcha_height', 'int' ) ?? 
-				self::CAPTCHA_HEIGHT;
+		$sizey	= 
+		\PubCabin\Util::intRange( 
+			$config->setting( 'captcha_height', 'int' ) ?? 
+				self::CAPTCHA_HEIGHT,
+			10, 100
+		);
 		
 		// Character length
 		$cl	= \PubCabin\Util::strsize( $txt );
 		
+		// Font size
+		$fs	= 
+		\PubCabin\Util::intRange( 
+			$config->setting( 'captcha_fsize', 'int' ) ?? 
+				self::CAPTCHA_FSIZE,
+			10, 72
+		);
+		
 		// Expand the image with the number of characters
-		$sizex	= ( $cl * 19 ) + 10;
+		$sizex	= floor( ( $cl * $fs / 1.5 ) + 10 );
 		
 		// Some initial padding
-		$w	= floor( $sizex / $cl ) - 13;
+		$w	= floor( ( $sizex / $cl ) - $fs / 2 );
 		
 		$img	= \imagecreatetruecolor( $sizex, $sizey );
 		
@@ -97,6 +112,8 @@ class Captcha {
 			$config->setting( 'captcha_bg', 'string' ) ?? 
 			self::CAPTCHA_BG
 		);
+		$color	= 
+		\PubCabin\Util::spanIntRange( $colors, 3, 0, 255 );
 		
 		$bg	= 
 		\imagecolorallocate( $img, $color[0], $color[1], $color[2] );
@@ -112,6 +129,8 @@ class Captcha {
 			$config->setting( 'captcha_lines', 'string' ) ?? 
 			self::CAPTCHA_COLORS
 		);
+		$color	= 
+		\PubCabin\Util::spanIntRange( $colors, 6, 0, 255 );
 		
 		// Random lines
 		for ( $i = 0; $i < ( $sizex * $sizey ) / 250; $i++ ) {
@@ -143,6 +162,8 @@ class Captcha {
 			$config->setting( 'captcha_colors', 'string' ) ?? 
 			self::CAPTCHA_COLORS
 		);
+		$color	= 
+		\PubCabin\Util::spanIntRange( $colors, 6, 0, 255 );
 		
 		
 		// Insert the text (with random colors and placement)
@@ -161,7 +182,7 @@ class Captcha {
 			
 			\imagettftext( 
 				$img, 
-				30, 
+				$fs, 
 				\rand( -10, 10 ), 
 				$w + ( $i * \rand( 18, 19 ) ), 
 				\rand( 30, 40 ), 
