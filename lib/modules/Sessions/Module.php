@@ -3,7 +3,7 @@
  *  @file	/lib/modules/Module/Sessions/Module.php
  *  @brief	Visitor session state and cookie handler
  */
-namespace PubCabin\Modules\Forms;
+namespace PubCabin\Modules\Sessions;
 
 class Module extends \PubCabin\Modules\Module {
 	
