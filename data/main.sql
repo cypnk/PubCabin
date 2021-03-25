@@ -68,6 +68,20 @@ CREATE UNIQUE INDEX idx_site_label ON sites ( label );-- --
 CREATE INDEX idx_site_settings ON sites ( settings_id )
 	WHERE settings_id IS NOT NULL;-- --
 
+-- Mirrored sites
+CREATE TABLE site_aliases (
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	site_id INTEGER NOT NULL,
+	basename TEXT NOT NULL,
+	
+	CONSTRAINT fk_pages_site 
+		FOREIGN KEY ( site_id ) 
+		REFERENCES sites ( id )
+		ON DELETE CASCADE
+);-- --
+CREATE UNIQUE INDEX idx_site_alias ON site_aliases ( site_id, basename );-- --
+
+
 CREATE VIEW sites_enabled AS SELECT 
 	s.id AS id, 
 	s.label AS label, 
@@ -592,7 +606,7 @@ CREATE TABLE pages (
 	CONSTRAINT fk_pages_site 
 		FOREIGN KEY ( site_id ) 
 		REFERENCES sites ( id )
-		ON DELETE CASCADE,
+		ON DELETE RESTRICT,
 		
 	CONSTRAINT fk_pages_parent 
 		FOREIGN KEY ( parent_id ) 
@@ -716,12 +730,12 @@ CREATE TABLE page_texts (
 	CONSTRAINT fk_page_texts_lang 
 		FOREIGN KEY ( lang_id ) 
 		REFERENCES languages ( id ) 
-		ON DELETE CASCADE,
+		ON DELETE RESTRICT,
 		
 	CONSTRAINT fk_page_texts_path
 		FOREIGN KEY ( path_id ) 
 		REFERENCES page_paths ( id ) 
-		ON DELETE CASCADE
+		ON DELETE RESTRICT
 );-- --
 
 -- Each language represented once per page text
@@ -843,6 +857,27 @@ CREATE VIEW page_area_view AS SELECT
 	p.created AS created,
 	p.updated AS updated,
 	p.published AS published,
+	s.basename AS basename,
+	s.basepath AS basepath,
+	
+	-- Timestamps
+	strftime( '%Y-%m-%dT%H:%M:%SZ', 
+		COALESCE( p.published, p.created ) 
+	) AS date_utc, 
+	strftime( '%Y-%m-%d', 
+		COALESCE( p.published, p.created )
+	) AS date_short, 
+	
+	-- Archive search
+	strftime( '%Y', 
+		COALESCE( p.published, p.created ) 
+	) AS archive_y, 
+	strftime( '%Y/%m', 
+		COALESCE( p.published, p.created ) 
+	) AS archive_ym, 
+	strftime( '%Y/%m/%d', 
+		COALESCE( p.published, p.created ) 
+	) AS archive_ymd, 
 	
 	p.settings AS settings_override,
 	g.settings AS settings,
@@ -854,7 +889,16 @@ CREATE VIEW page_area_view AS SELECT
 	t.id AS text_id,
 	t.title AS title,
 	t.slug AS slug,
-	pp.url AS url,
+	pp.url AS url, 
+	
+	-- Permanent link
+	( s.basename || s.basepath || COALESCE( pp.url, '/' ) || 
+		strftime( '%Y/%m/%d/', 
+			COALESCE( p.published, p.created ) ) || t.slug
+	) AS permalink,
+	
+	( s.basename || s.basepath || COALESCE( pp.url, '/' ) || 
+		t.slug ) AS baselink,
 	
 	-- Previously published sibling
 	( SELECT id FROM pages prev
@@ -881,6 +925,7 @@ CREATE VIEW page_area_view AS SELECT
 	LEFT JOIN page_paths pp ON t.path_id = pp.id
 	LEFT JOIN page_area pa ON pa.page_id = p.id
 	LEFT JOIN areas a ON pa.area_id = a.id
+	LEFT JOIN sites s ON p.site_id = s.id
 	LEFT JOIN settings g ON p.settings_id = g.id;-- --
 
 CREATE VIEW page_text_view AS SELECT 
@@ -2428,6 +2473,363 @@ CREATE TABLE field_language(
 );-- --
 CREATE INDEX idx_form_lang_field ON field_language( field_id );-- --
 CREATE INDEX idx_form_lang ON field_language( lang_id );-- --
+
+
+
+
+
+
+-- Default database content
+
+-- Language and translations
+INSERT INTO languages (
+	id, label, iso_code, sort_order, is_default
+) VALUES ( 1, 'English', 'en', 0, 1 );-- --
+
+-- Translations are JSON which need placeholder replacements before parsing
+INSERT INTO translations (
+	id, locale, lang_id, definitions
+) VALUES ( 1, 'us', 1, '{
+	"date_nice"	: "l, F j, Y",
+	"headings"	: {
+		"related"	: "Related", 
+		"tags"		: "Tags:"
+	}, 
+	"nav"		: {
+		"previous"	: "\u0026larr; Previous"
+		"next"		: "Next \u0026rarr;",
+		"home"		: "Home",
+		"back"		: "Back",
+		"about"		: "About",
+		"archive"	: "Archive",
+		"feed"		: "Feed",
+		"search"	: "Search",
+		"login"		: "Login",
+		"logout"	: "Logout",
+		"register"	: "Register"
+	}, 
+	"forms"		: {
+		"search"	: {
+			"placeholder"	: "Find by title or body",
+			"button"	: "Search"
+		},
+		"postpage"	: {
+			"create"	: "Create new message",
+			"edit"		: "Editing message"
+		},
+		"login"		: {
+			"page"		: "Login",
+			"name"		: "Name <span>(required)<\/span>",
+			"namedesc"	: "Between {name_min} and {name_max} characters. Letters, numbers, and spaces supported.",
+			"pass"		: "Password <span>(required)<\/span>",
+			"passdesc"	: "Minimum {pass_min} characters.",
+			"rem"		: "Remember me",
+			"submit"	: "Login"
+		},
+		"register"	: {
+			"page"		: "Register",
+			"name"		: "Name <span>(required)<\/span>",
+			"namedesc"	: "Between {name_min} and {name_max} characters. Letters, numbers, and spaces supported.",
+			"pass"		: "Password <span>(required)<\/span>",
+			"passdesc"	: "Minimum {pass_min} characters.",
+			"repeat"	: "Repeat password <span>(required)<\/span>",
+			"repeatdesc"	: "Must match password entered above",
+			"rem"		: "Remember me",
+			"terms"		: "Agree to the <a href=\"{term}\" target=\"_blank\">site terms</a>",
+			"submit"	: "Register"
+		},
+		"password"	: {
+			"page"		: "Change password",
+			"old"		: "Old Password <span>(required)<\/span>",
+			"olddesc"	: "Must match current password.",
+			"new"		: "New password <span>(required)<\/span>",
+			"newdesc"	: "Minimum {pass_min} characters. Must be different from old password.",
+			"submit"	: "Change"
+		},
+		"profile"	: {
+			"page"		: "Profile",
+			"name"		: "Name",
+			"display"	: "Display name <span>(optional)<\/span>",
+			"displaydesc"	: "Between {display_min} and {display_max} characters. Letters, numbers, and spaces supported.",
+			"bio"		: "Bio <span>(optional)<\/span>",
+			"biodesc"	: "Simple HTML and a subset of <a href=\"{formatting}\">Markdown<\/a> supported.",
+			"submit"	: "Save"
+		},
+		"createpage"	: {
+			"page"		: "Create a new page",
+			"title"		: "Page title title",
+			"titledesc"	: "Between {title_min} and {title_max} characters. Letters, numbers, and spaces supported.",
+			"msg"		: "Page body <span>(required)<\/span>",
+			"msgdesc"	: "Simple HTML and a subset of <a href=\"__formatting__\">Markdown<\/a> supported.",
+			"submit"	: "Post"
+		},
+		"editpage"	: {
+			"page"		: "Edit page",
+			"title"		: "Page title",
+			"titledesc"	: "Between {title_min} and {title_max} characters. Letters, numbers, and spaces supported.",
+			"msg"		: "Editing page body <span>(required)<\/span>",
+			"msgdesc"	: "Simple HTML and a subset of <a href=\"__formatting__\">Markdown<\/a> supported.",
+			"submit"	: "Save changes"
+		},
+	},
+	"sections" : {
+		"settings"  {
+			"websettings"	: "Change website settings", 
+			"fields" {
+				"page_title" : "Website title",
+				"page_sub" : "Subtitle or tagline",
+				"timezone" : "Default timezone",
+				"mail_from" : "Email sending address", 
+				"mail_whitelist" : "List of allowed recipients",
+				"frame_whitelist" : "Whitelist of embeddable URLs" 
+			}
+		},
+		"user" : {
+			"messages"	: "{message_count} Messages",
+			"replies"	: "{reply_count} Replies",
+			"password"	: "Password",
+			"profile"	: "Profile",
+			"deleteacct"	: "Delete account",
+			"resetpass"	: "Reset password",
+			"changeemail"	: "Change email address",		
+			"changepass"	: "Change password"
+		}, 
+		"moderation" : {
+			"recent"	: "{recent_count} Recent",
+			"queue"		: "{queue_count} Queue",
+			"add"		: "Add filter",
+			"duration"	: "Duration",
+			"delselect"	: "Delete selected",
+			"durdesc"	: "E.G. \"5 hours\" (without quotes). Leave empty for no expiration",
+			"drop"		: {
+				"action"	: "Action",
+				"hold"		: "Hold",
+				"pub"		: "Publish",
+				"del"		: "Delete",
+				"holdsusp"	: "Hold, suspend user",
+				"delsusp"	: "Delete, suspend user",
+				"holdsuspip"	: "Hold, suspend IP",
+				"delsuspip"	: "Delete, suspend IP",
+				"holdsuspuip"	: "Hold, suspend user, suspend IP",
+				"delsuspuip"	: "Delete, suspend user, suspend IP",
+				"holdblock"	: "Hold, block user",
+				"delblock"	: "Delete, block user",
+				"holdblockip"	: "Hold, block IP",
+				"delblockip"	: "Delete, block IP",
+				"holdblockuip"	: "Hold, block user, block IP",
+				"delblockuip"	: "Delete, block user, block IP",
+				"noanon"	: "No anonymous comments",
+				"close"		: "No new comments, show existing comments",
+				"hide"		: "No new comments, hide existing comments",
+				"dur"		: " - Duration: {duration}"
+			},
+			"filters"	: {
+				"label"		: "Filters",
+				"ip"		: "IP Ranges and Hostname filter",
+				"iplbl"		: "IP Addresses",
+				"ipdesc"	: "IPv4 or IPv6 range in CIDR notation or individual ip address. Separate by comma.",
+				"hostlbl"	: "Host names and domains",
+				"hostdesc"	: "Host names. Separate by comma.",
+				"word"		: "Word / Phrase filter",
+				"wordlbl"	: "Block Word or phrase",
+				"worddesc"	: "Case insensitive.",
+				"user"		: "Username filter",
+				"userlbl"	: "Block username",
+				"userdesc"	: "Case insensitive. Separate by comma.",
+				"url"		: "Page comments",
+				"urllbl"	: "URLs / Unique identifiers",
+				"urldesc"	: "Case insensitive. Relative paths only."
+			}
+		}
+	}, 
+	"errors"	: {
+		"error"		: "Error",
+		"generic"	: "An error has occured",
+		"returnhome"	: "<a href=\"{home}\">Return home<\/a>",
+		"noposts"	: "No more posts. Return <a href=\"{home}\">home<\/a>.",
+		"notfound"	: "Page not found",
+		"noroute"	: "No route defined",
+		"badmethod"	: "Method not allowed",
+		"nomethod"	: "Method not implemented",
+		"denied"	: "Access denied",
+		"invalid"	: "Invalid request",
+		"codedetect"	: "Server-side code detected",
+		"expired"	: "This form has expired",
+		"toomany"	: "Too many requests"
+		"namereq"	: "Name is required",
+		"nameinv"	: "Name is invalid",
+		"nameexists"	: "User already exists",
+		"passreq"	: "Password is required",
+		"passinv"	: "Password is invalid",
+		"passmatch"	: "Passwords must match",
+		"loginfail"	: "Login unsuccessful",
+		"loginwait"	: "Login unsuccessful, please wait a few minutes before trying again",
+		"registerwait"	: "Please wait a few minutes before trying to register again",
+		"messagereq"	: "Message is required",
+		"messageinv"	: "Message is invalid"
+	}
+}' );-- --
+
+-- Default settings
+INSERT INTO settings( id, label, info ) 
+VALUES ( 1, 'default_site_settings', '{ 
+	"page_title" : "Rustic Cyberpunk",
+	"page_sub" : "Coffee. Code. Cabins.",
+	"timezone" : "America/New_York",
+	"mail_from" : "domain@localhost", 
+	"mail_whitelist" : [
+		"root@localhost",
+		"www@localhost"
+	],
+	"frame_whitelist" : [
+		"https:\/\/www.youtube.com",
+		"https:\/\/player.vimeo.com",
+		"https:\/\/archive.org",
+		"https:\/\/peertube.mastodon.host",
+		"https:\/\/lbry.tv",
+		"https:\/\/odysee.com"
+	], 
+	"default_jcsp" : {
+		"default-src"		: "''none''",
+		"img-src"		: "*",
+		"base-uri"		: "''self''",
+		"style-src"		: "''self''",
+		"script-src"		: "''self''",
+		"font-src"		: "''self''",
+		"form-action"		: "''self''",
+		"frame-ancestors"	: "''self''",
+		"frame-src"		: "*",
+		"media-src"		: "''self''",
+		"connect-src"		: "''self''",
+		"worker-src"		: "''self''",
+		"child-src"		: "''self''",
+		"require-trusted-types-for" : "''script''"
+	}, 
+	"tag_white" : {
+		"p"		: [ "style", "class", "align", 
+					"data-pullquote", "data-video", 
+					"data-media" ],
+	
+		"div"		: [ "style", "class", "align" ],
+		"span"		: [ "style", "class" ],
+		"br"		: [ "style", "class" ],
+		"hr"		: [ "style", "class" ],
+		
+		"h1"		: [ "style", "class" ],
+		"h2"		: [ "style", "class" ],
+		"h3"		: [ "style", "class" ],
+		"h4"		: [ "style", "class" ],
+		"h5"		: [ "style", "class" ],
+		"h6"		: [ "style", "class" ],
+		
+		"strong"	: [ "style", "class" ],
+		"em"		: [ "style", "class" ],
+		"u"	 	: [ "style", "class" ],
+		"strike"	: [ "style", "class" ],
+		"del"		: [ "style", "class", "cite" ],
+		
+		"ol"		: [ "style", "class" ],
+		"ul"		: [ "style", "class" ],
+		"li"		: [ "style", "class" ],
+		
+		"code"		: [ "style", "class" ],
+		"pre"		: [ "style", "class" ],
+		
+		"sup"		: [ "style", "class" ],
+		"sub"		: [ "style", "class" ],
+		
+		"a"		: [ "style", "class", "rel", 
+					"title", "href" ],
+		"img"		: [ "style", "class", "src", "height", "width", 
+					"alt", "longdesc", "title", "hspace", 
+					"vspace", "srcset", "sizes"
+					"data-srcset", "data-src", 
+					"data-sizes" ],
+		"figure"	: [ "style", "class" ],
+		"figcaption"	: [ "style", "class" ],
+		"picture"	: [ "style", "class" ],
+		"table"		: [ "style", "class", "cellspacing", 
+						"border-collapse", 
+						"cellpadding" ],
+		
+		"thead"		: [ "style", "class" ],
+		"tbody"		: [ "style", "class" ],
+		"tfoot"		: [ "style", "class" ],
+		"tr"		: [ "style", "class" ],
+		"td"		: [ "style", "class", "colspan", 
+					"rowspan" ],
+		"th"		: [ "style", "class", "scope", 
+				"colspan", "rowspan" ],
+		
+		"caption"	: [ "style", "class" ],
+		"col"		: [ "style", "class" ],
+		"colgroup"	: [ "style", "class" ],
+		
+		"summary"	: [ "style", "class" ],
+		"details"	: [ "style", "class" ],
+		
+		"q"		: [ "style", "class", "cite" ],
+		"cite"		: [ "style", "class" ],
+		"abbr"		: [ "style", "class" ],
+		"blockquote"	: [ "style", "class", "cite" ],
+		"body"		: []
+	}, 
+	"form_white" : {
+		"form"		: [ "id", "method", "action", "enctype", "style", "class" ], 
+		"input"		: [ "id", "type", "name", "required", , "max", "min", 
+					"value", "size", "maxlength", "checked", 
+				"disabled", "style", "class" ],
+		"label"		: [ "id", "for", "style", "class" ], 
+		"textarea"	: [ "id", "name", "required", "rows", "cols",  
+					"style", "class" ],
+		"select"	: [ "id", "name", "required", "multiple", "size", 
+					"disabled", "style", "class" ],
+		"option"	: [ "id", "value", "disabled", "style", "class" ],
+		"optgroup"	: [ "id", "label", "style", "class" ]
+	}, 
+	"ext_whitelist" : {
+		"text"		: "css, js, txt, html",
+		"images"	: "ico, jpg, jpeg, gif, bmp, png, tif, tiff, svg", 
+		"fonts"		: "ttf, otf, woff, woff2",
+		"audio"		: "ogg, oga, mpa, mp3, m4a, wav, wma, flac",
+		"video"		: "avi, mp4, mkv, mov, ogg, ogv"
+	}, 
+	"route_mark" : {
+		"*"	: "(?<all>.+)",
+		":id"	: "(?<id>[1-9][0-9]*)",
+		":page"	: "(?<page>[1-9][0-9]*)",
+		":label": "(?<label>[\\pL\\pN\\s_\\-]{1,30})",
+		":nonce": "(?<nonce>[a-z0-9]{10,30})",
+		":token": "(?<token>[a-z0-9\\+\\=\\-\\%]{10,255})",
+		":meta"	: "(?<meta>[a-z0-9\\+\\=\\-\\%]{7,255})",
+		":tag"	: "(?<tag>[\\pL\\pN\\s_\\,\\-]{1,30})",
+		":tags"	: "(?<tags>[\\pL\\pN\\s_\\,\\-]{1,255})",
+		":year"	: "(?<year>[2][0-9]{3})",
+		":month": "(?<month>[0-3][0-9]{1})",
+		":day"	: "(?<day>[0-9][0-9]{1})",
+		":slug"	: "(?<slug>[\\pL\\-\\d]{1,100})",
+		":tree"	: "(?<tree>[\\pL\\/\\-\\d]{1,255})",
+		":file"	: "(?<file>[\\pL_\\-\\d\\.\\s]{1,120})",
+		":find"	: "(?<find>[\\pL\\pN\\s\\-_,\\.\\:\\+]{2,255})",
+		":redir": "(?<redir>[a-z_\\:\\/\\-\\d\\.\\s]{1,120})"
+	}
+}' );-- --
+
+
+-- Homepage URL
+INSERT INTO page_paths ( id, url ) 
+VALUES ( 1, '/' );-- --
+
+-- Base website
+INSERT INTO sites ( id, label, basename, basepath, settings_id ) 
+VALUES ( 1, 'localhost', 'localhost', '', 1 );-- --
+
+-- Main viewable render area 
+INSERT INTO areas ( id, label, site_id ) 
+VALUES ( 1, 'main', 1 );-- --
+
+-- TODO: Default content
+
 
 
 
