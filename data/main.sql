@@ -2535,7 +2535,7 @@ INSERT INTO translations (
 			"repeat"	: "Repeat password <span>(required)<\/span>",
 			"repeatdesc"	: "Must match password entered above",
 			"rem"		: "Remember me",
-			"terms"		: "Agree to the <a href=\"{term}\" target=\"_blank\">site terms</a>",
+			"terms"		: "Agree to the <a href=\"{terms}\" target=\"_blank\">site terms</a>",
 			"submit"	: "Register"
 		},
 		"password"	: {
@@ -2560,7 +2560,7 @@ INSERT INTO translations (
 			"title"		: "Page title title",
 			"titledesc"	: "Between {title_min} and {title_max} characters. Letters, numbers, and spaces supported.",
 			"msg"		: "Page body <span>(required)<\/span>",
-			"msgdesc"	: "Simple HTML and a subset of <a href=\"__formatting__\">Markdown<\/a> supported.",
+			"msgdesc"	: "Simple HTML and a subset of <a href=\"{formatting}\">Markdown<\/a> supported.",
 			"submit"	: "Post"
 		},
 		"editpage"	: {
@@ -2568,9 +2568,9 @@ INSERT INTO translations (
 			"title"		: "Page title",
 			"titledesc"	: "Between {title_min} and {title_max} characters. Letters, numbers, and spaces supported.",
 			"msg"		: "Editing page body <span>(required)<\/span>",
-			"msgdesc"	: "Simple HTML and a subset of <a href=\"__formatting__\">Markdown<\/a> supported.",
+			"msgdesc"	: "Simple HTML and a subset of <a href=\"{formatting}\">Markdown<\/a> supported.",
 			"submit"	: "Save changes"
-		},
+		}
 	},
 	"sections" : {
 		"settings"  {
