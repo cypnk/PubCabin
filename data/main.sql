@@ -647,18 +647,22 @@ CREATE TRIGGER page_default_insert BEFORE INSERT ON
 	pages FOR EACH ROW 
 WHEN NEW.is_home <> 0 OR NEW.is_home IS NOT NULL
 BEGIN
-	UPDATE languages SET is_default = 0 
-		WHERE is_default IS NOT 0;
+	UPDATE pages SET is_home = 0 
+		WHERE is_home IS NOT 0 
+			AND site_id = NEW.site_id;
 END;-- --
 
+-- One homepage per site
 CREATE TRIGGER page_default_update BEFORE UPDATE ON 
 	pages FOR EACH ROW 
 WHEN NEW.is_home <> 0 OR NEW.is_home IS NOT NULL
 BEGIN
 	UPDATE pages SET is_home = 0 
-		WHERE is_home IS NOT 0 AND id IS NOT NEW.id;
+		WHERE is_home IS NOT 0 AND id IS NOT NEW.id 
+			AND site_id = OLD.site_id;
 END;-- --
 
+-- Create page unique identifier
 CREATE TRIGGER page_insert AFTER INSERT ON pages FOR EACH ROW
 BEGIN
 	UPDATE pages SET uuid = ( SELECT id FROM uuid )
@@ -668,7 +672,7 @@ END;-- --
 
 -- If this is a child post
 CREATE TRIGGER page_child_insert AFTER INSERT ON pages FOR EACH ROW
-WHEN parent_id IS NOT NULL
+WHEN NEW.parent_id IS NOT NULL
 BEGIN
 	UPDATE pages SET child_count = ( child_count + 1 ) 
 		WHERE id = NEW.parent_id;
@@ -748,7 +752,7 @@ CREATE UNIQUE INDEX idx_page_slug ON page_texts ( page_id, slug );-- --
 -- Generate a random slug if empty
 CREATE TRIGGER page_texts_insert_slug AFTER INSERT ON 
 	page_texts FOR EACH ROW
-WHEN slug = ''
+WHEN NEW.slug = ''
 BEGIN
 	UPDATE page_texts SET slug = ( SELECT id FROM uuid ) 
 		WHERE id = NEW.id;
@@ -756,7 +760,7 @@ END;-- --
 
 CREATE TRIGGER page_texts_update_slug AFTER UPDATE ON 
 	page_texts FOR EACH ROW
-WHEN slug = ''
+WHEN NEW.slug = ''
 BEGIN
 	UPDATE page_texts SET slug = ( SELECT id FROM uuid ) 
 		WHERE id = NEW.id;
@@ -824,7 +828,11 @@ CREATE UNIQUE INDEX idx_page_text_users ON
 CREATE TABLE page_revisions (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 	text_id INTEGER NOT NULL, 
-	user_id INTEGER NOT NULL, 
+	path_id INTEGER NOT NULL, 
+	user_id INTEGER DEFAULT NULL, 
+	author_name TEXT DEFAULT NULL COLLATE NOCASE,
+	author_email TEXT DEFAULT NULL COLLATE NOCASE,
+	author_ip TEXT DEFAULT NULL COLLATE NOCASE,
 	title TEXT COLLATE NOCASE,
 	body TEXT NULL COLLATE NOCASE,
 	created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -839,8 +847,18 @@ CREATE TABLE page_revisions (
 		REFERENCES users ( id ) 
 		ON DELETE RESTRICT
 );-- --
-CREATE INDEX idx_page_revision_user ON page_revisions ( user_id );-- --
+CREATE INDEX idx_page_revision_path ON page_revisions ( path_id );-- --
+CREATE INDEX idx_page_revision_user ON page_revisions ( user_id )
+	WHERE user_id IS NOT NULL;-- --
+CREATE INDEX idx_page_revision_author_name ON page_revisions ( author_name ) 
+	WHERE author_name IS NOT NULL;-- --
+CREATE INDEX idx_page_revision_author_email ON page_revisions ( author_email ) 
+	WHERE author_email IS NOT NULL;-- --
+CREATE INDEX idx_page_revision_author_ip ON page_revisions ( author_ip ) 
+	WHERE author_ip IS NOT NULL;-- --
 CREATE INDEX idx_page_revision_text ON page_revisions ( text_id );-- --
+CREATE INDEX idx_page_revision_created ON page_revisions ( created );-- --
+
 
 CREATE VIEW page_area_view AS SELECT
 	p.id AS id,
@@ -946,6 +964,28 @@ CREATE VIEW page_text_view AS SELECT
 	LEFT JOIN page_paths pp ON t.path_id = pp.id
 	LEFT JOIN text_sources ts ON t.id = ts.text_id;-- --
 
+-- Edit history view
+CREATE VIEW page_revision_view AS SELECT
+	r.id AS id, 
+	r.title AS title, 
+	r.body AS body, 
+	r.text_id AS text_id, 
+	r.path_id AS path_id, 
+	r.user_id AS user_id,
+	r.created AS created,
+	
+	-- Authorship
+	COALESCE( u.display, u.username, r.author_name, '.' ) AS author_name,
+	COALESCE( e.email, r.author_email, '@' ) AS author_email,
+	COALESCE( e.last_ip, r.author_ip, '::' ) AS author_ip,
+	COALESCE( e.last_active, '0' ) AS author_last_active,
+	COALESCE( e.last_login, '0' ) AS author_last_login,
+	COALESCE( u.user_id, 0 ) AS author_id
+	
+	FROM page_revisions r
+	LEFT JOIN users u ON r.user_id = u.id
+	LEFT JOIN user_auth e ON e.user_id = u.id;-- --
+
 
 -- Page text searching
 CREATE VIRTUAL TABLE page_search 
@@ -955,9 +995,6 @@ CREATE TRIGGER page_text_insert AFTER INSERT ON page_texts FOR EACH ROW
 BEGIN
 	INSERT INTO page_search( docid, body ) 
 		VALUES ( NEW.id, NEW.title || ' ' || NEW.bare );
-	
-	INSERT INTO page_revisions ( text_id, title, body ) 
-		VALUEs ( NEW.id, NEW.title, NEW.body );
 END;-- --
 
 CREATE TRIGGER page_text_update AFTER UPDATE ON page_texts FOR EACH ROW 
@@ -967,9 +1004,6 @@ BEGIN
 	
 	UPDATE pages SET updated = CURRENT_TIMESTAMP 
 		WHERE id = NEW.page_id;
-	
-	INSERT INTO page_revisions ( text_id, title, body ) 
-		VALUEs ( NEW.id, NEW.title, NEW.body );
 END;-- --
 
 CREATE TRIGGER page_text_delete BEFORE DELETE ON page_texts FOR EACH ROW 
@@ -1117,6 +1151,12 @@ CREATE UNIQUE INDEX idx_comment_uuid ON comments( uuid )
 	WHERE uuid IS NOT NULL;-- --
 CREATE INDEX idx_comment_user_id ON comments( user_id ) 
 	WHERE user_id IS NOT NULL;-- --
+CREATE INDEX idx_comment_author_name ON comments( author_name ) 
+	WHERE author_name IS NOT NULL;-- --
+CREATE INDEX idx_comment_author_email ON comments( author_email ) 
+	WHERE author_email IS NOT NULL;-- --
+CREATE INDEX idx_comment_author_ip ON comments( author_ip ) 
+	WHERE author_ip IS NOT NULL;-- --
 CREATE INDEX idx_comment_created ON comments ( created );-- --
 CREATE INDEX idx_comment_updated ON comments ( updated );-- --
 
@@ -2708,84 +2748,88 @@ VALUES ( 1, 'default_site_settings', '{
 	"tag_white" : {
 		"p"		: [ "style", "class", "align", 
 					"data-pullquote", "data-video", 
-					"data-media" ],
+					"data-media", "data-highlight", 
+					"data-feature" ],
 	
-		"div"		: [ "style", "class", "align" ],
-		"span"		: [ "style", "class" ],
-		"br"		: [ "style", "class" ],
-		"hr"		: [ "style", "class" ],
+		"div"		: [ "style", "class", "align", "data-highlight", 
+					"data-feature" ],
+		"span"		: [ "style", "class", "data-highlight", 
+					"data-feature", "data-validation" ],
+		"br"		: [ "style", "class", "data-feature" ],
+		"hr"		: [ "style", "class", "data-feature" ],
 		
-		"h1"		: [ "style", "class" ],
-		"h2"		: [ "style", "class" ],
-		"h3"		: [ "style", "class" ],
-		"h4"		: [ "style", "class" ],
-		"h5"		: [ "style", "class" ],
-		"h6"		: [ "style", "class" ],
+		"h1"		: [ "style", "class", "data-highlight", "data-feature" ],
+		"h2"		: [ "style", "class", "data-highlight", "data-feature" ],
+		"h3"		: [ "style", "class", "data-highlight", "data-feature" ],
+		"h4"		: [ "style", "class", "data-highlight", "data-feature" ],
+		"h5"		: [ "style", "class", "data-highlight", "data-feature" ],
+		"h6"		: [ "style", "class", "data-highlight", "data-feature" ],
 		
-		"strong"	: [ "style", "class" ],
-		"em"		: [ "style", "class" ],
-		"u"	 	: [ "style", "class" ],
-		"strike"	: [ "style", "class" ],
-		"del"		: [ "style", "class", "cite" ],
+		"strong"	: [ "style", "class", "data-highlight", "data-feature" ],
+		"em"		: [ "style", "class", "data-highlight", "data-feature" ],
+		"u"	 	: [ "style", "class", "data-highlight", "data-feature" ],
+		"strike"	: [ "style", "class", "data-highlight", "data-feature" ],
+		"del"		: [ "style", "class", "cite", "data-highlight", "data-feature" ],
 		
-		"ol"		: [ "style", "class" ],
-		"ul"		: [ "style", "class" ],
-		"li"		: [ "style", "class" ],
+		"ol"		: [ "style", "class", "data-feature" ],
+		"ul"		: [ "style", "class", "data-feature" ],
+		"li"		: [ "style", "class", "data-highlight", "data-feature" ],
 		
-		"code"		: [ "style", "class" ],
-		"pre"		: [ "style", "class" ],
+		"code"		: [ "style", "class", "data-highlight", "data-feature" ],
+		"pre"		: [ "style", "class", "data-highlight", "data-feature" ],
 		
-		"sup"		: [ "style", "class" ],
-		"sub"		: [ "style", "class" ],
+		"sup"		: [ "style", "class", "data-highlight", "data-feature" ],
+		"sub"		: [ "style", "class", "data-highlight", "data-feature" ],
 		
 		"a"		: [ "style", "class", "rel", 
-					"title", "href" ],
-		"img"		: [ "style", "class", "src", "height", "width", 
-					"alt", "longdesc", "title", "hspace", 
-					"vspace", "srcset", "sizes"
-					"data-srcset", "data-src", 
-					"data-sizes" ],
-		"figure"	: [ "style", "class" ],
-		"figcaption"	: [ "style", "class" ],
-		"picture"	: [ "style", "class" ],
-		"table"		: [ "style", "class", "cellspacing", 
-						"border-collapse", 
-						"cellpadding" ],
+					"title", "href", "data-highlight", "data-feature" ],
+		"img"		: [ "style", "class", "src", "height", "width", "alt", 
+					"longdesc", "title", "hspace", "vspace", "srcset", 
+					"sizes" "data-srcset", "data-src", "data-sizes", 
+					"data-feature" ],
+		"figure"	: [ "style", "class", "data-highlight", "data-feature" ],
+		"figcaption"	: [ "style", "class", "data-highlight", "data-feature" ],
+		"picture"	: [ "style", "class", "data-highlight", "data-feature" ],
+		"table"		: [ "style", "class", "cellspacing", "cellpadding", 
+					"border-collapse", "data-feature" ],
 		
-		"thead"		: [ "style", "class" ],
-		"tbody"		: [ "style", "class" ],
-		"tfoot"		: [ "style", "class" ],
-		"tr"		: [ "style", "class" ],
-		"td"		: [ "style", "class", "colspan", 
-					"rowspan" ],
-		"th"		: [ "style", "class", "scope", 
-				"colspan", "rowspan" ],
+		"thead"		: [ "style", "class", "data-highlight", "data-feature" ],
+		"tbody"		: [ "style", "class", "data-highlight", "data-feature" ],
+		"tfoot"		: [ "style", "class", "data-highlight", "data-feature" ],
+		"tr"		: [ "style", "class", "data-feature" ],
+		"td"		: [ "style", "class", "colspan", "rowspan", 
+					"data-highlight", "data-feature" ],
+		"th"		: [ "style", "class", "scope", "colspan", "rowspan", 
+					"data-highlight", "data-feature" ],
 		
-		"caption"	: [ "style", "class" ],
-		"col"		: [ "style", "class" ],
-		"colgroup"	: [ "style", "class" ],
+		"caption"	: [ "style", "class", "data-highlight", "data-feature" ],
+		"col"		: [ "style", "class", "data-feature" ],
+		"colgroup"	: [ "style", "class", "data-feature" ],
 		
-		"summary"	: [ "style", "class" ],
-		"details"	: [ "style", "class" ],
+		"summary"	: [ "style", "class", "data-highlight", "data-feature" ],
+		"details"	: [ "style", "class", "data-highlight", "data-feature" ],
 		
-		"q"		: [ "style", "class", "cite" ],
-		"cite"		: [ "style", "class" ],
-		"abbr"		: [ "style", "class" ],
-		"blockquote"	: [ "style", "class", "cite" ],
+		"q"		: [ "style", "class", "cite", "data-highlight", "data-feature" ],
+		"cite"		: [ "style", "class", "data-highlight", "data-feature" ],
+		"abbr"		: [ "style", "class", "data-highlight", "data-feature" ],
+		"blockquote"	: [ "style", "class", "cite", "data-highlight", "data-feature" ],
 		"body"		: []
 	}, 
 	"form_white" : {
-		"form"		: [ "id", "method", "action", "enctype", "style", "class" ], 
+		"form"		: [ "id", "method", "action", "enctype", "style", "class", 
+					"data-feature" ], 
 		"input"		: [ "id", "type", "name", "required", , "max", "min", 
-					"value", "size", "maxlength", "checked", 
-				"disabled", "style", "class" ],
-		"label"		: [ "id", "for", "style", "class" ], 
-		"textarea"	: [ "id", "name", "required", "rows", "cols",  
-					"style", "class" ],
-		"select"	: [ "id", "name", "required", "multiple", "size", 
-					"disabled", "style", "class" ],
-		"option"	: [ "id", "value", "disabled", "style", "class" ],
-		"optgroup"	: [ "id", "label", "style", "class" ]
+					"value", "size", "maxlength", "checked", "pattern", 
+					"disabled", "style", "class", "data-highlight", 
+					"aria-describedby", "data-feature" ],
+		"label"		: [ "id", "for", "style", "class", "data-highlight", "data-feature" ], 
+		"textarea"	: [ "id", "name", "required", "rows", "cols", "style", "class", 
+					"aria-describedby", "data-highlight", "data-feature" ],
+		"select"	: [ "id", "name", "required", "multiple", "size", "disabled", 
+					"style", "class", "aria-describedby", "data-highlight", 
+					"data-feature" ],
+		"option"	: [ "id", "value", "disabled", "style", "class", "data-feature" ],
+		"optgroup"	: [ "id", "label", "style", "class", "data-feature" ]
 	}, 
 	"ext_whitelist" : {
 		"text"		: "css, js, txt, html",
@@ -2824,11 +2868,30 @@ VALUES ( 1, '/' );-- --
 INSERT INTO sites ( id, label, basename, basepath, settings_id ) 
 VALUES ( 1, 'localhost', 'localhost', '', 1 );-- --
 
+-- Test site
+INSERT INTO site_aliases( id, site_id, basename ) 
+VALUES ( 1, 1, 'pubcabin.local' );-- --
+
 -- Main viewable render area 
 INSERT INTO areas ( id, label, site_id ) 
 VALUES ( 1, 'main', 1 );-- --
 
--- TODO: Default content
+-- Default content
+INSERT INTO pages( id, site_id, ptype, is_home ) 
+VALUES( 1, 1, 'html', 1 );-- --
+
+-- Page area
+INSERT INTO page_area( page_id, area_id ) 
+VALUES ( 1, 1 );-- --
+
+-- Page content
+INSERT INTO page_texts( 
+	id, page_id, lang_id, path_id, slug, title, body, bare 
+) VALUES (
+	1, 1, 1, 1, 'home', 'Home', 
+	'<h1>Home</h1><p>Welcome to your default homepage</p>', 
+	'Home Welcome to your default homepage' 
+);-- -- 
 
 
 
