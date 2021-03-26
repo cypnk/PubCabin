@@ -2077,19 +2077,6 @@ BEGIN
 	
 	INSERT INTO meta_content_search( docid, body ) 
 		VALUES ( ( SELECT last_insert_rowid() ), NEW.bare );
-	
-	-- For SQLite 3.35+
-	--INSERT INTO meta_content_search( docid, body ) 
-	--	VALUES ( ( 
-	--		INSERT INTO meta_content 
-	--			( meta_id, sort_order, bare, content ) 
-	--		VALUES ( 
-	--			NEW.meta_id, 
-	--			COALESCE( NEW.sort_order, 0 ) ), 
-	--			COALESCE( NEW.bare, '' ), 
-	--			NEW.content 
-	--		) returning id
-	--	), NEW.bare );
 END;-- --
 
 CREATE TRIGGER meta_content_search_update INSTEAD OF UPDATE ON meta_content_view
