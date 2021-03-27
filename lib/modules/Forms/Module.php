@@ -14,7 +14,7 @@ class Module extends \PubCabin\Modules\Module {
 	const FORM_STATUS_FLOOD		= 3;
 	
 	public function dependencies() : array {
-		return [ 'Hooks', 'Sessions' ];
+		return [ 'Hooks', 'Sessions', 'Files' ];
 	}
 	
 	/**
