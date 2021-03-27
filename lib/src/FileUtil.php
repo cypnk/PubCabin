@@ -332,5 +332,82 @@ final class FileUtil {
 		
 		return \strtolower( $mime );
 	}
+	
+	/**
+	 *  Verify if given directory path is a subfolder of root
+	 *  
+	 *  @param string	$path	Folder path to check
+	 *  @param string	$root	Full parent folder path
+	 *  @return string Empty if directory traversal or other issue found
+	 */
+	public static function filterDir( $path, string $root ) {
+		if ( \strpos( $path, '..' ) ) {
+			return '';
+		}
+		
+		$lp	= \strlen( $root );
+		if ( \strlen( $path ) < $lp ) { 
+			return ''; 
+		}
+		$pos	= \strpos( $path, $root );
+		if ( false === $pos ) {
+			return '';
+		}
+		$path	= \substr( $path, $pos + $lp );
+		return \trim( $path ?? '' );
+	}
+	
+	/**
+	 *  Get all files in relative folder path
+	 *  
+	 *  @param string	$root Search path
+	 *  @return array
+	 */
+	public static function getTree( string $root = '' ) : array {
+		static $st =	[];
+		if ( isset( $st[$root] ) ) {
+			return $st[$root];
+		}
+		
+		if ( !\is_readable( $root ) || !\is_dir( $root ) ) {
+			return [];
+		}
+		
+		// Clean root
+		$root	= static::buildPath( explode( '/', $root ) );
+		
+		try {
+			$dir		= 
+			new \RecursiveDirectoryIterator( 
+				$root, 
+				\FilesystemIterator::FOLLOW_SYMLINKS | 
+				\FilesystemIterator::KEY_AS_FILENAME
+			);
+			$it		= 
+			new \RecursiveIteratorIterator( 
+				$root, 
+				\RecursiveIteratorIterator::LEAVES_ONLY,
+				\RecursiveIteratorIterator::CATCH_GET_CHILD 
+			);
+			
+			$it->rewind();
+			
+			// Temp array for sorting
+			$tmp	= \iterator_to_array( $it, true );
+			\rsort( $tmp, \SORT_NATURAL );
+			
+			$st[$root]	= $tmp;
+			return $tmp;
+			
+		} catch( \Exception $e ) {
+			errors( 
+				'Error retrieving files from ' . $pd . ' ' . 
+				$e->getMessage() ?? 
+					'Directory search exception'
+			);
+		}
+		
+		return [];
+	}
 }
 
