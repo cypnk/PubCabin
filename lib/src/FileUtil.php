@@ -12,6 +12,12 @@ final class FileUtil {
 	private static $loaded	= [];
 	
 	/**
+	 *  Loaded folder trees
+	 *  @var array
+	 */
+	private static $folders	= [];
+	
+	/**
 	 *  Loaded file contents as arrays of lines
 	 *  @var array
 	 */
@@ -363,18 +369,17 @@ final class FileUtil {
 	 *  @param string	$root Search path
 	 *  @return array
 	 */
-	public static function getTree( string $root = '' ) : array {
-		static $st =	[];
-		if ( isset( $st[$root] ) ) {
-			return $st[$root];
+	public static function getTree( string $root ) : array {
+		// Clean root
+		$root	= static::buildPath( explode( '/', $root ) );
+		
+		if ( isset( static::$folders[$root] ) ) {
+			return static::$folders[$root];
 		}
 		
 		if ( !\is_readable( $root ) || !\is_dir( $root ) ) {
 			return [];
 		}
-		
-		// Clean root
-		$root	= static::buildPath( explode( '/', $root ) );
 		
 		try {
 			$dir		= 
@@ -396,7 +401,7 @@ final class FileUtil {
 			$tmp	= \iterator_to_array( $it, true );
 			\rsort( $tmp, \SORT_NATURAL );
 			
-			$st[$root]	= $tmp;
+			static::$folders[$root]	= $tmp;
 			return $tmp;
 			
 		} catch( \Exception $e ) {
