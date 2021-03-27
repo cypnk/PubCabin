@@ -80,6 +80,15 @@ abstract class Module {
 	}
 	
 	/**
+	 *  Get list of currently loaded modules
+	 *  
+	 *  @return array
+	 */
+	protected function getLoadedModules() : array {
+		return \array_keys( static::$loaded );
+	}
+	
+	/**
 	 *  Get already loaded dependency
 	 *  
 	 *  @param string	$module		Module short class name
