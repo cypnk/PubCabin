@@ -47,15 +47,40 @@ class Response extends Message {
 	/**
 	 *  Flush and end all output buffers
 	 *  
-	 *  @param bool		$end	End execution if true
+	 *  @param bool		$done	End execution if true
 	 */
-	public function flushBuffers( bool $end = false ) {
+	public function flushBuffers( bool $done = false ) {
 		while ( \ob_get_level() > 0 ) {
 			\ob_end_flush();
 		}
 		
-		if ( $end ) {
+		if ( $done ) {
 			die();
+		}
+	}
+	
+	/**
+	 *  Erase and end all output buffers
+	 *  
+	 *  @param bool		$done	End execution if true
+	 */
+	public function eraseBuffers( bool $done = false ) {
+		while ( false !== \ob_get_length() ) {
+			\ob_end_clean();
+		}
+		
+		if ( $done ) {
+			die();
+		}
+	}
+	
+	/**
+	 *  Send all currently set headers
+	 */
+	public function sendHeaders() {
+		$headers = \array_unique( $this->headers );
+		foreach ( $headers as $h ) {
+			\header( $h, true );
 		}
 	}
 	
@@ -171,19 +196,14 @@ class Response extends Message {
 		}
 		
 		$this->scrubOutput();
-		
-		$headers = \array_unique( $this->headers );
-		foreach ( $headers as $h ) {
-			\header( $h, true );
-		}
-		
-		// Flush and end buffers
-		$this->flushBuffers();
+		$this->sendHeaders();
 		
 		if ( $this->ifModified( $etag ) && !$nosend ) {
 			\readfile( $path );
 		}
-		die();
+		
+		// Flush and end buffers
+		$this->flushBuffers( true );
 	}
 	
 	/**
@@ -307,10 +327,7 @@ class Response extends Message {
 			\ob_start( 'ob_gzhandler' );
 		}
 		
-		$headers = \array_unique( $this->headers );
-		foreach ( $headers as $h ) {
-			\header( $h, true );
-		}
+		$this->sendHeaders();
 		
 		// Send to visitor
 		echo $content;
@@ -455,4 +472,38 @@ class Response extends Message {
 		\http_response_code( 500 );
 		$this->flushBuffers( true );
 	}
+	
+	/**
+	 *  Redirect with status code
+	 *  
+	 *  @param int		$code	HTTP Status code
+	 *  @param string	$path	Full URL to from current domain
+	 */
+	public function redirect(
+		int		$code		= 200,
+		string		$path		= ''
+	) {
+		$url	= \parse_url( $path );
+		$host	= $url['host'] ?? '';
+		
+		// Arbitrary redirect attempt?
+		if ( 0 !== \strcasecmp( $host, $_SERVER['SERVER_NAME'] ) ) {
+			errors( 'Invalid URL: ' . $path );
+			$this->eraseBuffers( true );
+		}
+		
+		// Get get current path
+		$path	= $host . 
+		\PubCabin\Util::slashPath( $url['path'] ?? '' );
+		
+		// Directory traversal
+		$path	= \preg_replace( '/\.{2,}', '.', $path );
+		
+		if ( false === \headers_sent() ) {
+			\header( 'Location: ' . $path, true, $code );
+		}
+		
+		$this->eraseBuffers( true );
+	}
 }
+
