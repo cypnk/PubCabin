@@ -19,6 +19,16 @@ class Module extends \PubCabin\Modules\Module {
 	public function __construct() {
 		parent::__construct();
 		
+		$hooks	= $this->getModule( 'Hooks' );
+		
+		// Register session request start
+		$hooks->event( [ 'request', [ $this, 'begin' ] );
+	}
+	
+	/**
+	 *  Register session start and end handler
+	 */
+	public function begin() {
 		/**
 		 *  Set session handler functions
 		 */
