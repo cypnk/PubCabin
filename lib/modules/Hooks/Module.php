@@ -34,7 +34,7 @@ class Module extends \PubCabin\Modules\Module {
 	 */
 	public function __destruct() {
 		// Run shutdown hooks
-		$this->register( [ 'shutdown', [] ] );
+		$this->event( [ 'shutdown', [] ] );
 		
 		// Run destruct callbacks
 		foreach( static::$_shutdown as $k => $v ) {
@@ -124,7 +124,7 @@ class Module extends \PubCabin\Modules\Module {
 		string		$event, 
 		string		$default	= '' 
 	) : string {
-		$sent	= $this->register( [ $event, '' ] );
+		$sent	= $this->event( [ $event, '' ] );
 		return 
 		( !empty( $sent ) && \is_string( $sent ) ) ? 
 			$sent : $default;
@@ -141,7 +141,7 @@ class Module extends \PubCabin\Modules\Module {
 		string		$event, 
 		array		$default	= [] 
 	) : array {
-		$sent	= $this->register( [ $event, '' ] );
+		$sent	= $this->event( [ $event, '' ] );
 		return 
 		( !empty( $sent ) && \is_array( $sent ) ) ? 
 			$sent : $default;
