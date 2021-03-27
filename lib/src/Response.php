@@ -32,6 +32,34 @@ class Response extends Message {
 	}
 	
 	/**
+	 *  Remove previously set headers, output
+	 */
+	public function scrubOutput() {
+		// Scrub output buffer
+		\ob_clean();
+		\header_remove( 'Pragma' );
+		
+		// This is best done in php.ini : expose_php = Off
+		\header( 'X-Powered-By: nil', true );
+		\header_remove( 'X-Powered-By' );
+	}
+	
+	/**
+	 *  Flush and end all output buffers
+	 *  
+	 *  @param bool		$end	End execution if true
+	 */
+	public function flushBuffers( bool $end = false ) {
+		while ( \ob_get_level() > 0 ) {
+			\ob_end_flush();
+		}
+		
+		if ( $end ) {
+			die();
+		}
+	}
+	
+	/**
 	 *  Generate ETag from file path
 	 */
 	public function genEtag( string $path ) {
@@ -133,28 +161,29 @@ class Response extends Message {
 					$fmod	= $tags['fmod'];
 					if ( !empty( $fmod ) ) {
 						$this->headers[]  =
-							'Last-Modified: ', 
-							Util::dateRfcFile( $fmod );
+						'Last-Modified: ', 
+						\PubCabin\Util::dateRfcFile( 
+							$fmod 
+						);
 					}
 				}
 			}
 		}
 		
-		// TODO: Cleanup and flush before readfile
+		$this->scrubOutput();
 		
 		$headers = \array_unique( $this->headers );
 		foreach ( $headers as $h ) {
 			\header( $h, true );
 		}
 		
-		// Send any headers and end buffering
-		while ( \ob_get_level() > 0 ) {
-			\ob_end_flush();
-		}
+		// Flush and end buffers
+		$this->flushBuffers();
 		
 		if ( $this->ifModified( $etag ) && !$nosend ) {
 			\readfile( $path );
 		}
+		die();
 	}
 	
 	/**
@@ -236,19 +265,6 @@ class Response extends Message {
 	}
 	
 	/**
-	 *  Remove previously set headers, output
-	 */
-	public function scrubOutput() {
-		// Scrub output buffer
-		\ob_clean();
-		\header_remove( 'Pragma' );
-		
-		// This is best done in php.ini : expose_php = Off
-		\header( 'X-Powered-By: nil', true );
-		\header_remove( 'X-Powered-By' );
-	}
-	
-	/**
 	 *  Print headers, content, and end execution
 	 *  
 	 *  @param int		$code		HTTP Status code
@@ -299,13 +315,8 @@ class Response extends Message {
 		// Send to visitor
 		echo $content;
 		
-		// Flush and end all output buffers
-		while ( \ob_get_level() > 0 ) {
-			\ob_end_flush();
-		}
-		
-		// End
-		die();
+		// Flush and end buffers
+		$this->flushBuffers( true );
 	}
 	
 	/**
@@ -440,6 +451,8 @@ class Response extends Message {
 		
 		// Log unkown status type
 		errors( 'Unknown status code "' . $code . '"' );
-		die();
+		
+		\http_response_code( 500 );
+		$this->flushBuffers( true );
 	}
 }
