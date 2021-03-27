@@ -136,6 +136,9 @@ CREATE TABLE translations (
 	
 	definitions TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
 	
+	-- Default locale for the language
+	is_default INTEGER NOT NULL DEFAULT 0,
+	
 	CONSTRAINT fk_date_language
 		FOREIGN KEY ( lang_id ) 
 		REFERENCES languages ( id )
@@ -143,14 +146,34 @@ CREATE TABLE translations (
 );-- --
 CREATE UNIQUE INDEX idx_translation_local ON translations( locale );-- --
 CREATE INDEX idx_translation_lang ON translations( lang_id );-- --
+CREATE INDEX idx_translation_default ON translations( is_default );-- --
+
+-- Unset any previous default language locales if new default is set
+CREATE TRIGGER locale_default_insert BEFORE INSERT ON 
+	translations FOR EACH ROW 
+WHEN NEW.is_default <> 0 AND NEW.is_default IS NOT NULL
+BEGIN
+	UPDATE translations SET is_default = 0 
+		WHERE is_default IS NOT 0 AND lang_id = NEW.lang_id;
+END;-- --
+
+CREATE TRIGGER locale_default_update BEFORE UPDATE ON 
+	translations FOR EACH ROW 
+WHEN NEW.is_default <> 0 AND NEW.is_default IS NOT NULL
+BEGIN
+	UPDATE translations SET is_default = 0 
+		WHERE is_default IS NOT 0 AND id IS NOT NEW.id 
+			AND lang_id = OLD.lang_id;
+END;-- --
 
 CREATE VIEW locale_view AS SELECT
 	t.id AS id,
 	l.label AS label,
 	l.iso_code AS iso_code,
-	l.is_default AS is_default,
+	l.is_default AS is_lang_default,
 	l.lang_group AS lang_group,
 	t.label AS locale,
+	t.is_default AS is_locale_default,
 	t.definitions AS definitions
 	
 	FROM translations t
@@ -2515,8 +2538,8 @@ INSERT INTO languages (
 
 -- Translations are JSON which need placeholder replacements before parsing
 INSERT INTO translations (
-	id, locale, lang_id, definitions
-) VALUES ( 1, 'us', 1, '{
+	id, locale, lang_id, is_default, definitions
+) VALUES ( 1, 'us', 1, 1, '{
 	"date_nice"	: "l, F j, Y",
 	"headings"	: {
 		"related"	: "Related", 
