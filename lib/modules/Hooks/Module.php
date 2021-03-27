@@ -80,10 +80,7 @@ class Module extends \PubCabin\Modules\Module {
 		
 		// Adding a handler to the given event?
 		// Need an event name and a handler
-		if ( 
-			\is_string( $params[0] )	&& 
-			\is_callable( $params[0] )
-		) {
+		if ( \is_callable( $params[0] ) ) {
 			$this->handlers[$name][]	= $params[0];
 			
 		// Handler being called with parameters, if any
