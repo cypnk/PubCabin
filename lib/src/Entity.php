@@ -8,6 +8,31 @@ namespace PubCabin;
 abstract class Entity {
 	
 	/**
+	 *  Main database name
+	 */
+	const MAIN_DATA			= 'main.db';
+	
+	/**
+	 *  Session database name
+	 */
+	const SESSION_DATA		= 'session.db';
+	
+	/**
+	 *  Cache database name
+	 */
+	const CACHE_DATA		= 'cache.db';
+	
+	/**
+	 *  Data logging database name
+	 */
+	const LOGS_DATA			= 'logs.db';
+	
+	/**
+	 *  Moderation and content filtering database name
+	 */
+	const FILTER_DATA		= 'filter.db';
+	
+	/**
 	 *  Database index primary key (set once)
 	 *  @var int
 	 */
