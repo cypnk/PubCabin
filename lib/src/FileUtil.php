@@ -25,6 +25,23 @@ final class FileUtil {
 	
 	
 	/**
+	 *  Build a coherent path from given set of components
+	 * 
+	 *  @params array	$segs	List of directories and/or file
+	 */
+	public static function buildPath( array $segs ) {
+		if ( empty( $segs ) ) {
+			return '';
+		}
+		
+		return 
+		\strtr( 
+			implode( '/', $segs ), 
+			[ '//' => '/', '..' => '' ] 
+		);
+	}
+	
+	/**
 	 *  Split a block of text into an array of lines
 	 *  
 	 *  @param string	$text	Raw text to split into lines
