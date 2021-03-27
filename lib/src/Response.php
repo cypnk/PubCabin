@@ -337,6 +337,27 @@ class Response extends Message {
 	}
 	
 	/**
+	 *  Send file with ETag data
+	 *  
+	 *  @param string	$path	File path after confirming it exists
+	 */
+	public function sendWithEtag( $path ) : bool {
+		$tags	= $this->genEtag( $path );
+		
+		// Couldn't generate ETag?
+		// Either filesize() or filemtime() failed
+		if ( empty( $tags['etag'] ) ) {
+			return false;
+		}
+		
+		// Create return code based on returned ETag
+		$code	= $this->ifModified( $tags['etag'] )? 200 : 304;
+		
+		// Send on success
+		return $this->sendFile( $path, false, true, $code );
+	}
+	
+	/**
 	 *  Safety headers
 	 *  
 	 *  @param string	$chk	Content checksum
