@@ -3,7 +3,7 @@
  *  @file	/lib/modules/Module/Files/Captcha.php
  *  @brief	Bot test image generator (requires GD)
  */
-namespace PubCabin\Modules\Forms;
+namespace PubCabin\Modules\Files;
 
 class Captcha {
 	
