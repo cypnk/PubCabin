@@ -1,6 +1,6 @@
 <?php declare( strict_types = 1 );
 /**
- *  @file	/lib/modules/Module/Forms/Captcha.php
+ *  @file	/lib/modules/Module/Files/Captcha.php
  *  @brief	Bot test image generator (requires GD)
  */
 namespace PubCabin\Modules\Forms;
