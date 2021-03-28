@@ -259,6 +259,8 @@ class Html {
 	 */
 	public static function tidyup( string $text ) : string {
 		static $newtags;
+		static $opt;
+		
 		if ( \PubCabin\Util::missing( 'tidy_repair_string' ) ) {
 			return $text;
 		}
@@ -269,18 +271,20 @@ class Html {
 			// TODO Custom tag hooks
 		}
 		
-		$opt = [
-			'bare'					=> 1,
-			'hide-comments' 			=> 1,
-			'drop-proprietary-attributes'		=> 1,
-			'fix-uri'				=> 1,
-			'join-styles'				=> 1,
-			'output-xhtml'				=> 1,
-			'merge-spans'				=> 1,
-			'show-body-only'			=> 1,
-			'new-blocklevel-tags'			=> $newtags,
-			'wrap'					=> 0
-		];
+		if ( !isset( $opt ) ) {
+			$opt = [
+				'bare'				=> 1,
+				'hide-comments' 		=> 1,
+				'drop-proprietary-attributes'	=> 1,
+				'fix-uri'			=> 1,
+				'join-styles'			=> 1,
+				'output-xhtml'			=> 1,
+				'merge-spans'			=> 1,
+				'show-body-only'		=> 1,
+				'new-blocklevel-tags'		=> $newtags,
+				'wrap'				=> 0
+			];
+		}
 		
 		return \trim( \tidy_repair_string( $text, $opt ) );
 	}
