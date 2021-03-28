@@ -51,6 +51,12 @@ abstract class Module {
 	 */
 	protected static $request;
 	
+	/**
+	 *  Template render helper
+	 *  @var \PubCabin\Render
+	 */
+	protected static $render;
+	
 	abstract public function dependencies() : array;
 	
 	public function __construct() {
@@ -127,6 +133,24 @@ abstract class Module {
 			new \PubCabin\Request( $config );
 		}
 		return static::$request;
+	}
+	
+	/**
+	 *  Get or load template rendering helper
+	 *  
+	 *  @return \PubCabin\Request
+	 */
+	public function getRender() {
+		if ( !isset( static::$render ) ) {
+			$config = $this->getConfig();
+			if ( empty( $config ) ) {
+				return null;
+			}
+			
+			static::$render	= 
+			new \PubCabin\Render( $config );
+		}
+		return static::$render;
 	}
 	
 	/**
