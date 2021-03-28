@@ -50,6 +50,8 @@ class Module extends \PubCabin\Modules\Module {
 		$this->getConfig()->overrideDefaults( 
 			[ 'translations' => $lang->translations ]
 		);
+		
+		// TODO Override site style templates from database
 	}
 	
 	/**
@@ -86,5 +88,39 @@ class Module extends \PubCabin\Modules\Module {
 		
 		return $this->language;
 	}
+	
+	/**
+	 *  Override the default templates with site specific styles
+	 *  
+	 *  @param int		$id	Current site ide
+	 *  @param string	$area	Rendered area
+	 */
+	public function setRenderTemplates( int $id, string $area ) {
+		$tpl	= [];
+		$db	= $this->getData()->getDb( static::MAIN_DATA );
+		$stm	= 
+		$db->prepare(
+			"SELECT * FROM area_view WHERE 
+				site_id = :id AND area = :area"
+		);
+		
+		$rows	= 
+		$db->getDataResult( $db, [ 
+			':id'	=> $id, 
+			':area'	=> $area
+		], $stm );
+		
+		foreach ( $rows as $r ) {
+			$tpl = 
+			\array_combine( 
+				explode( '|', $r['templates'] ), 
+				explode( '|', $r['template_render'] )
+			);
+			break;
+		}
+		
+		$this->getRender()->template( '', $tpl );
+	}
+	
 }
 
