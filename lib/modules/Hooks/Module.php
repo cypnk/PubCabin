@@ -25,6 +25,9 @@ class Module extends \PubCabin\Modules\Module {
 	 */
 	private static $_shutdown	= [];
 	
+	/**
+	 *  This is the base event module and shouldn't have dependencies
+	 */
 	public function dependencies() : array {
 		return [];
 	}
@@ -157,6 +160,71 @@ class Module extends \PubCabin\Modules\Module {
 	) : string {
 		return 
 		$this->arrayResult( $event )['html'] ?? $default;
+	}
+	
+	/**
+	 *  Get HTML render template from hook result, if sent
+	 *  
+	 *  @param string	$event		Hook event name
+	 *  @param string	$default	Fallback template
+	 *  @param array	$input		Component to apply template to
+	 *  @param bool		$full		Render full regions
+	 *  @return string
+	 */
+	public function templateRender( 
+		string	$event, 
+		string	$default,
+		array	$input,
+		bool	$full	= false
+	) : string {
+		$render = $this->getRender();
+		return 
+		$render->parse( 
+			$this->arrayResult( $event )['template'] ?? 
+			$this->stringResult( $event, $default ), $input, $full
+		);
+	}
+	
+	/**
+	 *  Wrap component region in 'before' and 'after' event hooks and their output
+	 *  
+	 *  @param string	$before		Before template parsing event
+	 *  @param string	$after		After template parsing event
+	 *  @param string	$tpl		Base component template
+	 *  @param array	$input		Raw component data
+	 *  @param bool		$full		Render full regions
+	 *  @return string
+	 */
+	public function wrap( 
+		string		$before, 
+		string		$after, 
+		string		$tpl		= '', 
+		array		$input		= [],
+		bool		$full		= false
+	) {
+		// Call "before" event hook
+		$this->event( [ $before, [ 
+			'data'		=> $input, 
+			'template'	=> $tpl, 
+			'full'		=> $full 
+		] ] );
+		
+		// Prepend any HTML output and render the new ( or old ) template
+		$html	= 
+			$this->html( $before ) . 
+			$this->templateRender( $before, $tpl, $input, $full );
+	
+		// Call "after" event hook
+		$this->event( [ $after, [ 
+			'data'		=> $input,	// Raw component data
+			'before'	=> $before,	// Event called before
+			'html'		=> $html,	// Current HTML
+			'full'		=> $full,	// Full region render
+			'template'	=> $tpl		// New or previously replaced
+		] ] );
+		
+		// Send any replaced HTML or already rendered HTML
+		return $this->html( $after, $html );
 	}
 	
 	/**
