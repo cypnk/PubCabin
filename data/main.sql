@@ -3182,9 +3182,109 @@ VALUES
 	type="button" id="{id}" name="{name}" value="{value}" 
 	class="{button_classes}" {extra}>{input_button_after}{input_after}' ), 
 
-( 1, 'tpl_data_pfx', 'data-{term}="{value}"' );-- --
+( 1, 'tpl_data_pfx', 'data-{term}="{value}"' ), 
 
+( 1, 'tpl_breadcrumbs', '{crumbs_before}
+<nav class="{crumb_classes}">
+<ul class="{crumb_wrap_classes}">{crumbs_links_before}{links}{crumbs_links_before}</ul>
+</nav>{crumbs_after}' ), 
 
+( 1, 'tpl_sub_breadcrumbs', '{crumbs_sub_before}<nav class="{crumb_sub_classes}">
+{crumbs_sub_ul_before}
+<ul class="{crumb_sub_wrap_classes}">{links}</ul>{crumbs_sub_ul_after}
+</nav>{crumbs_sub_after}' ), 
+
+( 1, 'tpl_crumb_link', '<li class="{crumb_item_classes}">{crumb_link_before}
+<a href="{url}" class="{crumb_link_classes}">{label}</a>{crumb_link_after}
+</li>' ), 
+
+( 1, 'tpl_crumb_current','<li class="{crumb_current_classes}">{crumb_current_before}
+<span class="{crumb_current_item}" title="{url}">{label}</span>{crumb_current_after}
+</li>' ), 
+
+( 1, 'tpl_page_current_link', '<li class="{nav_current_classes}"><span 
+class="{nav_current_s_classes}" title="{url}">{text}</span></li>' ), 
+
+( 1, 'tpl_page_prev_link', '<li class="{nav_prev_classes}"><a 
+href="{url}" class="{nav_prev_a_classes}">Previous</a></li>' ), 
+
+( 1, 'tpl_page_noprev','<li class="{nav_noprev_classes}"><span 
+class="{nav_noprev_s_classes}">Previous</span></li>' ), 
+
+( 1, 'tpl_page_next_link','<li class="{nav_next_classes}"><a 
+href="{url}" class="{nav_next_a_classes}">Next</a></li>' ), 
+
+( 1, 'tpl_page_nonext', '<li class="{nav_nonext_classes}"><span 
+class="{nav_nonext_s_classes}">Next</span></li>' ), 
+
+( 1, 'tpl_page_first2', '<li class="{nav_first1_classes}"><a href="{url1}" class="{nav_first1_a_classes}">{text1}</a></li>
+	<li class="{nav_first2_classes}"><a href="{url2}" class="{nav_first2_a_classes}">{text2}</a></li>
+	<li class="{nav_first_s_classes}">...</li>' ), 
+
+( 1, 'tpl_page_last2','<li class="{nav_last_s_classes}">...</li>
+	<li class="{nav_last1_classes}"><a href="{url1}" class="{nav_last1_a_classes}">{text1}</a></li>
+	<li class="{nav_last2_classes}"><a href="{url2}" class="{nav_last2_a_classes}">{text2}</a></li>' ), 
+
+( 1, 'tpl_page_list', '<div class="{list_wrap_classes}">
+	<h3 class="list_h_classes">{heading}</h3>
+	<nav class="{list_classes}"><ul>{links}</ul></nav>
+</div>' ), 
+
+( 1, 'tpl_pagination', '<div class="{pagination_wrap_classes}">
+<nav class="{pagination_classes}">
+<ul class="{pagination_ul_classes}">{links}</ul>
+</nav>
+</div>' ), 
+
+( 1, 'tpl_id_field', '<input type="hidden" name="id" value="{id}">' ), 
+
+( 1, 'tpl_input_submit', '{input_before}{input_submit_before}<input type="submit" id="{id}" 
+	name="{name}" value="{value}" class="{submit_classes}" 
+	{extra}>{input_submit_after}{input_after}' ), 
+
+( 1, 'tpl_input_submit_alt', '{input_before}{input_submit_before}{input_submit_alt_before}<input 
+	type="submit" id="{id}" name="{name}" value="{value}" class="{alt_classes}" 
+	{extra}>{input_submit_after}{input_submit_alt_after}{input_after}' ), 
+
+( 1, 'tpl_input_submit_warn', '{input_before}{input_warn_before}<input type="submit" name="{name}" 
+	value="{value}" class="{warn_classes}" 
+	{extra}>{input_warn_after}{input_after}' ), 
+
+( 1, 'tpl_input_submit_action', '{input_before}{input_action_before}<input type="submit" name="{name}" 
+	value="{value}" class="{action_classes}" 
+	{extra}>{input_action_after}{input_after}' ), 
+
+( 1, 'tpl_form_block', '{form_before}{form_block_before}
+<form id="{id}" action="{action}" method="{method}" enctype="{enctype}" 
+	class="{form_classes}" 
+	{extra}>{form_input_before}{fields}{form_input_after}</form>
+{form_block_after}{form_after}' ), 
+
+( 1, 'tpl_form', '{form_before}{form_inline_before}
+<form id="{form_classes}" method="{method}" action="{action}" 
+	enctype="{enctype}" accept-charset="UTF-8" 
+	{extra}>{form_input_before}{fields}{form_input_after}</form>
+{form_inline_after}{form_after}' ), 
+
+( 1, 'tpl_form_fieldset', '{input_fieldset_before}<fieldset 
+	class="{fieldset_classes}">{input}</fieldset>{input_fieldset_after}' ), 
+
+( 1, 'tpl_form_input_wrap', '{input_wrap_before}<p 
+class="{input_wrap_classes}">{input}</p>{input_wrap_after}' ), 
+
+( 1, 'tpl_form_button_wrap', '{button_wrap_before}<p 
+class="{button_wrap_classes}">{buttons}</p>{button_wrap_after}' ), 
+
+( 1, 'tpl_picture', '{picture_wrap_before}<figure 
+class="{picture_wrap_classes}">{picture}
+	<figcaption class="{picture_caption_classes}">{caption}</figcaption>
+</figure>{picture_wrap_after}' ), 
+
+( 1, 'tpl_picture_nd', '{picture_wrap_before}<figure 
+class="{picture_wrap_classes}">{picture}</figure>{picture_wrap_after}' ), 
+
+( 1, 'tpl_gallery', '{gallery_wrap_before}<div 
+class="{gallery_wrap_classes}">{pictures}</div>{gallery_wrap_after}' );-- --
 
 
 
