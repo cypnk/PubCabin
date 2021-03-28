@@ -42,6 +42,14 @@ class Module extends \PubCabin\Modules\Module {
 		$db	= $this->getData();
 		
 		// TODO Load websites and configuration
+		
+		// Current visitor language
+		$lang = $this->getLanguage();
+		
+		// Override preconfigured language definitions
+		$this->getConfig()->overrideDefaults( 
+			[ 'translations' => $lang->translations ]
+		);
 	}
 	
 	/**
@@ -72,9 +80,9 @@ class Module extends \PubCabin\Modules\Module {
 		
 		
 		$this->language = 
-			\PubCabin\Core\Language( 
-				$this->getData(), $req->getLang()
-			);
+		\PubCabin\Core\Language( 
+			$this->getData(), $req->getLang()
+		);
 		
 		return $this->language;
 	}
