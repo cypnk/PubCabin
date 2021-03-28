@@ -181,7 +181,9 @@ class Module extends \PubCabin\Modules\Module {
 		return 
 		$render->parse( 
 			$this->arrayResult( $event )['template'] ?? 
-			$this->stringResult( $event, $default ), $input, $full
+			$this->stringResult( $event, $default ), $input, 
+			$this->config-setting( 'translations', 'json' ) ?? [],
+			$full
 		);
 	}
 	
