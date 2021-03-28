@@ -8,6 +8,21 @@ namespace PubCabin\Modules\Forms;
 class Input {
 	
 	/**
+	 *  Default textarea columns
+	 */
+	const RENDER_MULTILINE_COLS = 60;
+	
+	/**
+	 *  Default textarea rows
+	 */
+	const RENDER_MULTILINE_ROWS = 10;
+	
+	/**
+	 *  Form module
+	 */
+	protected $module;
+	
+	/**
 	 *  Supported input types
 	 *  @var array
 	 */
@@ -163,7 +178,11 @@ HTML
 HTML;
 	
 	
-	
+	public function __construct( 
+		\PubCabin\Modules\Forms\Module $_module 
+	) {
+		$this->module = $_module;
+	}
 	
 	public function validate( array $params ) : bool {
 		// TODO Form field validation
@@ -285,7 +304,390 @@ HTML;
 		}
 	}
 	
+	/**
+	 *  This section uses the Styles module
+	 */
 	
+	/**
+	 *  Create a user input form and apply hooks per placeholder
+	 *  
+	 *  @param string	$name		Form name (also used for XSRF)
+	 *  @param array	$fields		Form content input defaults
+	 *  @param string	$action		Posting location
+	 *  @param array	$buttons	Form  submission or other buttons
+	 *  @param string	$method		Form submission method
+	 *  @param string	$enctype	Form encoding type
+	 *  @param bool		$is_block	Block level form if true
+	 *  @return string
+	 */
+	public function createForm(
+		string	$name,
+		array	$fields,
+		string	$action,
+		array	$buttons	= [],
+		string	$method		= 'get',
+		string	$enctype	= '',
+		bool	$is_block	= true
+	) : string {
+		$config = $this->module->getConfig();
+		
+		// Check posting method
+		if ( 0 != \strncasecmp( $method, 'get' ) ) {
+			$ap	= 
+			$config->setting( 'allow_post', 'bool' ) ?? false;
+			
+			if ( !$ap || 0 != \strncasecmp( $method, 'post' )) {
+				// Don't build this form in a method that isn't allowed
+				return '';
+			}
+		}
+		
+		$hooks	= $this->module->getModule( 'Hooks' );
+		$render	= $this->module->getRender();
+		
+		// Inline or block type form
+		$tpl	= $is_block ? 'tpl_form_block' : 'tpl_form';
+		
+		// Filter encoding type
+		$enctype= Html::cleanFormEnctype( $enctype );
+		
+		// Hook options
+		$opts	= [ 
+			'name'		=> $name, 
+			'is_block'	=> $is_block, 
+			'fields'	=> $fields, 
+			'buttons'	=> $buttons 
+		];
+		
+		// Pre-input hooks
+		$hooks->event( [ 'formbefore', $opts ] );
+		
+		// Call block level or inline level form hooks
+		// Replace input fields if needed
+		if ( $is_block ) {
+			$hooks->event( [ 'formblockbefore', $opts ] );
+			$opts = $hooks->arrayResult( 'formblockbefore', $opts );
+		} else {
+			$hooks->event( [ 'forminlinebefore', $opts ] );
+			$opts = $hooks->arrayResult( 'formblockbefore', $opts );
+		}
+		
+		$hooks->event( [ 'forminputbefore', $opts ] );
+		
+		// Create anti-XSRF token fields before other fields
+		$pair	= $this->module->genNoncePair( $name );
+		$out	= 
+		$hooks->wrap( 
+			'before'. $name .'xsrf',
+			'after'. $name .'xsrf',
+			$render->template( 'tpl_input_xsrf' ), 
+			[ 
+				'nonce'	=> $pair['nonce'], 
+				'token'	=> $pair['token'] 
+			]
+		);
+		
+		$itpl = '';
+		// Append other fields
+		foreach ( $opts['fields'] as $f ) {
+			$out .= $this->createFormField( $f );
+		}
+		
+		// Append buttons
+		$btn	= '';
+		$hooks->event( [ 'buttonwrapbefore', $opts ] );
+		$hooks->event( [ 'buttonwrapafter', $opts ] );
+		foreach ( $buttons as $b ) {
+			$btn .= 
+			$this->createInputField( 
+				$f['name'] ?? '', 
+				$f['template'] ?? 'tpl_input_submit', $f, true
+			);
+		}
+		
+		$out	.= 
+		$render->parse( $render->template( 'tpl_form_button_wrap' ), [ 
+			'button_wrap_before'	=> $hooks->stringResult( 'buttonwrapbefore' ),
+			'button_wrap_after'	=> $hooks->stringResult( 'buttonwrapafter' ),
+			'buttons'		=> $btn
+		] );
+		
+		// Post-input hooks
+		$hooks->event( [ 'forminputafter', $opts ] );
+		if ( $is_block ) {
+			$hooks->event( [ 'formblockafter',  $opts ] );
+		} else {
+			$hooks->event( [ 'forminlineafter', $opts ] );
+		}
+		
+		// Form after event
+		$hooks->( [ 'formafter', $opts ] );
+		
+		// Append template placeholders
+		$vars	= [
+			'form_before'		=> $hooks->stringResult( 'formbefore' ), 
+			'form_after'		=> $hooks->stringResult( 'formafter' ),
+			'form_input_before'	=> $hooks->stringResult( 'forminputbefore' ),
+			'form_input_after'	=> $hooks->stringResult( 'forminputafter' ),
+			'fields'		=> $out
+		];
+		
+		if ( $is_block ) {
+			$vars['form_block_before']	= $hooks->stringResult( 'formblockbefore' );
+			$vars['form_block_after']	= $hooks->stringResult( 'formblockafter' );
+		} else {
+			$vars['form_inline_before']	= $hooks->stringResult( 'forminlinebefore' );
+			$vars['form_inline_after']	= $hooks->stringResult( 'forminlineafter' );
+		}
+		
+		return $render->parse( $render->template( $tpl ), $vars );
+	}
+
+	/**
+	 *  Create an input field and apply hooks per placeholder
+	 *  
+	 *  @param string		$name		Input field name
+	 *  @param string		$tpl		Rendering template
+	 *  @param array		$vars		Starting default values
+	 *  @return string
+	 */
+	public function createInputField(
+		string		$name, 
+		string		$tpl, 
+		array		$vars
+	) : string {
+		// Set field ID if not already set
+		$vars['id']	= $vars['id'] ?? $name;
+		
+		// Input specific hook events
+		$nbf		= 'input' . $name . 'before';
+		$naf		= 'input' . $name . 'after';
+		
+		// Hook settings
+		$opts		= [ 'name' => $name, 'details' => $vars ];
+		
+		$hooks	= $this->module->getModule( 'Hooks' );
+		$render	= $this->module->getRender();
+		
+		/**
+		 *  Run field hooks
+		 */
+		// General input before/after hooks
+		$hooks->event( [ 'inputbefore', $opts ] );
+		$hooks->event( [ 'inputafter', $opts ] );
+		
+		// Input name specific before/after hooks
+		$hooks->event( [ $nbf, $opts ] );
+		$hooks->event( [ $naf, $opts ] );
+		
+		// Input label and special detail hooks
+		$hooks->event( [ 'labelbefore', $opts ] );
+		$hooks->event( [ 'labelafter', $opts ] );
+		
+		$hooks->event( [ 'specialbefore', $opts ] );
+		$hooks->event( [ 'specialafter', $opts ] );
+	
+		// Input field hooks
+		$hooks->event( [ 'inputfieldbefore', $opts ] );
+		$hooks->event( [ 'inputfieldafter', $opts ] );
+		
+		// Description/help info hooks
+		$hooks->event( [ 'desc_before', $opts ] );
+		$hooks->event( [ 'desc_after', $opts ] );
+		
+		// Form field input wrap
+		$hooks->event( [ 'inputwrapbefore', $opts ] );
+		$hooks->event( [ 'inputwrapafter', $opts ] );
+		
+		$out		= 
+		\array_merge( $vars, [
+			'input_before'			=> $hooks->stringResult( 'inputbefore' ),
+			'input_after'			=> $hooks->stringResult( 'inputafter' ),
+			
+			'input_' . $name .'_before'	=> $hooks->stringResult( $nbf ),
+			'input_' . $name .'_after'	=> $hooks->stringResult( $naf ),
+			
+			'label_before'			=> $hooks->stringResult( 'labelbefore' ),
+			'input_after'			=> $hooks->stringResult( 'labelafter' ),
+			
+			'special_before'		=> $hooks->stringResult( 'specialbefore' ),
+			'special_after'			=> $hooks->stringResult( 'specialafter' ),
+			
+			'input_field_before'		=> $hooks->stringResult( 'inputfieldbefore' ),
+			'input_field_before'		=> $hooks->stringResult( 'inputfieldafter' ),
+			
+			'desc_before'			=> $hooks->stringResult( 'descbefore' ),
+			'desc_after'			=> $hooks->stringResult( 'descafter' ),
+		] );
+		
+		// Select is a special type
+		$input	= 
+		( 0 == \strcasecmp( $vars['type'] ?? '', 'select' ) ) ? 
+			$this->createSelect(
+			$tpl,
+			$out,
+			$vars['options'] ?? []
+		) : $render->parse( $tpl, $out );
+		
+		return 
+		$render->parse( 
+			$render->template( 'tpl_form_input_wrap' ), 
+			[ 
+				'input_wrap_before'	=> $hooks->stringResult( 'inputwrapbefore' ),
+				'input_wrap_after'	=> $hooks->stringResult( 'inputwrapafter' ),
+				'input'			=> $input
+			] 
+		);
+	}
+	
+	/**
+	 *  Create select input field from options
+	 */
+	public function createSelect(
+		string		$tpl, 
+		array		$vars, 
+		array		$opts 
+	) : string {
+		$out	= '';
+		$render	= $this->module->getRender();
+		
+		foreach ( $opts as $o ) {
+			$out	.= 
+			$render->parse( 
+				$render->template( 'tpl_input_select_opt' ), 
+				[
+					'value'		=> $o[0],
+					'text'		=> $o[1],
+					'selected'	=> $o[2] ? 'selected' : ''
+				] 
+			);
+		}
+		
+		return 
+		$render->parse( $tpl, \array_merge( $vars, [ 
+			'options' => $out 
+		] ) );
+	}
+	
+	/**
+	 *  Create select box and wrap data in 'before' and 'after' event output
+	 *  
+	 *  @param string	$before		Before template parsing event
+	 *  @param string	$after		After template parsing event
+	 *  @param string	$tpl		Base component template
+	 *  @param array	$input		Raw select dropdown data
+	 *  @param array	$opts		Select dropdown options list
+	 *  
+	 *  @return string
+	 */
+	public function hookSelectWrap( 
+		string		$before, 
+		string		$after, 
+		string		$tpl, 
+		array		$input, 
+		array		$opts 
+	) {
+		return 
+		$this->module->getModule( 'Hooks' )->wrap( 
+			$before, 
+			$after, 
+			$this->createSelect( $tpl, $input, $opts ),
+			$input	
+		);
+	}
+	
+	/**
+	 *  Form field template selection helper based on input type
+	 *  
+	 *  @param array	$field		Form field parameters
+	 */
+	public function createFormField( array $field ) {
+		$tpl	= '';
+		$type	= 
+		\PubCabin\Util::lowercase( $field['type'] ?? '' );
+		
+		$render	= $this->module->getRender();
+		$config = $this->module->getConfig();
+		
+		// Try to retrieve given template or use default based on type
+		switch ( $type ) {
+			case 'select':
+				$tpl = $field['template'] ?? 
+				$render->template( 'tpl_input_select' );
+				break;
+			
+			case 'text':
+				$tpl = $field['template'] ?? 
+				$render->template( 'tpl_input_text' );
+				break;
+				
+			case 'date-time':
+			case 'datetime':
+				$tpl = $field['template'] ?? 
+				$render->template( 'tpl_input_datetime' );
+				break;
+				
+			case 'email':
+				$tpl = $field['template'] ?? 
+				$render->template( 'tpl_input_email' );
+				break;
+				
+			case 'pass':
+			case 'password':
+				$tpl = $field['template'] ?? 
+				$render->template( 'tpl_input_pass' );
+				break;
+			
+			case 'textarea':
+			case 'multiline':
+				$tpl = $field['template'] ?? 
+				$render->template( 'tpl_input_multiline' );
+				
+				// Set textarea defaults
+				$field['rows'] = 
+				\PubCabin\Util::intRange(
+					$field['rows'] ?? 
+					$config->setting( 
+						'render_multiline_rows', 
+						'int' ) ?? self::RENDER_MULTILINE_ROWS,
+					1, 10000
+				);
+				$field['cols'] = 
+				\PubCabin\Util::intRange(
+					$field['cols'] ?? 
+					$config->setting( 
+						'render_multiline_cols', 
+						'int' ) ?? self::RENDER_MULTILINE_COLS,
+					1, 1000
+				);
+				
+				break;
+				
+			case 'checkbox':
+				$tpl = 
+				$field['template'] ?? 
+					$render->template( 'tpl_input_checkbox' );
+				break;
+				
+			case 'file':
+			case 'upload':
+				$tpl = 
+				$field['template'] ?? 
+					$render->template( 'tpl_input_upload' );
+				break;
+			
+			// This only works if 'type' is given, E.G. number, range etc...
+			default:
+				$tpl = 
+				$field['template'] ?? \strtr( 
+					$render->template( 'tpl_input_field' ), 
+					[ '{input}' => $render->template( 'tpl_input' ) ]
+				);
+		}
+		
+		return 
+		$this->createInputField( $field['name'] ?? '', $tpl, $field, true );
+	}
 }
 
 
