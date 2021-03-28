@@ -100,7 +100,7 @@ abstract class Module {
 	 *  @param string	$module		Module short class name
 	 *  @return mixed
 	 */
-	protected function getModule( string $module ) {
+	public function getModule( string $module ) {
 		return static::$loaded[$module] ?? null;
 	}
 	
@@ -109,7 +109,7 @@ abstract class Module {
 	 *  
 	 *  @return \PubCabin\Config
 	 */
-	protected function getConfig() {
+	public function getConfig() {
 		if ( !isset( static::$config ) ) {
 			static::$config		= 
 			new \PubCabin\Config();
@@ -158,7 +158,7 @@ abstract class Module {
 	 *  
 	 *  @return \PubCabin\Data
 	 */
-	protected function getData() {
+	public function getData() {
 		if ( !isset( static::$data ) ) {
 			$config	= $this->getConfig();
 			if ( empty( $config ) ) {
