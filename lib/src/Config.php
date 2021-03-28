@@ -351,5 +351,34 @@ JSON
 				static::$defaults[$name];
 		}
 	}
+	
+	/**
+	 *  Helper to determine if given hash algo exists or returns default
+	 *  
+	 *  @param string	$token		Configuration setting name
+	 *  @param string	$default	Defined default value
+	 *  @param bool		$hmac		Check hash_hmac_algos() if true
+	 *  @return string
+	 */
+	public function hashAlgo(
+		string	$token, 
+		string	$default, 
+		bool	$hmac		= false 
+	) : string {
+		static $algos	= [];
+		$t		= $token . ( string ) $hmac;
+		if ( isset( $algos[$t] ) ) {
+			return $algos[$t];
+		}
+		
+		$ht		= $this->setting( $token ) ?? $default;
+		
+		$algos[$t]	= 
+			\in_array( $ht, 
+				( $hmac ? \hash_hmac_algos() : \hash_algos() ) 
+			) ? $ht : $default;
+			
+		return $algos[$t];	
+	}
 }
 
