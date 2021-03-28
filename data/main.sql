@@ -515,7 +515,7 @@ CREATE TABLE styles(
 CREATE UNIQUE INDEX idx_styles_label ON styles ( label );-- --
 
 -- HTML render templates
-CREATE TABLE style_template(
+CREATE TABLE style_templates(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 	label TEXT NOT NULL COLLATE NOCASE, 
 	render TEXT NOT NULL DEFAULT '' COLLATE NOCASE,
@@ -526,8 +526,9 @@ CREATE TABLE style_template(
 		REFERENCES styles ( id ) 
 		ON DELETE CASCADE
 );-- --
-CREATE INDEX idx_template_style ON style_template ( style_id );-- --
-CREATE INDEX idx_template_label ON style_template ( label );-- --
+CREATE UNIQUE INDEX idx_template ON style_templates ( style_id, label );-- --
+CREATE INDEX idx_template_style ON style_templates ( style_id );-- --
+CREATE INDEX idx_template_label ON style_templates ( label );-- --
 
 
 -- Site content regions/paged collections
@@ -600,7 +601,7 @@ CREATE VIEW area_view AS SELECT
 	FROM area_render ar
 	JOIN areas a ON ar.area_id = a.id 
 	LEFT JOIN styles sy ON ar.style_id = sy.id 
-	LEFT JOIN style_template st ON sy.id = st.style_id 
+	LEFT JOIN style_templates st ON sy.id = st.style_id 
 	LEFT JOIN settings ag ON a.settings_id = ag.id
 	LEFT JOIN settings rg ON ar.settings_id = rg.id;-- --
 
@@ -2902,6 +2903,286 @@ INSERT INTO page_texts(
 	'<h1>Home</h1><p>Welcome to your default homepage</p>', 
 	'Home Welcome to your default homepage' 
 );-- -- 
+
+
+
+-- Rendering and styles
+
+-- Default style template
+INSERT INTO styles( id, label, description ) 
+VALUES ( 1, 'default', 'Base PubCabin style' );-- --
+
+-- Default template renders (must not contain any vertical pipes "|" )
+INSERT INTO style_templates( style_id, label, render ) 
+VALUES 
+( 1, 'tpl_skeleton', '<!DOCTYPE html>
+<html lang="{lang}">
+<head>
+	{head}
+</head>
+<body class="{body_classes}" {extra}>
+	{body}
+</body>
+</html>' ), 
+
+( 1, 'tpl_skeleton_title', '<title>{title}</title>' ), 
+
+( 1, 'tpl_rel_tag', '<link rel="{rel}" type="{type}" title="{title}" href="{url}">' ),
+( 1, 'tpl_rel_tag_nt', '<link rel="{rel}" href="{url}">' ), 
+
+( 1, 'tpl_style_tag', '<link rel="stylesheet" href="{url}">' ), 
+( 1, 'tpl_meta_tag', '<meta name="{name}" content="{content}">' ), 
+( 1, 'tpl_script_tag', '<script src="{url}"></script>' ), 
+
+( 1, 'tpl_anchor', '<a href="{url}">{text}</a>' ), 
+( 1, 'tpl_para', '<p {extra}>{html}</p>' ), 
+( 1, 'tpl_span', '<span {extra}>{html}</span>' ), 
+( 1, 'tpl_div', '<div {extra}>{html}</div>' ), 
+( 1, 'tpl_main', '<main {extra}>{html}</main>' ), 
+( 1, 'tpl_article', '<article {extra}>{html}</article>' ), 
+( 1, 'tpl_header', '<header {extra}>{html}</header>' ), 
+( 1, 'tpl_aside', '<aside {extra}>{html}</aside>' ), 
+( 1, 'tpl_footer', '<footer {extra}>{html}</footer>' ), 
+
+( 1, 'tpl_full_page', '<!DOCTYPE html>
+<html lang="{lang}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="alternate" type="application/xml" title="{feed_title}" href="{feedlink}">
+<title>{page_title}</title>
+{after_title}
+{stylesheets}
+{meta_tags}
+</head>
+<body class="{body_classes}" {extra}>
+{body_before}
+{body}
+{body_after}
+{body_before_lastjs}
+{body_js}
+{body_after_lastjs}
+</body>
+</html>' ), 
+
+( 1, 'tpl_error_page', '<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{lang:errors:error} {code} - {page_title}</title>
+<link rel="stylesheet" href="{home}style.css">
+</head>
+<body>
+<header>
+<div class="content">
+	<h1><a href="{home}">{page_title}</a></h1>
+	<p>{tagline}</p>
+</div>
+</header>
+<main>
+<div class="content">
+{body}
+<p>{lang:errors:returnhome}</p>
+</div>
+</main>
+</body>
+</html>' ), 
+
+( 1, 'tpl_home_body', '<div class="{home_classes}">
+<article class="{home_wrap_classes}">
+{body}
+</article>
+</div>' ), 
+
+( 1, 'tpl_about_body', '<div class="{about_classes}">
+<article class="{about_wrap_classes}">
+{body}
+</article>
+</div>' ), 
+
+( 1, 'tpl_page_footer', '<footer class="{footer_classes}">
+<div class="{footer_wrap_classes}">{footer_links}</div>
+</footer>' ), 
+
+( 1, 'tpl_page_heading', '{before_page_heading}<header class="{heading_classes}">
+<div class="{heading_wrap_classes}">
+{heading_before}
+<h1 class="{heading_h_classes}">
+	<a href="{home}" class="{heading_a_classes}">{page_title}</a>
+</h1>
+<p class="{tagline_classes}">{tagline}</p>
+{main_links}
+<div class="{search_form_wrap_classes}">{search_form}</div>
+{heading_after}
+</div>
+</header>{after_page_heading}' ), 
+
+( 1, 'tpl_home_heading', '{before_home_heading}<header class="{heading_classes}">
+<div class="{heading_wrap_classes}">
+<h1 class="{heading_h_classes}">
+	<a href="{home}" class="{heading_a_classes}">{page_title}</a>
+</h1>
+<p class="{tagline_classes}">{tagline}</p>
+{home_links}
+<div class="{search_form_wrap_classes}">{search_form}</div>
+{heading_after}
+</div>
+</header>{after_home_heading}' ), 
+
+( 1, 'tpl_about_heading', '{before_about_heading}<header class="{heading_classes}">
+<div class="{heading_wrap_classes}">{before_heading_h}
+<h1 class="{heading_h_classes}">
+	<a href="{home}" class="{heading_a_classes}">{page_title}</a>
+</h1>{after_heading_h}
+<p class="{tagline_classes}">{tagline}</p>
+{about_links}
+<div class="{search_form_wrap_classes}">{search_form}</div>
+{heading_after}
+</div>
+</header>{after_about_heading}' ), 
+
+( 1, 'tpl_input_xsrf', '{before_input_xsrf}
+<input type="hidden" name="nonce" value="{nonce}">
+<input type="hidden" name="token" value="{token}">
+<input type="hidden" name="meta" value="{meta}">
+{after_input_xsrf}' ), 
+
+( 1, 'tpl_searchform', '{before_search_form}<form action="{home}" method="get" 
+	class="{form_classes} {search_form_classes}">
+	<fieldset class="{search_fieldset_classes}">
+{xsrf}
+{before_search_input}<input type="search" name="find" 
+	placeholder="{lang:forms:search:placeholder}" 
+	class="{input_classes} {search_input_classes}" 
+	required>{after_search_input} 
+{before_search_button}
+<input type="submit" class="{submit_classes} {search_button_classes}" 
+	value="{lang:forms:search:button}">{after_search_button}
+	</fieldset>
+</form>{after_search_form}' ), 
+
+( 1, 'tpl_post', '{before_post}
+<article class="{post_classes}">{before_full_post}
+	<div class="{post_wrap_classes}">{before_post_heading}
+	<header class="{post_heading_classes}">
+	<div class="{post_heading_wrap_classes}">
+		<h2 class="{post_heading_h_classes}">
+			<a href="{permalink}" class="{post_heading_a_classes}">{title}</a>
+		</h2>
+		<time datetime="{date_utc}"
+			class="{post_pub_classes}">{date_stamp}</time> {read_time}
+	</div>
+	</header>{before_post_body}
+	<div class="{post_body_wrap_classes}">
+		<div class="{post_body_content_classes">{body}</div>
+		<div class="{post_body_tag_classes}">{tags}</div>
+	</div>{after_post_body}
+	</div>{after_full_post}
+</article>{after_post}'),
+
+( 1, 'tpl_index_post', '{before_index_post}
+<article class="{post_idx_wrap_classes}">{before_item_post}
+	<div class="{post_idx_wrap_classes}">{before_index_post_heading}
+	<header class="{post_idx_heading_classes}">
+	<div class="{post_idx_heading_wrap_classes}">
+		<h2 class="{post_idx_heading_h_classes}">
+			<a href="{permalink}" class="{post_idx_heading_a_classes}">{title}</a>
+		</h2>
+		<time datetime="{date_utc}"
+			class="{post_idx_pub_classes}">{date_stamp}</time> {read_time}
+	</div>
+	</header>{after_index_post_heading}
+	<div class="{post_idx_body_wrap_classes}">
+		<div class="{post_idx_body_content_classes}">{body}</div>
+		<div class="{post_idx_body_tag_classes}">{tags}</div>
+	</div>
+	</div>
+{after_item_post}</article>{after_index_post}' ), 
+
+( 1, 'tpl_read_time', '<span class="readtime">{lang:headings:readtime}</span>' ), 
+
+( 1, 'tpl_index_tagwrap', '<nav class="{tag_index_wrap_classes}">
+	<span class="{tag_index_heading_classes}">{lang:headings:tags}</span> 
+	<ul class="{tag_index_ul_classes}">{tags}</ul></nav>' ),
+
+( 1, 'tpl_tagwrap', '<nav class="{tag_wrap_classes}">
+	<span class="{tag_heading_classes}">{lang:headings:tags}</span> 
+	<ul class="{tag_ul_classes}">{tags}</ul></nav>' ), 
+
+( 1, 'tpl_input_nd', '{input_field_before}<input id="{id}" name="{name}" type="{type}" 
+	placeholder="{placeholder}" class="{input_classes}" 
+	{required}{extra}>{input_field_after}' ),
+
+( 1, 'tpl_input_field', '{input_before}
+{label_before}<label for="{id}" class="{label_classes}">{label}
+	{special_before}<span class="{special_classes}"
+	>{special}</span>{special_after}</label>{label_after} 
+{input}
+{desc_before}<small id="{id}-desc" class="{desc_classes}" 
+	{desc_extra}>{desc}</small>{desc_after}{input_after}' ), 
+
+( 1, 'tpl_input_field_nd', '{label_before}<label for="{id}" 
+	class="{label_classes}">{label}
+	{special_before}<span class="{special_classes}"
+	>{special}</span>{special_after}</label>{label_after} 
+{input}' ),
+
+( 1, 'tpl_input_textarea', '{input_before}{input_multiline_before}
+{label_before}<label for="{id}" class="{label_classes}">{label}
+	{special_before}<span class="{special_classes}"
+	>{special}</span>{special_after}</label>{label_after} 
+{input_field_before}<textarea id="{id}" name="{name}" rows="{rows} cols="{cols}" 
+	placeholder="{placeholder}" aria-describedby="{id}-desc"
+	 class="{input_classes}" {required}{extra}>{value}</textarea>{input_field_after}
+{desc_before}<small id="{id}-desc" class="{desc_classes}" 
+	{desc_extra}>{desc}</small>{desc_after}{input_after}
+{input_multiline_after}{input_after}' ),
+
+( 1, 'tpl_input_select_opt', '<option value="{value}" {selected}>{text}</option>' ),
+
+( 1, 'tpl_input_select', '{input_before}{input_select_before}{label_before}
+{label_before}<label for="{id}" class="{label_classes}">{label}
+	{special_before}<span class="{special_classes}"
+	>{special}</span>{special_after}</label>{label_after} 
+<select id="{id}" name="{name}" aria-describedby="{id}-desc"
+	class="{input_classes}" {required}{extra}>
+	{unselect_option}{options}</select>
+{desc_before}<small id="{id}-desc" class="{desc_classes}" 
+	{desc_extra}>{desc}</small>{desc_after}
+{input_select_after}{input_after}' ),
+
+( 1, 'tpl_input_unselect', '<option value="">--</option>' ),
+
+( 1, 'tpl_input_file', '{input_before}{input_upload_before}
+{label_before}<label for="{id}" class="{label_classes}">{label}
+	{special_before}<span class="{special_classes}"
+	>{special}</span>{special_after}</label>{label_after} 
+{input_field_before}<input id="{id}" name="{name}" type="file" 
+	placeholder="{placeholder}" class="{input_classes}" 
+	aria-describedby="{id}-desc" {required}{extra}>{input_field_after}
+{desc_before}<small id="{id}-desc" class="{desc_classes}" 
+	{desc_extra}>{desc}</small>{desc_after}{input_after}
+{input_upload_after}{input_after}' ),
+
+( 1, 'tpl_input_file_nd', '{input_before}{input_upload_before}
+{label_before}<label for="{id}" class="{label_classes}">{label}
+	{special_before}<span class="{special_classes}"
+	>{special}</span>{special_after}</label>{label_after} 
+{input_field_before}<input id="{id}" name="{name}" type="file" 
+	placeholder="{placeholder}" aria-describedby="{id}-desc" 
+	class="{input_classes}" 
+	{required}{extra}>{input_field_after}{input_upload_after}{input_after}' ),
+
+( 1, 'tpl_input_submit', '{input_before}{input_submit_before}<input 
+	type="submit" id="{id}" name="{name}" value="{value}" 
+	class="{submit_classes}" {extra}>{input_submit_after}{input_after}' ),
+
+( 1, 'tpl_input_button', '{input_before}{input_button_before}<input 
+	type="button" id="{id}" name="{name}" value="{value}" 
+	class="{button_classes}" {extra}>{input_button_after}{input_after}' ), 
+
+( 1, 'tpl_data_pfx', 'data-{term}="{value}"' );-- --
 
 
 
