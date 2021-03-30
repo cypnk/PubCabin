@@ -57,6 +57,12 @@ abstract class Module {
 	 */
 	protected static $render;
 	
+	/**
+	 *  Base text placeholder parser
+	 *  @var \PubCabin\Parser
+	 */
+	protected static $parser;
+	
 	abstract public function dependencies() : array;
 	
 	public function __construct() {
@@ -151,6 +157,19 @@ abstract class Module {
 			new \PubCabin\Render( $config );
 		}
 		return static::$render;
+	}
+	
+	/**
+	 *  Get or load placeholder text parser
+	 *  
+	 *  @return \PubCabin\Parser
+	 */
+	public function getParser() {
+		if ( !isset( static::$parser ) ) {
+			static::$parser		= 
+			new \PubCabin\Parser();
+		}
+		return static::$parser;
 	}
 	
 	/**
