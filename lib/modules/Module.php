@@ -166,8 +166,9 @@ abstract class Module {
 	 */
 	public function getParser() {
 		if ( !isset( static::$parser ) ) {
+			$config = $this->getConfig();
 			static::$parser		= 
-			new \PubCabin\Parser();
+			new \PubCabin\Parser( $config );
 		}
 		return static::$parser;
 	}
