@@ -99,6 +99,7 @@ CREATE VIEW sites_enabled AS SELECT
 CREATE TABLE languages (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 	label TEXT NOT NULL COLLATE NOCASE,
+	display TEXT NOT NULL COLLATE NOCASE,
 	iso_code TEXT NOT NULL COLLATE NOCASE,
 	sort_order INTEGER NOT NULL DEFAULT 0,
 	
@@ -171,6 +172,7 @@ CREATE VIEW locale_view AS SELECT
 	l.label AS label,
 	l.iso_code AS iso_code,
 	l.is_default AS is_lang_default,
+	l.display AS lang_display,
 	l.lang_group AS lang_group,
 	t.label AS locale,
 	t.is_default AS is_locale_default,
@@ -2534,8 +2536,36 @@ CREATE INDEX idx_form_lang ON field_language( lang_id );-- --
 
 -- Language and translations
 INSERT INTO languages (
-	id, label, iso_code, sort_order, is_default
-) VALUES ( 1, 'English', 'en', 0, 1 );-- --
+	id, iso_code, label, display, is_default
+) VALUES 
+( 1, 'en', 'English', 'English', 1 ), 
+( 2, 'es', 'Español', 'Spanish', 0 ), 
+( 3, 'ar', 'عربى', 'Arabic', 0 ),
+( 4, 'bn', 'বাংলা', 'Bengali', 0 ),
+( 5, 'de', 'Deutsch', 'German', 0 ),
+( 6, 'el', 'ελληνικά', 'Greek', 0 ),
+( 7, 'fa', 'فارسی', 'Farsi', 0 ),
+( 8, 'fr', 'Français', 'French', 0 ),
+( 9, 'gu', 'ગુજરાતી', 'Gujarati', 0 ),
+( 10, 'he', 'עברית‬', 'Hebrew', 0 ),
+( 11, 'hi', 'हिंदी', 'Hindi', 0 ),
+( 12, 'hy', 'հայերեն', 'Armenian', 0 ),
+( 13, 'it', 'Italiano', 'Italian', 0 ),
+( 14, 'jp', '日本語', 'Japanese', 0 ),
+( 15, 'ko', '조선말', 'Korean', 0 ),
+( 16, 'lo', 'ພາສາລາວ', 'Lao', 0 ),
+( 17, 'ml', 'Melayu', 'Malay', 0 ),
+( 18, 'nl', 'Nederlands', 'Dutch', 0 ),
+( 19, 'pa', 'ਪੰਜਾਬੀ', 'Punjabi', 0 ),
+( 20, 'pt', 'Português', 'Portuguese', 0 ),
+( 21, 'pl', 'Język polski', 'Polish', 0 ),
+( 22, 'ru', 'русский', 'Russian', 0 ),
+( 23, 'si', 'සිංහල', 'Sinhalese', 0 ),
+( 24, 'ta', 'தமிழ்', 'Tamil', 0 ),
+( 25, 'th', 'ภาษาไทย', 'Thai', 0 ),
+( 26, 'ur', 'اُردُو‬', 'Urdu', 0 ),
+( 27, 'vi', 'Tiếng Việt', 'Vietnamese', 0 ),
+( 28, 'zh', '中文', 'Chinese', 0 );-- --
 
 -- Translations are JSON which need placeholder replacements before parsing
 INSERT INTO translations (
@@ -3174,14 +3204,6 @@ VALUES
 	class="{input_classes}" 
 	{required}{extra}>{input_field_after}{input_upload_after}{input_after}' ),
 
-( 1, 'tpl_input_submit', '{input_before}{input_submit_before}<input 
-	type="submit" id="{id}" name="{name}" value="{value}" 
-	class="{submit_classes}" {extra}>{input_submit_after}{input_after}' ),
-
-( 1, 'tpl_input_button', '{input_before}{input_button_before}<input 
-	type="button" id="{id}" name="{name}" value="{value}" 
-	class="{button_classes}" {extra}>{input_button_after}{input_after}' ), 
-
 ( 1, 'tpl_data_pfx', 'data-{term}="{value}"' ), 
 
 ( 1, 'tpl_breadcrumbs', '{crumbs_before}
@@ -3238,9 +3260,13 @@ class="{nav_nonext_s_classes}">Next</span></li>' ),
 
 ( 1, 'tpl_id_field', '<input type="hidden" name="id" value="{id}">' ), 
 
-( 1, 'tpl_input_submit', '{input_before}{input_submit_before}<input type="submit" id="{id}" 
-	name="{name}" value="{value}" class="{submit_classes}" 
-	{extra}>{input_submit_after}{input_after}' ), 
+( 1, 'tpl_input_submit', '{input_before}{input_submit_before}<input 
+	type="submit" id="{id}" name="{name}" value="{value}" 
+	class="{submit_classes}" {extra}>{input_submit_after}{input_after}' ),
+
+( 1, 'tpl_input_button', '{input_before}{input_button_before}<input 
+	type="button" id="{id}" name="{name}" value="{value}" 
+	class="{button_classes}" {extra}>{input_button_after}{input_after}' ), 
 
 ( 1, 'tpl_input_submit_alt', '{input_before}{input_submit_before}{input_submit_alt_before}<input 
 	type="submit" id="{id}" name="{name}" value="{value}" class="{alt_classes}" 
