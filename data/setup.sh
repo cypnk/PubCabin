@@ -34,6 +34,7 @@ if [ -f main.db ]; then
 	sqlite3 main.db .dump > backup/site-$DATE.sql
 else
 	sqlite3 main.db < main.sql
+	sqlite3 main.db < main_install.sql
 fi
 
 if [ -f filter.db ]; then
