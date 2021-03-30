@@ -1,6 +1,6 @@
 <?php declare( strict_types = 1 );
 /**
- *  @file	/libs/modules/Hooks/Module.php
+ *  @file	/lib/modules/Hooks/Module.php
  *  @brief	Delayed or scheduled execution routines
  */
 namespace PubCabin\Modules\Hooks;
@@ -82,7 +82,6 @@ class Module extends \PubCabin\Modules\Module {
 		}
 		
 		// Adding a handler to the given event?
-		// Need an event name and a handler
 		if ( \is_callable( $params[0] ) ) {
 			$this->handlers[$name][]	= $params[0];
 			
