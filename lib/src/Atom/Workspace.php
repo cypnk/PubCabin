@@ -27,7 +27,7 @@ class Workspace extends Base {
 		$this->title	= $title;
 		
 		$telement	= 
-		$this->dom->createElement( 'atom:title', $title, '' );
+		$this->dom->createElement( 'atom:title', $title );
 		$this->work->appendChild( $telement );
 	}
 	
