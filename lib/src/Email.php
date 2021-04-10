@@ -49,7 +49,7 @@ class Email extends Message {
 	 *  @param string	$subject	Message heading
 	 *  @param string	$msg		Mail body
 	 *  @param array	$files		Source locations for attatched files
-	 *  @param bool		$html		Format email as HTML if true
+	 *  @param string	$mode		Email format mode
 	 *  @return bool
 	 */
 	public function send(
@@ -57,19 +57,8 @@ class Email extends Message {
 		string		$subject, 
 		string		$message, 
 		array		$attach		= [],
-		bool		$html		= false
+		string		$mode		= 'text'
 	) : bool {
-		static $hheaders = [
-			'MIME-Version: 1.0',
-			'Content-Type: text/html; charset="UTF-8"',
-			'Content-Transfer-Encoding: base64'
-		];
-	
-		static $theaders = [
-			'MIME-Version: 1.0',
-			'Content-Type: text/plain; charset="UTF-8"',
-			'Content-Transfer-Encoding: 8bit'
-		];
 		
 		static $br	= "\r\n";
 		
@@ -114,61 +103,60 @@ class Email extends Message {
 			return false;
 		}
 		
+		$to	= \implode( ',', $names );
 		
-		// Email without attachments
-		if ( empty( $attach ) ) {
-			
-			// HTML or plain text headers
-			$this->headers 		= $html ? $hheaders : $theaders;
+		// Content separator
+		$sep			= 
+		self::BOUNDARY_PREFIX . Util::genAlphaNum();
 		
-		// Email with attachments and content separators
-		} else {
-			$sep			= 
-			self::BOUNDARY_PREFIX . Util::genAlphaNum();
-			
-			$this->headers		= [ 
-				'MIME-Version: 1.0',
-				'Content-Transfer-Encoding: base64', 
-				'Content-Type: multipart/mixed; boundary="' . $sep . '"'
-			];
-			
-			// Prepend/append separator, breaks and content headers
-			if ( $html ) {
-				
+		// App name ( X-Mailer )
+		$mailer			= 
+		$this->config->setting( 'app_name', 'string' );
+		
+		$this->headers		= [ 
+			'Date: ' . Util::dateRfc(),
+			'From: ' . $mfr,
+			'To: ' . $to,
+			'MIME-Version: 1.0',
+			'Content-Type: multipart/mixed; boundary="' . $sep . '"',
+			'X-Mailer: ' . \quoted_printable_encode( $mailer )
+		];
+		
+		// Prepend/append separator, breaks, and content headers
+		switch( $mode ) {
+			case 'html':
 				// Encode for HTML
-				$msg =  $sep . $br . 
+				$msg =  $br. $br . $sep . $br . 
 				'Content-Type: text/html; charset="UTF-8"' . $br . 
 				'Content-Transfer-Encoding: base64' . $br . 
-				\base64_encode( $msg );
-				
-			} else {
-				
+				\base64_encode( $msg ) . $br;
+				break;
+			
+			default:
 				// Strip tags from plain text
-				$msg =  $sep . $br . 
+				$msg =  $br. $br . $sep . $br . 
 				'Content-Type: text/plain; charset="UTF-8"' . $br . 
-				'Content-Transfer-Encoding: 8bit' . $br . 
-				\strip_tags( $msg )
-			}
-			
-			// Padding
-			$msg	.= $br . $br;
-			
-			// Add attachments
-			foreach ( $attach as $f ) {
-				$msg .= $this->attachFile( $f, $sep );
-			}
-			
-			// End body
-			$msg .= "{$sep}--";
+				'Content-Transfer-Encoding: quoted-printable' . $br . 
+				\quoted_printable_encode( \trim( \strip_tags( $msg ) ) ) . $br;
 		}
 		
-		$this->headers[]	= 'From: ' . $mfr;
+		// Add any attachments
+		foreach ( $attach as $f ) {
+			$msg .= $this->attachFile( $f, $sep );
+		}
+		
+		// End body
+		$msg .= "{$sep}--";
+		
 		$subj			= 
-		Util::entities( Util::unifySpaces( $subject ) );
+		'=?UTF-9?Q?' . 
+		Util::unifySpaces( \quoted_printable_encode( 
+			\trim( \strip_tags( $subject ) )
+		) ) . '?=';
 		
 		$ok			= 
 		mail( 
-			\implode( ',', $names ), $subj, $msg, 
+			$to, $subj, $msg, 
 			\array_map( '\\PubCabin\\Util::unifySpaces', $this->headers ) 
 		);
 	
