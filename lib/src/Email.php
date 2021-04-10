@@ -7,9 +7,20 @@ namespace PubCabin;
 
 class Email extends Message {
 	
+	/**
+	 *  Multipart content separator boundary
+	 */
 	const BOUNDARY_PREFIX	= '--Multipart_';
 	
+	/**
+	 *  Message ID format
+	 */
 	const ID_FORMAT		= '<{id}-{hash}@{host}>';
+	
+	/**
+	 *  Encoded UTF-8 parameter phrase format
+	 */
+	const UTF_PARAM		= '=?UTF-8?Q?{phrase}?=';
 	
 	/**
 	 *  File attachment helper
@@ -42,6 +53,26 @@ class Email extends Message {
 		\chunk_split( \base64_encode( 
 			\file_get_contents( $name ) 
 		) ) . "\r\n\r\n";
+	}
+	
+	/**
+	 *  Single line email-friendly encoded phrase
+	 *  
+	 *  @param string	$txt	Raw content
+	 *  @param string	$br	Preserve line breaks
+	 */ 
+	public static phrase( string $txt, bool $br ) : string {
+		$txt = 
+		\strtr( self::UTF_PARAM, [ 
+			'{phrase}' => 
+			\quoted_printable_encode( 
+				Util::unifySpaces( $txt, ' ', $br )
+			)
+		] );
+		
+		return 
+		$br ? $txt : \preg_replace( '/[[:space:]]+/', ' ', $txt );
+		
 	}
 	
 	/**
@@ -83,7 +114,7 @@ class Email extends Message {
 			'Message-ID: ' . $id,
 			'MIME-Version: 1.0',
 			'Content-Type: multipart/mixed; boundary="' . $sep . '"',
-			'X-Mailer: =?UTF-8?Q?' .  $mailer . '?='
+			'X-Mailer: ' . static::phrase( $mailer, false )
 		];
 	}
 	
@@ -169,7 +200,7 @@ class Email extends Message {
 				$msg =  $br. $br . $sep . $br . 
 				'Content-Type: text/plain; charset="UTF-8"' . $br . 
 				'Content-Transfer-Encoding: quoted-printable' . $br . 
-				\quoted_printable_encode( \trim( \strip_tags( $msg ) ) ) . $br;
+				static::phrase( \strip_tags( $msg ), true ) . $br;
 		}
 		
 		// Add any attachments
@@ -178,19 +209,15 @@ class Email extends Message {
 		}
 		
 		// End body
-		$msg .= "{$sep}--";
+		$msg	.= "{$sep}--";
 		
 		// Subject
-		$subj			= 
-		'=?UTF-8?Q?' . 
-		Util::unifySpaces( \quoted_printable_encode( 
-			\trim( \strip_tags( $subject ) )
-		) ) . '?=';
+		$subj	= static::phrase( \strip_tags( $subject ), false );
 		
 		// Set email headers
 		$this->setHeaders( $sep, $to, $mfr, $subj );
 		
-		$ok			= 
+		$ok	= 
 		mail( 
 			$to, $subj, $msg, 
 			\array_map( '\\PubCabin\\Util::unifySpaces', $this->headers ) 
