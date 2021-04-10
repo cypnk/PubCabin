@@ -743,7 +743,7 @@ CREATE TABLE page_texts (
 	page_id INTEGER NOT NULL,
 	lang_id INTEGER NOT NULL,
 	path_id INTEGER NOT NULL,
-	slug TEXT NOT NULL COLLATE NOCASE,
+	slug TEXT DEFAULT NULL COLLATE NOCASE,
 	title TEXT NOT NULL COLLATE NOCASE,
 	
 	-- Exactly as entered
@@ -772,13 +772,14 @@ CREATE TABLE page_texts (
 CREATE UNIQUE INDEX idx_page_text ON 
 	page_texts ( page_id, lang_id );-- --
 
--- Page with this slug can only occur once per site
-CREATE UNIQUE INDEX idx_page_slug ON page_texts ( page_id, slug );-- --
+-- Page with this slug can only occur once per path
+CREATE UNIQUE INDEX idx_page_slug ON page_texts ( page_id, path_id, slug )
+	WHERE slug IS NOT NULL;-- --
 
 -- Generate a random slug if empty
 CREATE TRIGGER page_texts_insert_slug AFTER INSERT ON 
 	page_texts FOR EACH ROW
-WHEN NEW.slug = ''
+WHEN NEW.slug = '' OR NEW.slug IS NULL
 BEGIN
 	UPDATE page_texts SET slug = ( SELECT id FROM uuid ) 
 		WHERE id = NEW.id;
@@ -786,7 +787,7 @@ END;-- --
 
 CREATE TRIGGER page_texts_update_slug AFTER UPDATE ON 
 	page_texts FOR EACH ROW
-WHEN NEW.slug = ''
+WHEN NEW.slug = '' OR NEW.slug IS NULL
 BEGIN
 	UPDATE page_texts SET slug = ( SELECT id FROM uuid ) 
 		WHERE id = NEW.id;
