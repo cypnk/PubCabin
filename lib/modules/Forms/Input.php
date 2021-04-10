@@ -60,18 +60,35 @@ class Input {
 	 */
 	protected static $templates	= [
 		
+		// Standard input field
+		'tpl_input'			=> <<<HTML
+{input_field_before}<input id="{id}" name="{name}" type="{type}" 
+	placeholder="{placeholder}" class="{input_classes}" value="{value}" 
+	aria-describedby="{id}-desc" {required}{extra}>{input_field_after}
+HTML
+,
+
 		// Input field without description or label
+		'tpl_input_nd_nl'		=> <<<HTML
+{input_field_before}<input id="{id}" name="{name}" type="{type}" 
+	placeholder="{placeholder}" class="{input_classes}" 
+	value="{value}" {required}{extra}>{input_field_after}
+HTML
+,
+		
+		// Input field without description
 		'tpl_input_nd'			=> <<<HTML
 {input_field_before}<input id="{id}" name="{name}" type="{type}" 
 	placeholder="{placeholder}" class="{input_classes}" 
-	{required}{extra}>{input_field_after}
+	value="{value}" {required}{extra}>{input_field_after}
 HTML
 ,
 		
 		// Combined input field with label and description
 		'tpl_input_field'		=> <<<HTML
 {input_before}
-{label_before}<label for="{id}" class="{label_classes}">{label}
+{label_before}<label for="{id}" class="{label_classes}" 
+	id="{id}-label">{label}
 	{special_before}<span class="{special_classes}"
 	>{special}</span>{special_after}</label>{label_after} 
 {input}
@@ -82,7 +99,8 @@ HTML
 		
 		// Combined input field with label and without description
 		'tpl_input_field_nd'		=> <<<HTML
-{label_before}<label for="{id}" class="{label_classes}">{label}
+{label_before}<label for="{id}" class="{label_classes}" 
+	id="{id}-label">{label}
 	{special_before}<span class="{special_classes}"
 	>{special}</span>{special_after}</label>{label_after} 
 {input}
@@ -92,7 +110,8 @@ HTML
 		// Multiline text block content input
 		'tpl_input_textarea'		=> <<<HTML
 {input_before}{input_multiline_before}
-{label_before}<label for="{id}" class="{label_classes}">{label}
+{label_before}<label for="{id}" class="{label_classes}" 
+	id="{id}-label">{label}
 	{special_before}<span class="{special_classes}"
 	>{special}</span>{special_after}</label>{label_after} 
 {input_field_before}<textarea id="{id}" name="{name}" rows="{rows} cols="{cols}" 
@@ -117,8 +136,9 @@ HTML
 		// Select dropdown
 		'tpl_input_select'		=> <<<HTML
 {input_before}{input_select_before}{label_before}
-{label_before}<label for="{id}" class="{label_classes}">{label}
-	{special_before}<span class="{special_classes}"
+{label_before}<label for="{id}" class="{label_classes}" 
+	id="{id}-label">{label}
+	{special_before}<span class="{special_classes}" 
 	>{special}</span>{special_after}</label>{label_after} 
 <select id="{id}" name="{name}" aria-describedby="{id}-desc"
 	class="{input_classes}" {required}{extra}>
@@ -138,7 +158,8 @@ HTML
 		// File upload input
 		'tpl_input_file'		=> <<<HTML
 {input_before}{input_upload_before}
-{label_before}<label for="{id}" class="{label_classes}">{label}
+{label_before}<label for="{id}" class="{label_classes}" 
+	id="{id}-label">{label}
 	{special_before}<span class="{special_classes}"
 	>{special}</span>{special_after}</label>{label_after} 
 {input_field_before}<input id="{id}" name="{name}" type="file" 
@@ -153,7 +174,8 @@ HTML
 		// Upload input no description
 		'tpl_input_file_nd'		=> <<<HTML
 {input_before}{input_upload_before}
-{label_before}<label for="{id}" class="{label_classes}">{label}
+{label_before}<label for="{id}" class="{label_classes}" 
+	id="{id}-label">{label}
 	{special_before}<span class="{special_classes}"
 	>{special}</span>{special_after}</label>{label_after} 
 {input_field_before}<input id="{id}" name="{name}" type="file" 
@@ -204,12 +226,18 @@ HTML;
 				// Template with no label or description
 				return 
 				\strtr( 
-					static::$templates['tpl_input_nd'], 
+					static::$templates['tpl_input_nd_nl'], 
 					$params
 				);
 			}
 			
 			// Template with label only
+			$params['{input}'] = 
+			\strtr( 
+				static::$templates['tpl_input_nd'],
+				$params
+			);
+		
 			return 
 			\strtr( 
 				static::$templates['tpl_input_field_nd'], 
@@ -218,6 +246,12 @@ HTML;
 		}
 		
 		// Full field template with label and description
+		$params['{input}'] = 
+		\strtr( 
+			static::$templates['tpl_input'],
+			$params
+		);
+		
 		return 
 		\strtr( 
 			static::$templates['tpl_input_field'], 
@@ -230,12 +264,7 @@ HTML;
 	 *  
 	 *  @param string	$params		Placeholder replacements
 	 */
-	public function create( array $params ) : string {
-		
-		// Default type is text
-		if ( !isset( $params['type'] ) ) {
-			$params['type'] = 'text';
-		}
+	protected function create( array $params ) : string {
 		
 		switch ( $params['type'] ) {
 			case 'text':
@@ -289,11 +318,6 @@ HTML;
 					$params
 				);
 			
-			case 'select':
-				
-				// TODO Select box builder
-				return '';
-			
 			// Generic type without labels or descriptions
 			default:
 				return 
@@ -303,6 +327,92 @@ HTML;
 				);
 		}
 	}
+	
+	/**
+	 *  Set commonly required field attributes
+	 *  
+	 *  @param array	$field		Raw user input field
+	 *  @return array
+	 */
+	protected function fieldPrefilter( array $field ) : array {
+		// Default input type
+		$field['type']	= 
+		\PubCabin\Util::lowercase( $field['type'] ?? 'text' );
+		
+		// Default name
+		if ( 0 === \strcmp( $field['name'] ?? '', '' ) ) {
+			$field['name'] = \PubCabin\Util::genAlphaNum();
+		}
+		
+		// Default ID
+		if ( 0 === \strcmp( $field['id'] ?? '', '' ) ) {
+			$field['id'] = $field['name'];
+		}
+		
+		// Fix datetime-local type
+		if (
+			( 0 === \strcmp( 'date-time', $field['type'] ) || 
+			( 0 === \strcmp( 'datetime', $field['type'] ) 
+		) {
+			$field['type']	= 'datetime-local';
+		}
+		
+		return $field;
+	}
+	
+	/**
+	 *  Create filtered input buttons
+	 *  
+	 *  @param array	$buttons	List of input buttons
+	 *  @return string
+	 */
+	protected function createButtons( array $buttons ) : string {
+		$btn	= '';
+		$tpl	= '';
+		$type	= '';
+		$render	= $this->module->getRender();
+		
+		foreach ( $buttons as $b ) {
+			// Buttons specially need a type
+			if ( empty( $b['type'] ) ) {
+				continue;
+			}
+			
+			$b	= $this->fieldPrefilter( $b );
+			$type	= $b['type'];
+			
+			// Skip non-button elements
+			if ( 
+				0 !== \strcmp( $type, 'submit' ) || 
+				0 !== \strcmp( $type, 'button' )
+			) {
+				continue;
+			}
+			
+			// Select default template
+			if ( empty( $b['template'] ) ) {
+				$tpl = 
+				( 0 === \strcmp( $type, 'submit' ) ) ?
+					$render->template( 'tpl_input_submit' ) : 
+					$render->template( 'tpl_input_button' );
+				
+				// Fallback 
+				$tpl = empty( $tpl ) ? 
+					$this->create( $b ) : $tpl;
+			
+			} else {
+				$tpl = $b['template'];
+			}
+			
+			$btn .= 
+			$this->createInputField( 
+				$b['name'] ?? '', $tpl, $b
+			);
+		}
+		return $btn;
+	}
+	
+	
 	
 	/**
 	 *  This section uses the Styles module
@@ -394,22 +504,14 @@ HTML;
 		}
 		
 		// Append buttons
-		$btn	= '';
 		$hooks->event( [ 'buttonwrapbefore', $opts ] );
 		$hooks->event( [ 'buttonwrapafter', $opts ] );
-		foreach ( $buttons as $b ) {
-			$btn .= 
-			$this->createInputField( 
-				$f['name'] ?? '', 
-				$f['template'] ?? 'tpl_input_submit', $f, true
-			);
-		}
 		
 		$out	.= 
 		$render->parse( $render->template( 'tpl_form_button_wrap' ), [ 
 			'button_wrap_before'	=> $hooks->stringResult( 'buttonwrapbefore' ),
 			'button_wrap_after'	=> $hooks->stringResult( 'buttonwrapafter' ),
-			'buttons'		=> $btn
+			'buttons'		=> $this->createButtons( $buttons )
 		] );
 		
 		// Post-input hooks
@@ -517,12 +619,12 @@ HTML;
 			'input_field_before'		=> $hooks->stringResult( 'inputfieldafter' ),
 			
 			'desc_before'			=> $hooks->stringResult( 'descbefore' ),
-			'desc_after'			=> $hooks->stringResult( 'descafter' ),
+			'desc_after'			=> $hooks->stringResult( 'descafter' )
 		] );
 		
 		// Select is a special type
 		$input	= 
-		( 0 == \strcasecmp( $vars['type'] ?? '', 'select' ) ) ? 
+		( 0 === \strcmp( $vars['type'], 'select' ) ) ? 
 			$this->createSelect(
 			$tpl,
 			$out,
@@ -603,8 +705,9 @@ HTML;
 	 */
 	public function createFormField( array $field ) {
 		$tpl	= '';
-		$type	= 
-		\PubCabin\Util::lowercase( $field['type'] ?? '' );
+		
+		$field	= $this->fieldPrefilter( $field );
+		$type	= $field['type'];
 		
 		$render	= $this->module->getRender();
 		$config = $this->module->getConfig();
@@ -621,8 +724,7 @@ HTML;
 				$render->template( 'tpl_input_text' );
 				break;
 				
-			case 'date-time':
-			case 'datetime':
+			case 'datetime-local':
 				$tpl = $field['template'] ?? 
 				$render->template( 'tpl_input_datetime' );
 				break;
@@ -640,9 +742,6 @@ HTML;
 			
 			case 'textarea':
 			case 'multiline':
-				$tpl = $field['template'] ?? 
-				$render->template( 'tpl_input_multiline' );
-				
 				// Set textarea defaults
 				$field['rows'] = 
 				\PubCabin\Util::intRange(
@@ -660,6 +759,9 @@ HTML;
 						'int' ) ?? self::RENDER_MULTILINE_COLS,
 					1, 1000
 				);
+				
+				$tpl = $field['template'] ?? 
+				$render->template( 'tpl_input_multiline' );
 				
 				break;
 				
@@ -683,10 +785,16 @@ HTML;
 					$render->template( 'tpl_input_field' ), 
 					[ '{input}' => $render->template( 'tpl_input' ) ]
 				);
+				
+		}
+		
+		// Base fallback
+		if ( empty( $tpl ) ) {
+			$tpl = $this->create( $field );
 		}
 		
 		return 
-		$this->createInputField( $field['name'] ?? '', $tpl, $field, true );
+		$this->createInputField( $field['name'], $tpl, $field );
 	}
 }
 
