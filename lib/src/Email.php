@@ -9,6 +9,8 @@ class Email extends Message {
 	
 	const BOUNDARY_PREFIX	= '--Multipart_';
 	
+	const ID_FORMAT		= '<{id}-{hash}@{host}>';
+	
 	/**
 	 *  File attachment helper
 	 *  
@@ -40,6 +42,49 @@ class Email extends Message {
 		\chunk_split( \base64_encode( 
 			\file_get_contents( $name ) 
 		) ) . "\r\n\r\n";
+	}
+	
+	/**
+	 *  Email message header setter
+	 *  
+	 *  @param string	$sep		Email boundary separator
+	 *  @param string	$to		Sender address(es)
+	 *  @param string	$from		Recipient address(es)
+	 *  @param string	$subject	Formatted email subject
+	 */
+	protected function setHeaders( 
+		string		$sep, 
+		string		$to, 
+		string		$from, 
+		string		$subject 
+	) {
+		// App name ( X-Mailer )
+		$mailer			= 
+		\quoted_printable_encode( $this->config->setting( 
+			'app_name', 'string' 
+		) );
+		
+		// Message ID
+		$id			= 
+		\strtr( self::ID_FORMAT, [
+			'{id}'		=> Util::genSeqId(), 
+			'{hash}'	=> 
+				\hash( 'sha1', $from . $to . $subject ),
+			'{host}'	=> 
+				$this->config->setting( 'basename', 'string' ) ?? 
+				'pubcabin.local';
+		] );
+		
+		// Headers
+		$this->headers		= [ 
+			'Date: ' . Util::dateRfc(),
+			'From: ' . $from,
+			'To: ' . $to, 
+			'Message-ID: ' . $id,
+			'MIME-Version: 1.0',
+			'Content-Type: multipart/mixed; boundary="' . $sep . '"',
+			'X-Mailer: =?UTF-8?Q?' .  $mailer . '?='
+		];
 	}
 	
 	/**
@@ -109,19 +154,6 @@ class Email extends Message {
 		$sep			= 
 		self::BOUNDARY_PREFIX . Util::genAlphaNum();
 		
-		// App name ( X-Mailer )
-		$mailer			= 
-		$this->config->setting( 'app_name', 'string' );
-		
-		$this->headers		= [ 
-			'Date: ' . Util::dateRfc(),
-			'From: ' . $mfr,
-			'To: ' . $to,
-			'MIME-Version: 1.0',
-			'Content-Type: multipart/mixed; boundary="' . $sep . '"',
-			'X-Mailer: ' . \quoted_printable_encode( $mailer )
-		];
-		
 		// Prepend/append separator, breaks, and content headers
 		switch( $mode ) {
 			case 'html':
@@ -148,11 +180,15 @@ class Email extends Message {
 		// End body
 		$msg .= "{$sep}--";
 		
+		// Subject
 		$subj			= 
-		'=?UTF-9?Q?' . 
+		'=?UTF-8?Q?' . 
 		Util::unifySpaces( \quoted_printable_encode( 
 			\trim( \strip_tags( $subject ) )
 		) ) . '?=';
+		
+		// Set email headers
+		$this->setHeaders( $sep, $to, $mfr, $subj );
 		
 		$ok			= 
 		mail( 
