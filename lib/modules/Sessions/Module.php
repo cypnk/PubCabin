@@ -1,6 +1,6 @@
 <?php declare( strict_types = 1 );
 /**
- *  @file	/lib/modules/Module/Sessions/Module.php
+ *  @file	/lib/modules/Sessions/Module.php
  *  @brief	Visitor session state and cookie handler
  */
 namespace PubCabin\Modules\Sessions;
@@ -134,8 +134,11 @@ class Module extends \PubCabin\Modules\Module {
 		$db->dataExec( 
 			$sql, [ 'id' => $id ], 'column', self::SESSION_DATA 
 		);
-	
-		// TODO Session read hooks
+		
+		$this->getModule( 'Hooks' )->event( [ 
+			'sessionread', [ 'id' => $id, 'data' => $data ]
+		] );
+		
 		return empty( $data ) ? '' : ( string ) $data;
 	}
 	
@@ -155,7 +158,10 @@ class Module extends \PubCabin\Modules\Module {
 			'success', 
 			self::SESSION_DATA 
 		) ) {
-			// TODO Session write hooks
+			$this->getModule( 'Hooks' )->event( [ 
+				'sessionwrite', 
+				[ 'id' => $id, 'data' => $data ]
+			] );
 			return true;
 		}
 		return false;
@@ -250,7 +256,10 @@ class Module extends \PubCabin\Modules\Module {
 		$app		= 
 		$this->getConfig()->setting( 'appname', 'string' );
 		
-		// TODO Cookie set hooks
+		$this->getModule( 'Hooks' )->event( [ 
+			'sessioncookieparams', $options 
+		] );
+		
 		if ( newPHP( '7.3' ) ) {
 			return 
 			\setcookie( $app . "[$name]", $data, $options );
@@ -276,7 +285,9 @@ class Module extends \PubCabin\Modules\Module {
 	 *  @return bool
 	 */
 	function deleteCookie( string $name ) : bool {
-		// TODO Delete cookie hooks
+		$this->getModule( 'Hooks' )->event( [ 
+			'cookiedelete', [ 'name' => $name ] 
+		] );
 		
 		return $this->makeCookie( $name, '', [ 'expires' => 1 ] );
 	}
@@ -316,7 +327,10 @@ class Module extends \PubCabin\Modules\Module {
 			'secure'	=> $req->isSecure() ? true : false,
 			'httponly'	=> true
 		] );
-		// TODO Cookie params hooks
+		
+		$this->getModule( 'Hooks' )->event( [ 
+			'cookieparams', $opts
+		] );
 		
 		return $opts;
 	}
@@ -334,7 +348,10 @@ class Module extends \PubCabin\Modules\Module {
 			$this->getConfig()->setting( 'cookie_exp', 'int' );
 		unset( $options['expires'] );
 		
-		// TODO Session cookie params hooks
+		$this->getModule( 'Hooks' )->event( [ 
+			'sessioncookieparams', $opts 
+		] );
+		
 		if ( \PubCabin\Util::newPHP( '7.3' ) ) {
 			return \session_set_cookie_params( $options );
 		}
@@ -362,6 +379,8 @@ class Module extends \PubCabin\Modules\Module {
 			return;
 		}
 		
+		$hooks = $this->getModule( 'Hooks' );
+		
 		if ( \session_status() !== \PHP_SESSION_ACTIVE ) {
 			$this->sessionCookieParams();
 			\session_name( 
@@ -370,7 +389,10 @@ class Module extends \PubCabin\Modules\Module {
 			);
 			\session_start();
 			
-			// TODO Session created hooks
+			$hooks->event( [ 
+				'sessioncareated', 
+				[ 'id' => \session_id() ]
+			] );
 		}
 		
 		if ( $reset ) {
@@ -379,7 +401,7 @@ class Module extends \PubCabin\Modules\Module {
 				unset( $_SESSION[$k] );
 			}
 			
-			// TODO Session destroyed hooks
+			$hooks->event( [ 'sessiondestroyed', [] ] );
 		}
 	}
 }
