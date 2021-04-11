@@ -89,11 +89,13 @@ CREATE VIEW sites_enabled AS SELECT
 	s.basepath AS basepath, 
 	s.is_active AS is_active,
 	s.is_maintenance AS is_maintenance,
-	s.settings AS settings_override,
+	s.settings AS settings_override, 
+	a.basename AS base_alias,
 	g.settings AS settings
 	
 	FROM sites s 
-	LEFT JOIN settings g ON p.settings_id = g.id;-- --
+	LEFT JOIN settings g ON p.settings_id = g.id
+	LEFT JOIN site_aliases a ON s.site_id = s.id;-- --
 
 -- Localization
 CREATE TABLE languages (
