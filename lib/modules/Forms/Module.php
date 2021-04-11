@@ -1,6 +1,6 @@
 <?php declare( strict_types = 1 );
 /**
- *  @file	/lib/modules/Module/Forms/Module.php
+ *  @file	/lib/modules/Forms/Module.php
  *  @brief	User input, form field generator, and handler
  */
 namespace PubCabin\Modules\Forms;
