@@ -40,8 +40,15 @@ class Module extends \PubCabin\Modules\Module {
 	) {
 		$req	= $this->getRequest();
 		$db	= $this->getData();
+		$host	= $req->getHost();
+		$uri	= $req->getURI();
 		
-		// TODO Load websites and configuration
+		$sites	= $this->getSites( $host, $uri );
+		if ( empty( $sites ) ) {
+			errors( 'No host defined' );
+			// TODO Send 400 host error
+			return;
+		}
 		
 		// Current visitor language
 		$lang = $this->getLanguage();
@@ -49,7 +56,7 @@ class Module extends \PubCabin\Modules\Module {
 		// Override base config settings
 		$this->getConfig()->overrideDefaults( [ 
 			'translations'	=> $lang->translations,
-			'basename'	=> $req->getHost()
+			'basename'	=> $host
 		] );
 		
 		// TODO Override site style templates from database
@@ -109,7 +116,7 @@ class Module extends \PubCabin\Modules\Module {
 		$db->getDataResult( $db, [ 
 			':id'	=> $id, 
 			':area'	=> $area
-		], $stm );
+		], 'results', $stm );
 		
 		foreach ( $rows as $r ) {
 			$tpl = 
@@ -123,5 +130,67 @@ class Module extends \PubCabin\Modules\Module {
 		$this->getRender()->template( '', $tpl );
 	}
 	
+	/**
+	 *  Get list of enabled sites based on basename
+	 *  
+	 *  @param string	$host	Server or hostname
+	 *  @param string	$uri	Full path to search basename
+	 *  @return array
+	 */
+	protected function getSites( string $host, string $uri ) : array {
+		$segs	= 
+		\PubCabin\Util::trimmedList( $uri, false, '/' );
+		
+		// Limit maximum basepath search
+		// TODO Make this configurable
+		if ( count( $segs ) > 25 ) {
+			$segs = \array_slice( $segs, 0, 25 );
+		}
+		
+		$paths	= [];
+		$i	= count( $segs );
+		$u	= '';
+		
+		// Build incremental path from shortest to longest
+		for ( $j = 0; $j < $i; $j++ ) {
+			$u .= \PubCabin\Util::slashPath( $segs[$j] );
+			// Keep preceeding slash
+			if ( 0 !== \strcmp( $u, '/' ) ) {
+				$u = \rtrim( $u, '/' );
+			}
+			$paths[] = $u;
+		}
+		
+		// Base search parameters
+		$params = [
+			':balias'	=> $host, 
+			':bname'	=> $host
+		];
+		$data	= $this->getData();
+		
+		// Create IN () parameters
+		$ins	= $data->getInParam( $paths, $params );
+		
+		// Sites database
+		$db	= $data->getDb( static::MAIN_DATA );
+		$stm	= 
+		$db->prepare(
+			"SELECT * FROM sites_enabled 
+				WHERE ( base_alias = :balias OR 
+				basename = :bname ) AND basepath {$ins}
+				ORDER BY basepath DESC;"
+		);
+		
+		// Return collection of class Site
+		$sites	= 
+		$db->getDataResult( 
+			$db, 
+			$params, 
+			'class, \\PubCabin\\Core\\Site', 
+			$stm 
+		);
+		
+		return empty( $sites ) ? [] : $sites;
+	}
 }
 
