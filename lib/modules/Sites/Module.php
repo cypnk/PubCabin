@@ -1,6 +1,6 @@
 <?php declare( strict_types = 1 );
 /**
- *  @file	/libs/modules/Sites/Module.php
+ *  @file	/lib/modules/Sites/Module.php
  *  @brief	Main website handler
  */
 namespace PubCabin\Modules\Sites;
@@ -46,10 +46,11 @@ class Module extends \PubCabin\Modules\Module {
 		// Current visitor language
 		$lang = $this->getLanguage();
 		
-		// Override preconfigured language definitions
-		$this->getConfig()->overrideDefaults( 
-			[ 'translations' => $lang->translations ]
-		);
+		// Override base config settings
+		$this->getConfig()->overrideDefaults( [ 
+			'translations'	=> $lang->translations,
+			'basename'	=> $req->getHost()
+		] );
 		
 		// TODO Override site style templates from database
 	}
