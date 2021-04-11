@@ -1,6 +1,6 @@
 <?php declare( strict_types = 1 );
 /**
- *  @file	/lib/modules/Module/Forms/Input.php
+ *  @file	/lib/modules/Forms/Input.php
  *  @brief	Form field and attribute bulider
  */
 namespace PubCabin\Modules\Forms;
@@ -27,9 +27,10 @@ class Input {
 	 *  @var array
 	 */
 	protected static $input_types = [
-		'text', 'password', 'textarea', 'search', 'select', 
+		'text', 'password', 'textarea', 'search', 'select', 'email', 
 		'radio', 'checkbox', 'number', 'range', 'datetime-local', 
-		'file', 'submit', 'hidden', 'captcha'
+		'file', 'submit', 'button', 'hidden', 'captcha', 'color', 
+		'tel', 'url'
 	];
 	
 	/**
@@ -217,6 +218,19 @@ HTML;
 	 *  @params array	$params		Input placeholders
 	 */
 	protected function buildField( array $params ) {
+		// Find extras if present
+		$extras = empty( $params['extras'] ) ? 
+				'' : $params['extras'];
+		
+		$acompl	= 
+		\PubCabin\Util::lowercase( $params['autocomplete'] ?? '' );
+		
+		// Prepend autocomplete to existing extras if present
+		if ( \in_array( $acompl, static::$autocomplete ) ) {
+			$params['extras'] = 
+				"autocomplete=\"{$acompl}\"" . $extras;
+		}
+		
 		// No description?
 		if ( !isset( $params['description'] ) ) {
 			
@@ -233,10 +247,11 @@ HTML;
 			
 			// Template with label only
 			$params['{input}'] = 
-			\strtr( 
-				static::$templates['tpl_input_nd'],
-				$params
-			);
+			empty( $params['{input}'] ) ?
+				\strtr( 
+					static::$templates['tpl_input_nd'],
+					$params
+				) : $params['{input}'];
 		
 			return 
 			\strtr( 
@@ -247,10 +262,11 @@ HTML;
 		
 		// Full field template with label and description
 		$params['{input}'] = 
-		\strtr( 
-			static::$templates['tpl_input'],
-			$params
-		);
+		empty( $params['{input}'] ) ?
+			\strtr( 
+				static::$templates['tpl_input'], 
+				$params
+			) : $params['{input}'];
 		
 		return 
 		\strtr( 
@@ -788,8 +804,11 @@ HTML;
 				
 		}
 		
-		// Base fallback
-		if ( empty( $tpl ) ) {
+		// Base fallback if supported input type
+		if ( 
+			empty( $tpl ) && 
+			\in_array( $type, static::$input_types ) 
+		) {
 			$tpl = $this->create( $field );
 		}
 		
