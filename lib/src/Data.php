@@ -222,7 +222,7 @@ class Data {
 				$e->getMessage() ?? '';
 		}
 		
-		$opt	= explode( ',', $rtype );
+		$opt	= Util::trimmedList( $rtype );
 		switch ( $opt[0] ) {
 			// Query with array return
 			case 'results':
