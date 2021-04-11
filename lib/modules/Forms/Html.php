@@ -1,6 +1,6 @@
 <?php declare( strict_types = 1 );
 /**
- *  @file	/lib/modules/Module/Forms/Html.php
+ *  @file	/lib/modules/Forms/Html.php
  *  @brief	Whitelist based HTML tag and attribute filter
  */
 namespace PubCabin\Modules\Forms;
