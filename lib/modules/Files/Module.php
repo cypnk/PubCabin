@@ -1,6 +1,6 @@
 <?php declare( strict_types = 1 );
 /**
- *  @file	/lib/modules/Module/Files/Module.php
+ *  @file	/lib/modules/Files/Module.php
  *  @brief	User uploads and file sending handler
  */
 namespace PubCabin\Modules\Files;
@@ -18,21 +18,25 @@ class Module extends \PubCabin\Modules\Module {
 		$hooks		= $this->getModule( 'Hooks' );
 		$captcha	= $hooks->stringResult( 'captchamade' );
 		
-		// Not a captcha request (which has no actual file)
-		if ( empty( $captcha ) ) {
-			// No static file found?
-			if ( !$this->fileRequest() ) {
-				$hooks->event( [ 'nofile', '' );
-			}
-			
-			// TODO Handle file uploading
-			
+		$req		= $this->getRequest();
+		
 		// Try to send a generated captcha
-		} else {
+		if ( !empty( $captcha ) ) {
 			$img = new Captcha();
 			$img->genCaptcha( 
 				$captcha, $this->getConfig() 
 			);
+			
+			// Execution should end here, but end anyway
+			die();
+		}
+		
+		// Not an upload or static file ?
+		if (
+			!$this->upload( $hooks, $req ) || 
+			!$this->fileRequest( $hooks, $req )
+		) {
+			$hooks->event( [ 'nofile', '' ] );
 		}
 	}
 	
@@ -99,7 +103,7 @@ class Module extends \PubCabin\Modules\Module {
 	 */ 
 	public function sendWithEtag( string $path ) {
 		$rsp = new \PubCabin\Response();
-		$rsp->sendWithEtag( $fpath )
+		$rsp->sendWithEtag( $path )
 	}
 	
 	/**
@@ -226,11 +230,64 @@ class Module extends \PubCabin\Modules\Module {
 	}
 	
 	/**
+	 *  Upload type request
+	 */
+	public function fileUpload( 
+		\PubCabin\Modules\Hooks\Module	$hooks,
+		\PubCabin\Request		$req
+	) : bool {
+		$verb	= $req->getMethod();
+		
+		// Only handle post and put
+		if ( 
+			0 != \strcmp( 'post', $verb ) && 
+			0 != \strcmp( 'put', $verb )
+		) {
+			return false;
+		}
+		
+		// Check auth priority for handling uploads
+		$auth	= $hooks->event( [ 'uploadauthset', '' ] );
+		
+		// Uploading not allowed?
+		if ( empty( $auth ) ) {
+			return false;
+		}
+		if ( false === $auth ) {
+			return false;
+		}
+		
+		// Get set upload path from events
+		$uppath = $hooks->event( [ 'uploadpath', '' ] );
+		$uppath = empty( $uppath ) ? '' : $uppath;
+		
+		$upload	= new Upload();
+		$files	= ( 0 == \strcmp( 'post', $verb ) ?
+			$upload->saveUploads( $uppath ) : 
+			$upload->saveStream( $uppath );
+		
+		$hooks->event( [ 
+			'fileupload', [ 
+				'file_path'	=> $fpath,
+				'uri'		=> $path,
+				'method'	=> $verb,
+				'send'		=> $dosend,
+				'files'		=> $files
+			] 
+		] );
+		
+		// Trigger after upload event
+		$hook->event( [ 'fileupload', '' ] );
+		return true;
+	}
+	
+	/**
 	 *  Check path for file request
 	 */	
-	public function fileRequest() {
-		$req	= $this->getRequest();
-		$config	= $this->getConfig();
+	public function fileRequest( 
+		\PubCabin\Modules\Hooks\Module	$hooks,
+		\PubCabin\Request		$req
+	) : bool {
 		
 		$verb	= $req->getMethod();
 		$path	= $req->getURI();
@@ -242,6 +299,8 @@ class Module extends \PubCabin\Modules\Module {
 		) {
 			return false;
 		}
+		
+		$config	= $this->getConfig();
 		
 		// Don't actually send file for head method
 		$dosend = 
@@ -268,6 +327,17 @@ class Module extends \PubCabin\Modules\Module {
 		$this->getFileDirectory( 'file' ) . $path;
 		
 		if ( \file_exists( $fpath ) ) {
+			$hooks->event( [ 
+				'filerequest', [ 
+					'file_path'	=> $fpath,
+					'uri'		=> $path,
+					'method'	=> $verb,
+					'send'		=> $dosend
+				] 
+			] );
+			
+			// Trigger after file request event
+			$hook->event( [ 'filerequest', '' ] );
 			if ( $dosend ) {
 				$this->sendWithEtag( $fpath )
 			}
