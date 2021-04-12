@@ -310,24 +310,8 @@ class Upload {
 				return [];
 			}
 			
-			// Bytes written
-			$total	= 0;
-			
-			while ( $data = \fread( $stream, self::PUT_CHUNK ) ) {
-				$chunk = \PubCabin\Util::strsize( $data );
-				
-				// Write block of chunked data
-				$block = \fwrite( $tmp, $data );
-				if ( false === $block || $block != $chunk ) {
-					errors( 'PUT Upload Error: Cannot save upload stream' );
-					\fclose( $stream );
-					\fclose( $tmp );
-					unlink( $tmp );
-					return [];
-				}
-				
-				$total += $block;
-			}
+			\stream_set_chunk_size( $stream, self::PUT_CHUNK );
+			\stream_copy_to_stream( $stream, $wr );
 			
 			// Cleanup
 			\fclose( $wr );
@@ -336,7 +320,7 @@ class Upload {
 			$fs = \filesize( $tmp );
 			
 			// Compare file size to total written bytes
-			if ( false === $fs || $fs != $total ) {
+			if ( false === $fs ) {
 				unlink( $tmp );
 				errors( 'PUT Upload Error: Corrupted or empty data' );
 				return [];
