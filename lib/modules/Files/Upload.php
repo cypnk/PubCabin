@@ -15,7 +15,8 @@ class Upload {
 		'image/jpeg',
 		'image/png',
 		'image/gif',
-		'image/bmp'
+		'image/bmp',
+		'image/webp'
 	];
 	
 	/**
@@ -123,6 +124,10 @@ class Upload {
 			case 'image/bmp':
 				$source	= \imagecreatefrombmp( $src );
 				break;
+			
+			case 'image/webp':
+				$source	= \imagecreatefromwebp( $src );
+				break;
 				
 			default:
 				$source	= \imagecreatefromjpeg( $src );
@@ -147,6 +152,10 @@ class Upload {
 			
 			case 'image/bmp':
 				$tn = \imagebmp( $thumb, $dest, 100 );
+				break;
+			
+			case 'image/webp':
+				$tn = \imagewebp( $thumb, $dest, 100 );
 				break;
 			
 			default:
