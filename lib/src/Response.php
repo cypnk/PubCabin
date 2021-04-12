@@ -139,9 +139,9 @@ class Response extends Message {
 		
 		// Set content type if mime is found
 		if ( $verify ) {
-			$mime	= 
-			FileUtil::adjustMime( \mime_content_type( $path ), $path );
-			$this->headers[] = "Content-Type: {$mime}";
+			$mime			= 
+			\FileUtil::detectMime( $path );
+			$this->headers[]	= "Content-Type: {$mime}";
 		}
 		$this->headers[] = 
 		"Content-Security-Policy: default-src 'self'";
