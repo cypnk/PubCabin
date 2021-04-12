@@ -8,6 +8,11 @@ namespace PubCabin\Modules\Files;
 class Upload {
 	
 	/**
+	 *  Recieve chunk size for put files
+	 */
+	const PUT_CHUNK		= 8192;
+	
+	/**
 	 *  Valid image types to create a thumbnail
 	 *  @var array
 	 */
@@ -268,9 +273,91 @@ class Upload {
 		return $processed;
 	}
 	
-	public function saveStream() : array {
-		// TODO handle PUT based file uploading
-		return [];
+	/**
+	 *  Handle PUT method file upload
+	 *  
+	 *  @param string	$path	Uploading destination
+	 *  @return array
+	 */
+	public function saveStream( string $path ) : array {
+		$src	= '';
+		$store	= 
+		\PubCabin\Util::slashPath( 
+			$this->getHostDirectory( 'files' ), true 
+		);
+		
+		try {
+			// Temp storage
+			$tmp	= \tmpnam( $store, 'upload' );
+			if ( false === $tmp ) {
+				errors( 'PUT Upload Error: Unable to create temp file' );
+				return []
+			}
+			
+			$wr	= \fopen( $tmp, 'w' );
+			if ( false === $wr ) {
+				unlink( $tmp );
+				errors( 'PUT Upload Error: Unable to open temp file' );
+				return [];
+			}
+			
+			$stream	= \fopen( 'php://input', 'r' );
+			if ( false === $stream ) {
+				errors( 'PUT Upload Error: Cannot open upload stream' );
+				\fclose( $wr );
+				unlink( $tmp );
+				unset( $stream );
+				return [];
+			}
+			
+			// Bytes written
+			$total	= 0;
+			
+			while ( $data = \fread( $stream, self::PUT_CHUNK ) ) {
+				$chunk = \PubCabin\Util::strsize( $data );
+				
+				// Write block of chunked data
+				$block = \fwrite( $tmp, $data );
+				if ( false === $block || $block != $chunk ) {
+					errors( 'PUT Upload Error: Cannot save upload stream' );
+					\fclose( $stream );
+					\fclose( $tmp );
+					unlink( $tmp );
+					return [];
+				}
+				
+				$total += $block;
+			}
+			
+			// Cleanup
+			\fclose( $wr );
+			\fclose( $stream );
+			
+			$fs = \filesize( $tmp );
+			
+			// Compare file size to total written bytes
+			if ( false === $fs || $fs != $total ) {
+				unlink( $tmp );
+				errors( 'PUT Upload Error: Corrupted or empty data' );
+				return [];
+			}
+			
+			// Exract file path from destination
+			$name	= static::filterUpName( \basename( $path ) );
+			$src	= static::dupRename( $store . $name );
+			
+			if ( !\rename( $tmp, $src ) ) {
+				unlink( $tmp );
+				errors( 'PUT Upload Error: Cannot move temp file' );
+				return [];
+			}
+			
+		} catch( \Exception $e ) {
+			errors( 'PUT Upload Error: ' . $e->getMessage() );
+			return [];
+		}
+		
+		return [ static::processFile( $src ) ];
 	}
 }
 
