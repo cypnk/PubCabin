@@ -340,6 +340,28 @@ final class FileUtil {
 	}
 	
 	/**
+	 *  File mime-type detection helper
+	 *  
+	 *  @param string	$path	Fixed file path
+	 *  @return string
+	 */
+	public static function detectMime( string $path ) : string {
+		if ( !missing( 'mime_content_type' ) ) { 
+			return 
+			static::adjustMime( \mime_content_type( $path ), $path );
+		}
+		
+		$info	= \finfo_open( \FILEINFO_MIME_TYPE );
+		$mime	= 
+		static::adjustMime( 
+			\finfo_open( $info, $path ), $path 
+		);
+		
+		\finfo_close( $info );
+		return $mime;
+	}
+	
+	/**
 	 *  Verify if given directory path is a subfolder of root
 	 *  
 	 *  @param string	$path	Folder path to check
