@@ -30,7 +30,7 @@ class Input {
 		'text', 'password', 'textarea', 'search', 'select', 'email', 
 		'radio', 'checkbox', 'number', 'range', 'datetime-local', 
 		'file', 'submit', 'button', 'hidden', 'captcha', 'color', 
-		'tel', 'url'
+		'tel', 'url', 'wysiwyg'
 	];
 	
 	/**
@@ -54,6 +54,26 @@ class Input {
 		'tel', 'tel-country-code', 'tel-national', 'tel-area-code', 
 		'tel-local', 'tel-extension', 'impp', 'url', 'photo'
 	];
+	
+	/**
+	 *  Visual editor tools and options
+	 *  @var array
+	 */
+	protected static $wysiwyg_tools = [
+		"bold"		=> [],
+		"italic"	=> [],
+		"underline"	=> [],
+		"unordered"	=> [],
+		"ordered"	=> [],
+		"heading"	=> [],
+		"link"		=> [],
+		"quote"		=> [],
+		"code"		=> [],
+		"image"		=> [],
+		"undo"		=> [],
+		"redo"		=> []
+	];
+	
 	
 	/**
 	 *  Common templates
@@ -123,6 +143,24 @@ HTML
 {input_multiline_after}{input_after}
 HTML
 ,
+
+		// Visual editor content intput
+		'tpl_input_wysiwyg'		=> <<<HTML
+{input_before}{input_wysiwyg_before}
+{label_before}<label for="{id}" class="{label_classes}" 
+	id="{id}-label">{label}
+	{special_before}<span class="{special_classes}"
+	>{special}</span>{special_after}</label>{label_after} 
+{input_field_before}<div id="{id}-wysiwyg" data-textarea-name="{name}"></div>
+<textarea id="{id}" name="{name}" rows="{rows} cols="{cols}" 
+	placeholder="{placeholder}" aria-describedby="{id}-desc"
+	 class="{input_classes}" {required}{extra}>{value}</textarea>{input_field_after}
+{desc_before}<small id="{id}-desc" class="{desc_classes}" 
+	{desc_extra}>{desc}</small>{desc_after}{input_after}
+{input_wysiwyg_after}{input_after}
+HTML
+,
+
 		
 		/**
 		 *  User input form building blocks
@@ -205,11 +243,69 @@ HTML;
 		\PubCabin\Modules\Forms\Module $_module 
 	) {
 		$this->module = $_module;
+		$this->extendInput();
 	}
 	
 	public function validate( array $params ) : bool {
 		// TODO Form field validation
 		return true;
+	}
+	
+	/**
+	 *  Functionality change helper
+	 */
+	protected function extendInput() {
+		$hooks	= $this->module->getModule( 'Hooks' );
+		$hooks->event( [ 
+			'autocompleteopts',
+			[ 'options' => static::$autocomplete ]
+		] );
+		$hooks->event( [
+			'inputtemplates',
+			[ 'types' => static::$templates ]
+		] );
+		$hooks->event( [ 
+			'wysiwygtools', 
+			[ 'tools' => static::$wysiwyg_tools ] 
+		] );
+		
+		
+		// Modify base supported input type
+		static::$input_types	= 
+		\array_merge( 
+			static::$input_types, 
+			$hooks->arrayResult( 
+				'inputtypes' 
+			)['types'] ?? [] 
+		);
+		
+		// Add/append autocomplete properties
+		static::$autocomplete	= 
+		\array_merge( 
+			static::$autocomplete, 
+			$hooks->arrayResult( 
+				'autocompleteopts' 
+			)['options'] ?? [] 
+		);
+		
+		// Extend base templates
+		static::$templates	= 
+		\array_merge( 
+			static::$templates, 
+			$hooks->arrayResult( 
+				'inputtemplates', [] 
+			)['templates'] ?? [] 
+		);
+		
+		// New tools or new wysiwyg functionality?
+		$nt	= $hooks->arrayResult( 'wysiwygtools' );
+		
+		static::$wysiwyg_tools	= 
+		\array_merge( 
+			static::$wysiwyg_tools, 
+			$nt['tools'] ?? [] 
+		);
+		// TODO Wysiwyg attachments and functionality
 	}
 	
 	/**
@@ -305,6 +401,15 @@ HTML;
 					static::$templates['tpl_input_textarea'], 
 					$params
 				);
+				
+			// Wysiwyg is also special
+			case 'wysiwyg':
+				return 
+				\strtr( 
+					static::$templates['tpl_input_wysiwyg'], 
+					$params
+				);
+				
 			
 			case 'file':
 				return 
@@ -516,7 +621,20 @@ HTML;
 		$itpl = '';
 		// Append other fields
 		foreach ( $opts['fields'] as $f ) {
+			// Wysiwyg added?
+			$wys = 
+			( 0 == \strcasecmp( 'wysiwyg', $f['type'] ?? 'text' ) ) ? 
+				true : false;
+			
+			if ( $wys ) {
+				$hooks->event( [ 'wysiwygload', [ 'field' => $f ] );
+			}
+			
 			$out .= $this->createFormField( $f );
+			
+			if ( $wys ) {
+				$hooks->event( [ 'wysiwygload', '' ] );
+			}
 		}
 		
 		// Append buttons
@@ -715,6 +833,48 @@ HTML;
 	}
 	
 	/**
+	 *  Build multi-line/textarea/wysiwyg text field
+	 *  
+	 *  @param string	$type		Field input type
+	 *  @param array	$field		Preset field properties
+	 *  @return string
+	 */
+	public function createMultiline(
+		string		$type,
+		array		&$field 
+	) : string {
+		
+		$render	= $this->module->getRender();
+		$config = $this->module->getConfig();
+		// Set textarea defaults
+		$field['rows'] = 
+		\PubCabin\Util::intRange(
+			$field['rows'] ?? 
+			$config->setting( 
+				'render_multiline_rows', 
+				'int' 
+			) ?? self::RENDER_MULTILINE_ROWS,
+			1, 10000
+		);
+		$field['cols'] = 
+		\PubCabin\Util::intRange(
+			$field['cols'] ?? 
+			$config->setting( 
+				'render_multiline_cols', 
+				'int' ) ?? self::RENDER_MULTILINE_COLS,
+			1, 1000
+		);
+		
+		// Send back preset template or wysiwyg/multiline
+		return 		
+		$field['template'] ?? 
+		$render->template( 
+			( 0 == \strcmp( $field['type'], 'wysiwyg' ) ) ? 
+			'tpl_input_wysiwyg' : 'tpl_input_multiline'			
+		);
+	}
+	
+	/**
 	 *  Form field template selection helper based on input type
 	 *  
 	 *  @param array	$field		Form field parameters
@@ -726,7 +886,6 @@ HTML;
 		$type	= $field['type'];
 		
 		$render	= $this->module->getRender();
-		$config = $this->module->getConfig();
 		
 		// Try to retrieve given template or use default based on type
 		switch ( $type ) {
@@ -756,29 +915,12 @@ HTML;
 				$render->template( 'tpl_input_pass' );
 				break;
 			
+			case 'wysiwyg':
 			case 'textarea':
 			case 'multiline':
-				// Set textarea defaults
-				$field['rows'] = 
-				\PubCabin\Util::intRange(
-					$field['rows'] ?? 
-					$config->setting( 
-						'render_multiline_rows', 
-						'int' ) ?? self::RENDER_MULTILINE_ROWS,
-					1, 10000
-				);
-				$field['cols'] = 
-				\PubCabin\Util::intRange(
-					$field['cols'] ?? 
-					$config->setting( 
-						'render_multiline_cols', 
-						'int' ) ?? self::RENDER_MULTILINE_COLS,
-					1, 1000
-				);
-				
-				$tpl = $field['template'] ?? 
-				$render->template( 'tpl_input_multiline' );
-				
+				$tpl = 
+				$this->createMultiline( $type, $field );
+			
 				break;
 				
 			case 'checkbox':
