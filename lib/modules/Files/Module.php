@@ -261,7 +261,7 @@ class Module extends \PubCabin\Modules\Module {
 		$uppath = $hooks->event( [ 'uploadpath', '' ] );
 		$uppath = empty( $uppath ) ? '' : $uppath;
 		
-		$upload	= new Upload();
+		$upload	= new Upload( $this );
 		$files	= ( 0 == \strcmp( 'post', $verb ) ?
 			$upload->saveUploads( $uppath ) : 
 			$upload->saveStream( $uppath );
