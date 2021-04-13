@@ -13,6 +13,17 @@ class Upload {
 	const PUT_CHUNK		= 8192;
 	
 	/**
+	 *  File module holder
+	 */
+	protected $module;
+	
+	public function __construct( 
+		\PubCabin\Modules\Files\Module	$_module
+	) {
+		$this->module = $_module;
+	}
+	
+	/**
 	 *  Valid image types to create a thumbnail
 	 *  @var array
 	 */
@@ -246,12 +257,14 @@ class Upload {
 		
 		
 		$saved	= [];
+		$err	= [];
+		$hooks	= $this->module->getModule( 'Hooks' );
 		
 		foreach ( $files as $name ) {
 			foreach ( $name as $file ) {
 				// If errors were found, skip
 				if ( $file['error'] != \UPLOAD_ERR_OK ) {
-					errors( 'Error handling upload: ' . $name );
+					$err[] = 'Error handling upload: ' . $name;
 					continue;
 				}
 				$tn	= $file['tmp_name'];
@@ -263,6 +276,15 @@ class Upload {
 					$saved[] = $up;
 				}
 			}
+		}
+		
+		if ( !empty( $err ) ) {
+			$hooks->event( [ 'uploaderror', [
+				'method'	=> 'post',
+				'store'		=> $store,
+				'path'		=> $path, 
+				'messages'	=> $err
+			] ];
 		}
 		
 		// Once uploaded and moved, format info
@@ -286,43 +308,75 @@ class Upload {
 			$this->getHostDirectory( 'files' ), true 
 		);
 		
+		$hooks	= $this->module->getModule( 'Hooks' );
+		
 		try {
 			// Temp storage
 			$tmp	= \tmpnam( $store, 'upload' );
 			if ( false === $tmp ) {
-				errors( 'PUT Upload Error: Unable to create temp file' );
-				return []
+				$hooks->event( [ 'uploaderror', [
+					'method'	=> 'put',
+					'store'		=> $store,
+					'path'		=> $path,
+					'messages'	=> 
+					[ 'Unable to create temp file in ' . $store ]
+				] ];
+				return [];
 			}
 			
 			$wr	= \fopen( $tmp, 'w' );
 			if ( false === $wr ) {
 				unlink( $tmp );
-				errors( 'PUT Upload Error: Unable to open temp file' );
+				$hooks->event( [ 'uploaderror', [
+					'method'	=> 'put',
+					'store'		=> $store,
+					'path'		=> $path, 
+					'messages'	=> 
+					[ 'Unable to open temp file ' . $tmp ]
+				] ];
+				
 				return [];
 			}
 			
 			$stream	= \fopen( 'php://input', 'r' );
 			if ( false === $stream ) {
-				errors( 'PUT Upload Error: Cannot open upload stream' );
 				\fclose( $wr );
 				unlink( $tmp );
 				unset( $stream );
+				
+				$hooks->event( [ 'uploaderror', [
+					'method'	=> 'put',
+					'store'		=> $store,
+					'path'		=> $path, 
+					'messages'	=> 
+					[ 'Cannot open upload stream php://input' ]
+				] ];
 				return [];
 			}
 			
 			\stream_set_chunk_size( $stream, self::PUT_CHUNK );
-			\stream_copy_to_stream( $stream, $wr );
+			$ss = \stream_copy_to_stream( $stream, $wr );
 			
 			// Cleanup
-			\fclose( $wr );
 			\fclose( $stream );
+			\fclose( $wr );
 			
 			$fs = \filesize( $tmp );
 			
 			// Compare file size to total written bytes
-			if ( false === $fs ) {
+			if ( 
+				false === $ss || 
+				false === $fs || 
+				$ss != $fs 
+			) {
+				$hooks->event( [ 'uploaderror', [
+					'method'	=> 'put',
+					'store'		=> $store,
+					'path'		=> $path, 
+					'messages'	=> 
+					[ 'Corrupted or empty data in ' . $tmp ]
+				] ];
 				unlink( $tmp );
-				errors( 'PUT Upload Error: Corrupted or empty data' );
 				return [];
 			}
 			
@@ -331,13 +385,25 @@ class Upload {
 			$src	= static::dupRename( $store . $name );
 			
 			if ( !\rename( $tmp, $src ) ) {
+				$hooks->event( [ 'uploaderror', [
+					'method'	=> 'put',
+					'store'		=> $store,
+					'path'		=> $path, 
+					'messages'	=> 
+					[ 'Cannot move temp file ' . $tmp ]
+				] ];
+				
 				unlink( $tmp );
-				errors( 'PUT Upload Error: Cannot move temp file' );
 				return [];
 			}
 			
 		} catch( \Exception $e ) {
-			errors( 'PUT Upload Error: ' . $e->getMessage() );
+			$hooks->event( [ 'uploaderror', [
+				'method'	=> 'put',
+				'store'		=> $store,
+				'path'		=> $path, 
+				[ 'messages'	=> $e->getMessage() ]
+			] ];
 			return [];
 		}
 		
