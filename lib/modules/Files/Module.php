@@ -52,15 +52,25 @@ class Module extends \PubCabin\Modules\Module {
 		
 		if ( !isset( $ext ) ) {
 			// Configured whitelist of extensions
-			$ext	= 
+			$cs	= 
 			$this->getConfig()->setting( 
 				'ext_whitelist', 'json' 
 			);
 			
+			// Extend whitelist via hooks
+			$hooks	= $this->getModule( 'Hooks' );
+			$hooks->event( [ 
+				'extwhitelist', [ 'whitelist' => $cs ] 
+			] );
+			$sent	= $hooks->arrayResult( 'extwhitelist', [] );
+			
+			// Filtered whitelist
+			$ext	= 
+			empty( $sent ) ? $cs : 
+				\array_merge( $cs, $sent['whitelist'] ?? [] );
+			
 			// All extensions
 			$all	= \implode( ',', $ext );
-			
-			// TODO Extend whitelist via hooks
 		}
 		
 		return 
