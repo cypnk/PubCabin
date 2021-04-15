@@ -14,7 +14,8 @@ class Response extends Message {
 		// Default headers
 		$this->headers[] = 'X-XSS-Protection: 1; mode=block';
 		$this->headers[] = 'X-Content-Type-Options: nosniff';
-		$this->headers[] = 'X-Frame-Options: SAMEORIGIN'
+		$this->headers[] = 'X-Frame-Options: SAMEORIGIN';
+		$this->headers[] = 'Permissions-Policy: interest-cohort=()';
 		$this->headers[] = 
 			'Referrer-Policy: ' .
 			'no-referrer, strict-origin-when-cross-origin';
