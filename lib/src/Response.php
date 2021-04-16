@@ -8,6 +8,149 @@ namespace PubCabin;
 
 class Response extends Message {
 	
+	/**
+	 *  Content Security Policy and Permissions Policy
+	 *  
+	 *  @var array
+	 */
+	protected $policy;
+	
+	/**
+	 *  Parsed content security policy
+	 *  
+	 *  @var array
+	 */
+	protected $parsed	= [];
+	
+	
+	
+	/**
+	 *  Quoted security policy attribute helper
+	 *   
+	 *  @param string	$atr	Security policy parameter
+	 *  @return string
+	 */
+	public function quoteSecAttr( string $atr ) : string {
+		// Safe allow list
+		static $allow	= [ 'self', 'src', 'none' ];
+		$atr		= 
+		\trim( \PubCabin\Util::unifySpaces( $atr ) );
+		
+		return 
+		\in_array( $atr, $allow ) ? 
+			$atr : 
+			'"' . \PubCabin\Util::cleanUrl( $atr ) . '"'; 
+	}
+	
+	/**
+	 *  Parse security policy attribute value
+	 *  
+	 *  @param string	$key	Permisisons policy identifier
+	 *  @param mixed	$policy	Policy value(s)
+	 *  @return string
+	 */
+	public function parsePermPolicy(
+		string		$key, 
+				$policy	= null 
+	) : string {
+		// No value? Send empty set E.G. "interest-cohort=()"
+		if ( empty( $policy ) ) {
+			return \PubCabin\Util::bland( $key ) . '=()';
+		}
+		
+		// Send specific value(s) E.G. "fullscreen=(self)"
+		return 
+		\PubCabin\Util::bland( $key ) . '=(' . 
+		( \is_array( $policy ) ? 
+			\implode( ' ', 
+				\array_map( 
+					[ $this, 'quoteSecAttr' ], 
+					$policy 
+				) 
+			) : 
+			$this->quoteSecAttr( ( string ) $policy ) ) . 
+		')';
+	}
+	
+	/**
+	 *  Content Security and Permissions Policy settings
+	 *  
+	 *  @param string	$policy		Security policy header
+	 *  @return string
+	 */
+	public function securityPolicy( string $policy ) : string {
+		// Load defaults
+		if ( !isset( $this->policy ) ) {
+			$p = $this->config->setting( 
+				'default_secpolicy', 'json' 
+			);
+			
+			$this->policy = empty( $p ) ? [] : $p;
+		}
+		
+		switch ( $policy ) {
+			case 'permissions':
+			case 'permissions-policy':
+				if ( isset( $this->parsed['permissions'] ) ) {
+					return $this->parsed['permissions'];
+				}
+				
+				$prm = [];
+				
+				// Permissions policy override
+				$cfj = $this->config->setting( 
+					'permisisons-policy', 'json' 
+				);
+				
+				$def = 
+				$this->policy['permissions-policy'] ?? [];
+				
+				$pjp = 
+				\is_array( $cfj ) ? 
+					\array_merge( $def, $cfj ) : $def;
+				
+				foreach ( $pjp as $k => $v ) {
+					$prm[]	= 
+					$this->parsePermPolicy( $k, $v );
+				}
+				
+				$this->policy['permissions'] = 
+					\implode( ', ', $prm );
+				return $this->policy['permissions'];
+			
+			case 'content-security':
+			case 'content-security-policy':
+				if ( isset( $this->parsed['content'] ) ) {
+					return $this->parsed['content'];
+				}
+				
+				$csp = '';
+				$cjp = 
+				$this->policy['content-security-policy'] ?? [];
+				
+				// Approved frame ancestors ( for embedding media )
+				$raw = 
+				$this->config->setting( 
+					'frame_whitelist', 
+					'lines', 
+					'\\PubCabin\\Util::cleanUrl' 
+				);
+				
+				$raw = \array_unique( \array_filter( $raw ) );
+				$frm = \implode( ' ', $raw );
+				
+				foreach ( $cjp as $k => $v ) {
+					$csp .= 
+					( 0 == \strcmp( $k, 'frame-ancestors' ) ) ? 
+						"$k $v $frm;" : "$k $v;";
+				}
+				$this->parsed['content'] = \rtrim( $csp, ';' );
+				return $this->parsed['content'];
+		}
+		
+		return '';
+	}
+	
 	public function __construct( \PubCabin\Config $config ) {
 		parent::__construct( $config );
 		
@@ -375,33 +518,18 @@ class Response extends Message {
 			'Content-Type: text/html; charset=utf-8';
 		}
 		
+		// Set default permissions policy header
+		$perms = $this->securityPolicy( 'permissions-policy' );
+		if ( !empty( $perms ) ) {
+			$this->headers[] = 
+				'Permissions-Policy: ' . $perms;
+		}
+		
 		// If sending CSP and content checksum isn't used
 		if ( $send_csp ) {
-			$cjp = 
-			$this->config->setting( 'default_jcsp', 'json' );
-			$csp = 'Content-Security-Policy: ';
-			
-			// Approved frame ancestors ( for embedding media )
-			$frl = 
-			$this->config->setting( 'frame_whitelist' );
-			$raw = \is_array( $frl ) ? 
-					\array_map( 
-						'\PubCabin\Util::cleanUrl', $frl 
-					) : 
-					FileUtil::lineSettings( 
-						$frl, -1, 
-						'\PubCabin\Util::cleanUrl' 
-					);
-			
-			$raw = \array_unique( \array_filter( $raw ) );
-			$frm = \implode( ' ', $raw );
-			
-			foreach ( $cjp as $k => $v ) {
-				$csp .= 
-				( 0 == \strcmp( $k, 'frame-ancestors' ) ) ? 
-					"$k $v $frm;" : "$k $v;";
-			}
-			$this->headers[] =  \rtrim( $csp, ';' );
+			$this->headers[] = 
+			'Content-Security-Policy: ' . 
+				securityPolicy( 'content-security-policy' );
 			
 		// Content checksum used
 		} elseif ( !empty( $chk ) ) {
