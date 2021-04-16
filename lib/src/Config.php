@@ -167,22 +167,36 @@ JSON
 }
 JSON
 ,
-		'default_jcsp'		=> <<<JSON
+		'default_secpolicy'	=> <<<JSON
 {
-	"default-src"		: "'none'",
-	"img-src"		: "*",
-	"base-uri"		: "'self'",
-	"style-src"		: "'self'",
-	"script-src"		: "'self'",
-	"font-src"		: "'self'",
-	"form-action"		: "'self'",
-	"frame-ancestors"	: "'self'",
-	"frame-src"		: "*",
-	"media-src"		: "'self'",
-	"connect-src"		: "'self'",
-	"worker-src"		: "'self'",
-	"child-src"		: "'self'",
-	"require-trusted-types-for" : "'script'"
+	"content-security-policy": {
+		"default-src"			: "'none'",
+		"img-src"			: "*",
+		"base-uri"			: "'self'",
+		"style-src"			: "'self'",
+		"script-src"			: "'self'",
+		"font-src"			: "'self'",
+		"form-action"			: "'self'",
+		"frame-ancestors"		: "'self'",
+		"frame-src"			: "*",
+		"media-src"			: "'self'",
+		"connect-src"			: "'self'",
+		"worker-src"			: "'self'",
+		"child-src"			: "'self'",
+		"require-trusted-types-for"	: "'script'"
+	},
+	"permissions-policy": {
+		"accelerometer"			: [ "none" ],
+		"camera"			: [ "none" ],
+		"fullscreen"			: [ "self" ],
+		"geolocation"			: [ "none" ],
+		"gyroscope"			: [ "none" ],
+		"interest-cohort"		: [],
+		"payment"			: [ "none" ],
+		"usb"				: [ "none" ],
+		"microphone"			: [ "none" ],
+		"magnetometer"			: [ "none" ]
+	}
 }
 JSON
 ,
