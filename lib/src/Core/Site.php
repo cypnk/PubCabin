@@ -21,6 +21,12 @@ class Site extends \PubCabin\Entity {
 	public $basename;
 	
 	/**
+	 *  Alternate domain or IP address
+	 *  @var string
+	 */
+	public $base_alias;
+	
+	/**
 	 *  URL or sub section path
 	 *  @var string
 	 */
@@ -38,15 +44,45 @@ class Site extends \PubCabin\Entity {
 	 */
 	public $is_maintenance;
 	
-	// TODO
+	/**
+	 *  Create or update site entity
+	 *  
+	 *  @param \PubCabin\Date	$data	Storage handler
+	 *  @return bool			True on success
+	 */
 	public function save( \PubCabin\Data $data ) : bool {
-		if ( isset( $this->id ) ) {
+		$db	= $data->getDb( static::MAIN_DATA );
+		$params	= [
+			':label'	=> $this->label,
+			':basename'	=> $this->basename,
+			':basepath'	=> $this->basepath ?? '/',
+			':settings'	=> \PubCabin\Util::encode( $this->settings ),
+			':active'	=> ( int ) ( $this->is_active ?? 1 ),
+			':maint'	=> ( int ) ( $this->is_maintenance ?? 0 )
+		];
+		
+		if ( empty( $this->id ) ) {
+			$sql = 
+			"INSERT INTO sites ( 
+				label, basename, basepath, settings, 
+				is_active, is_maintenance
+			) VALUES ( :label, :basename, :basepath, :settings, 
+				:active, :maint );";
 			
-		} else {
+			$this->id = 
+			$data->setInsert( $sql, $params, static::MAIN_DATA );
 			
+			return empty( $this->id ) ? false : true;
 		}
 		
-		return true;
+		$params[':id'] => $this->id;
+		$sql = 
+		"UPDATE sites SET label = :label, basename = :basename, 
+			basepath = :basepath, settings = :settings, 
+				is_active = :active, is_maintenance = :maint 
+			WHERE id = :id LIMIT 1;";
+		
+		return $data->setInsert( $sql, $params, static::MAIN_DATA );
 	}
 }
 
