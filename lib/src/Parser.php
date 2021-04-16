@@ -75,7 +75,7 @@ class Parser {
 	 *  @param string	$tpl	Raw HTML template without content
 	 *  @return array
 	 */
-	public function findTplRegions( string $tpl ) : array {
+	public static function findTplRegions( string $tpl ) : array {
 		if ( \preg_match_all( self::RX_REGION, $tpl, $m ) ) {
 			return $m[0];
 		}
