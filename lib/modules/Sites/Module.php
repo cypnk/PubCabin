@@ -88,7 +88,6 @@ class Module extends \PubCabin\Modules\Module {
 			'{terms}'	=> '/terms'
 		] );
 		
-		
 		$this->language = 
 		\PubCabin\Core\Language( 
 			$this->getData(), $req->getLang()
@@ -142,9 +141,11 @@ class Module extends \PubCabin\Modules\Module {
 		\PubCabin\Util::trimmedList( $uri, false, '/' );
 		
 		// Limit maximum basepath search
-		// TODO Make this configurable
-		if ( count( $segs ) > 25 ) {
-			$segs = \array_slice( $segs, 0, 25 );
+		$depth = $this->config->setting( 'site_depth', 'int' );
+		$depth = \PubCabin\Util::intRange( $depth, 1, 255 );
+		
+		if ( count( $segs ) > $depth ) {
+			$segs = \array_slice( $segs, 0, $depth );
 		}
 		
 		$paths	= [];
