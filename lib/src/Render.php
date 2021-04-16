@@ -58,22 +58,6 @@ class Render {
 	}
 	
 	/**
-	 *  Find template {regions} set in the HTML
-	 *  Template regions must consist of letters, underscores, and no spaces
-	 *  
-	 *  @param string	$tpl	Raw HTML template without content yet
-	 *  @return array
-	 */
-	public static function findTplRegions( string $tpl ) : array {
-		if ( \preg_match_all( 
-			'/(?<=\{)([a-z_]+)(?=\})/i', $tpl, $m 
-		) ) {
-			return $m[0];
-		}
-		return [];
-	}
-	
-	/**
 	 *  Flatten a multi-dimensional array into a path map
 	 *  
 	 *  @link https://stackoverflow.com/a/2703121
@@ -489,7 +473,7 @@ class Render {
 				
 			// Find render regions
 			$this->regions[$key]	= 
-			static::findTplRegions( $this->cache[$key] );
+			Parser::findTplRegions( $this->cache[$key] );
 		}
 		
 		$out		= [];
