@@ -46,6 +46,7 @@ class Config {
 }
 JSON
 ,
+		'site_depth'		=> 25,
 		'language'		=> 'en',
 		'locale'		=> 'us',
 		'timezone'		=> 'America/New_York',
