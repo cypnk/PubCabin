@@ -7,7 +7,16 @@ namespace PubCabin\Modules\Sites;
 
 class Module extends \PubCabin\Modules\Module {
 	
+	/**
+	 *  Translations for currently set language
+	 *  @var array
+	 */
 	protected $language;
+	
+	/**
+	 *  Current base website
+	 */
+	protected $site;
 	
 	public function dependencies() : array {
 		return [ 'Hooks', 'Sessions', 'Files' ];
@@ -38,15 +47,19 @@ class Module extends \PubCabin\Modules\Module {
 		array		$hook, 
 		array		$params 
 	) {
+		$config	= $this->getConfig();
 		$req	= $this->getRequest();
 		$db	= $this->getData();
 		$host	= $req->getHost();
 		$uri	= $req->getURI();
 		
 		$sites	= $this->getSites( $host, $uri );
+		
 		if ( empty( $sites ) ) {
-			errors( 'No host defined' );
-			// TODO Send 400 host error
+			$ns	= 'No Host Defined';
+			errors( $ns );
+			$rsp	= new \PubCabin\Response( $config );
+			$rsp->sendError( 400, $ns );
 			return;
 		}
 		
@@ -54,7 +67,7 @@ class Module extends \PubCabin\Modules\Module {
 		$lang = $this->getLanguage();
 		
 		// Override base config settings
-		$this->getConfig()->overrideDefaults( [ 
+		$config->overrideDefaults( [ 
 			'translations'	=> $lang->translations,
 			'basename'	=> $host
 		] );
@@ -192,6 +205,13 @@ class Module extends \PubCabin\Modules\Module {
 		);
 		
 		return empty( $sites ) ? [] : $sites;
+	}
+	
+	/**
+	 *  Get currently loaded site data
+	 */
+	public function getWebsite() {
+		return isset( $this->site ) ? $this->site : null;
 	}
 }
 
