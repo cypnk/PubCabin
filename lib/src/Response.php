@@ -481,6 +481,68 @@ class Response extends Message {
 	}
 	
 	/**
+	 *  Error file sending helper
+	 *  
+	 *  @param int		$code		Error code number
+	 *  @return bool			True on success
+	 */
+	protected function sendErrorFile( int $code ) : bool {
+		// Try to send generic file error, if it exists, and exit
+		$path = 
+		$this->config->setting( 'error_path', 'string' );
+		
+		if ( empty( $path ) ) {
+			return false;
+		}
+		
+		$path	= \PubCabin\Util::slashPath( $path, true );
+		
+		// Send generic 50x if in series
+		if ( \in_array( $code, [ 500, 501, 503 ] ) ) {
+			if ( $this->sendFile( 
+				$path . '50x.html', false, false, $code 
+			) ) {
+				$this->flushBuffers( true );
+			}
+		}
+		
+		switch( $code ) {
+			case 400:
+			case 401:
+			case 403:
+			case 404:
+			case 405:
+			case 429:
+			case 500:
+			case 501:
+			case 503:
+				$path = $path . $code . '.html';
+				break;
+		}
+	
+		// TODO Error file sending hook
+		if ( $this->sendFile( $path, false, false, $code ) ) {
+			return true;
+		}
+		
+		return false;
+	}
+	
+	/**
+	 *  Send error message
+	 */
+	public function sendError( int $code, string $body ) {
+		// Try to send a static error file if it exists first
+		if ( sendErrorFile( $code ) ) {
+			$this->flushBuffers( true );
+		}
+		
+		// Send error as-is and exit
+		$this->send( $code, $body, false, false );
+	}
+	
+	
+	/**
 	 *  Send file with ETag data
 	 *  
 	 *  @param string	$path	File path after confirming it exists
