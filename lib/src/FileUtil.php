@@ -333,6 +333,9 @@ final class FileUtil {
 					
 				case 'svg':
 					return 'image/svg+xml';
+				
+				case 'vtt':
+					return 'text/vtt';
 			}
 		}
 		
