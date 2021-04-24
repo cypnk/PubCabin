@@ -28,7 +28,7 @@ class Module extends \PubCabin\Modules\Module {
 		$hooks	= $this->getModule( 'Hooks' );
 		
 		// Register this module's request handler
-		$hooks->event( [ 'request', [ $this, 'begin' ] );
+		$hooks->event( [ 'request', [ $this, 'begin' ] ] );
 		
 		// Trigger begin
 		$hooks->event( [ 'request', '' ] );
