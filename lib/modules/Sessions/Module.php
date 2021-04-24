@@ -22,7 +22,7 @@ class Module extends \PubCabin\Modules\Module {
 		$hooks	= $this->getModule( 'Hooks' );
 		
 		// Register session request start
-		$hooks->event( [ 'request', [ $this, 'begin' ] );
+		$hooks->event( [ 'request', [ $this, 'begin' ] ] );
 	}
 	
 	/**
