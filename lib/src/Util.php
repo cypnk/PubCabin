@@ -708,7 +708,7 @@ class Util {
 	) {
 		// Pad maximum or minimum values if array is too short
 		$items = 
-		( 0 === \strcasecmp( $pad, 'max' ) ?
+		( 0 === \strcasecmp( $pad, 'max' ) ) ?
 			\array_pad( $items, $num, $max ) : 
 			\array_pad( $items, $num, $min );
 		
