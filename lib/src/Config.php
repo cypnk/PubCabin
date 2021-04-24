@@ -54,7 +54,7 @@ JSON
 		'nonce_hash'		=> 'tiger160,4',
 		'ext_whitelist'		=> <<<JSON
 {
-	"text"		: "css, js, txt, html",
+	"text"		: "css, js, txt, html, vtt",
 	"images"	: "ico, jpg, jpeg, gif, bmp, png, tif, tiff, svg", 
 	"fonts"		: "ttf, otf, woff, woff2",
 	"audio"		: "ogg, oga, mpa, mp3, m4a, wav, wma, flac",
