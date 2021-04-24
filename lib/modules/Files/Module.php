@@ -33,7 +33,7 @@ class Module extends \PubCabin\Modules\Module {
 		
 		// Not an upload or static file ?
 		if (
-			!$this->upload( $hooks, $req ) || 
+			!$this->fileUpload( $hooks, $req ) || 
 			!$this->fileRequest( $hooks, $req )
 		) {
 			$hooks->event( [ 'nofile', '' ] );
@@ -113,7 +113,7 @@ class Module extends \PubCabin\Modules\Module {
 	 */ 
 	public function sendWithEtag( string $path ) {
 		$rsp = new \PubCabin\Response();
-		$rsp->sendWithEtag( $path )
+		$rsp->sendWithEtag( $path );
 	}
 	
 	/**
@@ -215,7 +215,7 @@ class Module extends \PubCabin\Modules\Module {
 				
 			if ( \file_exists( $fpath ) ) {
 				if ( $dosend ) {
-					$this->sendWithEtag( $fpath )
+					$this->sendWithEtag( $fpath );
 				}
 				return true;
 			}
@@ -230,7 +230,7 @@ class Module extends \PubCabin\Modules\Module {
 			
 			if ( \file_exists( $fpath ) ) {
 				if ( $dosend ) {
-					$this->sendWithEtag( $fpath )
+					$this->sendWithEtag( $fpath );
 				}
 				return true;
 			}
@@ -272,7 +272,7 @@ class Module extends \PubCabin\Modules\Module {
 		$uppath = empty( $uppath ) ? '' : $uppath;
 		
 		$upload	= new Upload( $this );
-		$files	= ( 0 == \strcmp( 'post', $verb ) ?
+		$files	= ( 0 == \strcmp( 'post', $verb ) ) ?
 			$upload->saveUploads( $uppath ) : 
 			$upload->saveStream( $uppath );
 		
@@ -314,7 +314,7 @@ class Module extends \PubCabin\Modules\Module {
 		
 		// Don't actually send file for head method
 		$dosend = 
-		( 0 === \strcmp( 'head', $verb ) ) false : true;
+		( 0 === \strcmp( 'head', $verb ) ) ? false : true;
 		
 		// Trim leading slash(es)
 		$path	= \preg_replace( '/^\//', '', $path );
@@ -349,7 +349,7 @@ class Module extends \PubCabin\Modules\Module {
 			// Trigger after file request event
 			$hook->event( [ 'filerequest', '' ] );
 			if ( $dosend ) {
-				$this->sendWithEtag( $fpath )
+				$this->sendWithEtag( $fpath );
 			}
 			return true;
 		}
