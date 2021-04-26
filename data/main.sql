@@ -732,7 +732,7 @@ CREATE VIRTUAL TABLE path_search
 
 
 -- New path, setup searching
-CREATE TRIGGER path_insert AFTER INSERT ON paths FOR EACH ROW 
+CREATE TRIGGER path_insert AFTER INSERT ON page_paths FOR EACH ROW 
 BEGIN
 	-- Create search data
 	INSERT INTO path_search( docid, url ) 
@@ -740,7 +740,7 @@ BEGIN
 END;-- --
 
 -- Update path search
-CREATE TRIGGER path_update AFTER UPDATE ON paths FOR EACH ROW
+CREATE TRIGGER path_update AFTER UPDATE ON page_paths FOR EACH ROW
 BEGIN
 	UPDATE path_search SET url = NEW.url WHERE docid = OLD.id;
 END;-- --
