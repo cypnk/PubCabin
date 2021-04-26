@@ -722,6 +722,30 @@ CREATE TABLE page_paths (
 );-- --
 CREATE UNIQUE INDEX idx_page_paths ON page_paths ( url ASC );-- --
 
+
+-- Path searching
+CREATE VIRTUAL TABLE path_search 
+	USING fts4( 
+		url, 
+		tokenize=unicode61 "tokenchars=-_" "separators=/*" 
+	);-- --
+
+
+-- New path, setup searching
+CREATE TRIGGER path_insert AFTER INSERT ON paths FOR EACH ROW 
+BEGIN
+	-- Create search data
+	INSERT INTO path_search( docid, url ) 
+		VALUES ( NEW.id, NEW.url );
+END;-- --
+
+-- Update path search
+CREATE TRIGGER path_update AFTER UPDATE ON paths FOR EACH ROW
+BEGIN
+	UPDATE path_search SET url = NEW.url WHERE docid = OLD.id;
+END;-- --
+
+
 -- Render clusters
 CREATE TABLE page_area(
 	page_id INTEGER NOT NULL, 
@@ -737,6 +761,138 @@ CREATE TABLE page_area(
 		REFERENCES areas ( id ) 
 		ON DELETE RESTRICT
 );-- --
+
+-- Page customizations for all users
+CREATE TABLE global_path_settings(
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	path_id INTEGER NOT NULL,
+	settings_id INTEGER DEFAULT NULL,
+	
+	-- Serialized JSON
+	settings TEXT NOT NULL DEFAULT '{}',
+	
+	CONSTRAINT fk_global_path
+		FOREIGN KEY ( path_id ) 
+		REFERENCES page_paths ( id ) 
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_global_path_settings
+		FOREIGN KEY ( settings_id ) 
+		REFERENCES settings ( id ) 
+		ON DELETE CASCADE
+);-- --
+CREATE UNIQUE INDEX idx_global_path_id ON 
+	global_path_settings( path_id );-- --
+CREATE INDEX idx_global_path_settings ON global_path_settings ( settings_id )
+	WHERE settings_id IS NOT NULL;-- --
+
+-- Role-specific 
+CREATE TABLE role_path_settings(
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	role_id INTEGER NOT NULL,
+	path_id INTEGER NOT NULL,
+	settings_id INTEGER DEFAULT NULL,
+	
+	-- Serialized JSON
+	settings TEXT NOT NULL DEFAULT '{}',
+	
+	CONSTRAINT fk_role_path_role
+		FOREIGN KEY ( role_id ) 
+		REFERENCES user_roles ( id ) 
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_role_path
+		FOREIGN KEY ( path_id ) 
+		REFERENCES page_paths ( id ) 
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_role_path_settings
+		FOREIGN KEY ( settings_id ) 
+		REFERENCES settings ( id ) 
+		ON DELETE CASCADE
+);-- --
+CREATE UNIQUE INDEX idx_role_path_role( path_id, role_id );-- --
+CREATE INDEX idx_role_path_settings ON role_path_settings ( settings_id )
+	WHERE settings_id IS NOT NULL;-- --
+
+-- Page customizations for users (overrides role and global settings)
+CREATE TABLE user_path_settings(
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	user_id INTEGER NOT NULL,
+	path_id INTEGER NOT NULL,
+	settings_id INTEGER DEFAULT NULL,
+	
+	-- Serialized JSON
+	settings TEXT NOT NULL DEFAULT '{}',
+	
+	CONSTRAINT fk_user_path
+		FOREIGN KEY ( path_id ) 
+		REFERENCES page_paths ( id ) 
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_user_path_settings
+		FOREIGN KEY ( settings_id ) 
+		REFERENCES settings ( id ) 
+		ON DELETE CASCADE
+);-- --
+CREATE UNIQUE INDEX idx_user_path_user( path_id, user_id );-- --
+CREATE INDEX idx_role_path_settings ON user_path_settings ( settings_id )
+	WHERE settings_id IS NOT NULL;-- --
+
+
+-- Path settings view
+-- Usage: For path /main/sub, get each segment broken down by '/', 
+-- 	with next setting overriding previous
+-- SELECT * FROM path_view WHERE url IN ( '/', '/main', '/main/sub' );
+CREATE VIEW path_global_view AS SELECT
+	p.id AS id,
+	p.url AS url,
+	s.settings AS path_settings,
+	COALESCE( '{}', gs.settings ) AS path_settings_override,
+	
+	
+	FROM paths p
+	LEFT JOIN global_path_settings gs ON paths.id = gs.path_id 
+	LEFT JOIN settings s ON gs.settings_id = s.id;-- --
+
+
+-- Role path settings, used mostly for modifications
+-- Usage: SELECT * FROM path_role_view WHERE url IN ( '/' ) AND 
+--		user_id = :id;
+CREATE VIEW path_role_view AS SELECT
+	p.id AS id,
+	p.url AS url,
+	s.settings AS path_settings,
+	COALESCE( '{}', gs.settings ) AS global_settings_override,
+	COALESCE( '{}', rs.settings ) AS role_settings_override
+	
+	FROM paths p
+	LEFT JOIN global_path_settings gs ON paths.id = gs.path_id
+	LEFT JOIN role_path_settings rs ON paths.id = rs.path_id 
+	LEFT JOIN settings s ON gs.settings_id = s.id;-- --
+
+
+CREATE VIEW path_user_view AS SELECT
+	p.id AS id,
+	p.url AS url,
+	us.user_id AS user_id,
+	s.settings AS path_settings,
+	COALESCE( '{}', gs.settings ) AS global_settings_override,
+	
+	-- User may be in multiple roles
+	group_concat( 
+		COALESCE( '{}', rs.settings ), ',' 
+	) AS role_settings_override,
+	
+	COALESCE( '{}', us.settings ) AS user_settings_override
+	
+	FROM paths p
+	LEFT JOIN global_path_settings gs ON paths.id = gs.path_id
+	LEFT JOIN role_path_settings rs ON paths.id = rs.path_id
+	LEFT JOIN user_roles ON rs.role_id = user_roles.id
+	LEFT JOIN user_path_settings us ON 
+		paths.id = us.path_id AND us.user_id = user_roles.id 
+	LEFT JOIN settings s ON gs.settings_id = s.id;-- --
 
 
 -- Page content data
