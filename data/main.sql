@@ -469,9 +469,19 @@ CREATE TABLE roles(
 );-- --
 CREATE UNIQUE INDEX idx_role_label ON roles( label ASC );-- --
 
+-- Third party role permission providers
+CREATE TABLE permission_providers(
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	label TEXT NOT NULL COLLATE NOCASE,
+	settings TEXT DEFAULT NULL COLLATE NOCASE
+);-- --
+CREATE UNIQUE INDEX idx_perm_provider_label ON permission_providers( label ASC );-- --
+
+-- Role permissions
 CREATE TABLE role_privileges(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	role_id INTEGER NOT NULL,
+	permission_id INTEGER DEFAULT NULL,
 	
 	-- Serialized JSON
 	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
@@ -482,15 +492,23 @@ CREATE TABLE role_privileges(
 		REFERENCES roles ( id )
 		ON DELETE CASCADE, 
 	
+	CONSTRAINT fk_privilege_provider
+		FOREIGN KEY ( permission_id ) 
+		REFERENCES permission_providers ( id )
+		ON DELETE RESTRICT, 
+	
 	CONSTRAINT fk_role_settings
 		FOREIGN KEY ( settings_id ) 
 		REFERENCES settings ( id )
 		ON DELETE SET NULL
 );-- --
 CREATE INDEX idx_privilege_role ON role_privileges( role_id );-- --
+CREATE INDEX idx_privilege_provider ON role_privileges ( permission_id )
+	WHERE permission_id IS NOT NULL
 CREATE INDEX idx_privilege_settings ON role_privileges ( settings_id )
 	WHERE settings_id IS NOT NULL;-- --
 
+-- User role relationships
 CREATE TABLE user_roles(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	role_id INTEGER NOT NULL,
@@ -508,6 +526,27 @@ CREATE TABLE user_roles(
 );-- --
 CREATE UNIQUE INDEX idx_user_role ON 
 	user_roles( role_id, user_id );-- --
+
+-- Role based user permission view
+CREATE VIEW user_permission_view AS 
+SELECT 
+	user_id AS id, 
+	GROUP_CONCAT( DISTINCT roles.label ) AS label,
+	GROUP_CONCAT( 
+		COALESCE( '{}', rp.settings ), ',' 
+	) AS role_settings_override,
+	GROUP_CONCAT( 
+		COALESCE( '{}', rg.settings ), ',' 
+	) AS role_settings,
+	GROUP_CONCAT( 
+		COALESCE( '{}', pr.settings ), ',' 
+	) AS provider_settings
+	
+	FROM user_roles
+	JOIN roles ON user_roles.role_id = roles.id
+	LEFT JOIN role_privileges rp ON roles.id = rp.role_id
+	LEFT JOIN permission_providers pr ON rp.permission_id = pr.id
+	LEFT JOIN settings rg ON rp.settings_id = rg.id;-- --
 
 
 -- Template style groups
@@ -880,7 +919,7 @@ CREATE VIEW path_user_view AS SELECT
 	COALESCE( '{}', gs.settings ) AS global_settings_override,
 	
 	-- User may be in multiple roles
-	group_concat( 
+	GROUP_CONCAT( 
 		COALESCE( '{}', rs.settings ), ',' 
 	) AS role_settings_override,
 	
