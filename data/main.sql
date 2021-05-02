@@ -2102,7 +2102,6 @@ CREATE TABLE modules (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	label TEXT NOT NULL,
 	src TEXT NOT NULL,
-	sort_order INTEGER NOT NULL DEFAULT 0,
 	created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );-- --
 CREATE UNIQUE INDEX idx_module_label ON modules( label );-- --
@@ -2115,26 +2114,37 @@ CREATE TABLE module_access(
 	module_id INTEGER NOT NULL, 
 	auth TEXT NOT NULL,
 	reference TEXT NOT NULL DEFAULT '',
+	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
+	settings_id INTEGER DEFAULT NULL,
+	sort_order INTEGER NOT NULL DEFAULT 0,
 	created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	
 	CONSTRAINT fk_module_src
 		FOREIGN KEY ( module_id ) 
 		REFERENCES modules ( id ) 
-		ON DELETE CASCADE
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_module_settings
+		FOREIGN KEY ( settings_id ) 
+		REFERENCES settings ( id )
+		ON DELETE SET NULL
 );-- --
 
 CREATE VIEW module_load AS SELECT 
 	m.id AS id,
 	m.label AS label,
 	m.src AS src,
-	m.sort_order AS sort_order,
 	m.created AS created,
+	ma.sort_order AS sort_order,
 	ma.auth AS auth,
 	ma.reference AS auth_reference,
-	ma.created AS auth_created
+	ma.created AS auth_created,
+	ma.settings AS settings_override,
+	g.settings AS settings
 	
 	FROM modules m
-	LEFT JOIN module_access ma ON m.id = ma.module_id;-- --
+	LEFT JOIN module_access ma ON m.id = ma.module_id
+	LEFT JOIN settings g ON ma.settings_id = g.id;-- --
 
 
 
