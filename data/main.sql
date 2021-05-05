@@ -1662,7 +1662,12 @@ CREATE TABLE places(
 	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
 	settings_id INTEGER DEFAULT NULL,
 	geo_lat REAL NOT NULL DEFAULT 0, 
-	geo_lon REAL NOT NULL DEFAULT 0
+	geo_lon REAL NOT NULL DEFAULT 0,
+	
+	CONSTRAINT fk_place_settings
+		FOREIGN KEY ( settings_id ) 
+		REFERENCES settings ( id )
+		ON DELETE SET NULL
 );-- --
 CREATE UNIQUE INDEX idx_places ON places( geo_lat, geo_lon );-- --
 CREATE INDEX idx_place_settings ON places( settings_id )
@@ -1688,6 +1693,61 @@ CREATE TABLE place_labels(
 -- Place searching
 CREATE VIRTUAL TABLE place_search 
 	USING fts4( body, tokenize=unicode61 );-- --
+
+
+CREATE TRIGGER place_label_insert AFTER INSERT ON place_labels FOR EACH ROW 
+BEGIN
+	INSERT INTO place_search( docid, body ) 
+		VALUES ( NEW.id, NEW.label );
+END;-- --
+
+CREATE TRIGGER place_label_update AFTER UPDATE ON place_labels FOR EACH ROW 
+BEGIN
+	UPDATE place_search SET body = NEW.label 
+		WHERE docid = NEW.id;
+END;-- --
+
+CREATE TRIGGER place_label_delete BEFORE DELETE ON place_labels FOR EACH ROW 
+BEGIN
+	DELETE FROM place_search WHERE docid = OLD.id;
+END;-- --
+
+-- User locations
+CREATE TABLE user_places(
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+	user_id INTEGER NOT NULL,
+	place_id INTEGER NOT NULL,
+	
+	-- This location can receive postal mail
+	is_mailing INTEGER NOT NULL DEFAULT 0,
+	sort_order INTEGER NOT NULL DEFAULT 0,
+	
+	CONSTRAINT fk_user_place_user 
+		FOREIGN KEY ( user_id ) 
+		REFERENCES users ( id ) 
+		ON DELETE CASCADE,
+		
+	CONSTRAINT fk_user_place
+		FOREIGN KEY ( place_id ) 
+		REFERENCES places ( id ) 
+		ON DELETE CASCADE
+
+);-- --
+CREATE INDEX idx_user_place_mailing ON user_places( is_mailing );-- --
+CREATE INDEX idx_user_place_sort ON user_places( sort_order );-- --
+
+CREATE VIEW user_place_view AS SELECT
+	l.place_id AS place_id,
+	l.user_id AS user_id,
+	l.is_mailing AS is_mailing,
+	p.geo_lat AS geo_lat,
+	p.geo_lon AS geo_lon,
+	p.settings AS settings_override,
+	g.settings AS settings
+	
+	FROM user_places l
+	LEFT JOIN places p ON l.place_id = p.id
+	LEFT JOIN settings g ON p.settings_id = g.id;-- --
 
 -- Entry locations
 CREATE TABLE page_places(
@@ -1750,24 +1810,6 @@ CREATE VIEW comment_place_view AS SELECT
 	FROM comment_places l
 	LEFT JOIN places p ON l.place_id = p.id
 	LEFT JOIN settings g ON p.settings_id = g.id;-- --
-
-
-CREATE TRIGGER place_label_insert AFTER INSERT ON place_labels FOR EACH ROW 
-BEGIN
-	INSERT INTO place_search( docid, body ) 
-		VALUES ( NEW.id, NEW.label );
-END;-- --
-
-CREATE TRIGGER place_label_update AFTER UPDATE ON place_labels FOR EACH ROW 
-BEGIN
-	UPDATE place_search SET body = NEW.label 
-		WHERE docid = NEW.id;
-END;-- --
-
-CREATE TRIGGER place_label_delete BEFORE DELETE ON place_labels FOR EACH ROW 
-BEGIN
-	DELETE FROM place_search WHERE docid = OLD.id;
-END;-- --
 
 
 -- Special actions
@@ -2102,6 +2144,7 @@ CREATE TABLE modules (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	label TEXT NOT NULL,
 	src TEXT NOT NULL,
+	sort_order INTEGER NOT NULL DEFAULT 0,
 	created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );-- --
 CREATE UNIQUE INDEX idx_module_label ON modules( label );-- --
@@ -2134,11 +2177,11 @@ CREATE VIEW module_load AS SELECT
 	m.id AS id,
 	m.label AS label,
 	m.src AS src,
+	m.sort_order AS sort_order,
 	m.created AS created,
-	ma.sort_order AS sort_order,
 	ma.auth AS auth,
 	ma.reference AS auth_reference,
-	ma.created AS auth_created,
+	ma.created AS auth_created
 	ma.settings AS settings_override,
 	g.settings AS settings
 	
