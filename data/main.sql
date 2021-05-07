@@ -2736,11 +2736,14 @@ CREATE TABLE form_fields(
 	field_name TEXT NOT NULL COLLATE NOCASE, 
 	filter TEXT NOT NULL DEFAULT '' COLLATE NOCASE, 
 	style_id INTEGER NOT NULL, 
+	template_id INTEGER DEFAULT NULL, 
 	
 	-- HTML templates
 	create_template TEXT NOT NULL COLLATE NOCASE, 
 	edit_template TEXT NOT NULL COLLATE NOCASE, 
 	view_template TEXT NOT NULL COLLATE NOCASE,
+	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
+	settings_id INTEGER DEFAULT NULL,
 	
 	CONSTRAINT fk_field_form
 		FOREIGN KEY ( form_id ) 
@@ -2750,10 +2753,22 @@ CREATE TABLE form_fields(
 	CONSTRAINT fk_field_style
 		FOREIGN KEY ( style_id ) 
 		REFERENCES styles ( id )
-		ON DELETE RESTRICT
+		ON DELETE RESTRICT,
+	
+	CONSTRAINT fk_field_template
+		FOREIGN KEY ( template_id ) 
+		REFERENCES style_templates ( id ) 
+		ON DELETE SET NULL,
+	
+	CONSTRAINT fk_field_settings
+		FOREIGN KEY ( settings_id ) 
+		REFERENCES settings ( id )
+		ON DELETE SET NULL
 );-- --
 CREATE INDEX idx_form_field_form ON form_fields( form_id );-- --
 CREATE INDEX idx_form_field_name ON form_fields( field_name );-- --
+CREATE INDEX idx_form_field_settings ON form_fields( settings_id )
+	WHERE settings_id IS NOT NULL;-- --
 
 -- Form field descriptions
 CREATE TABLE field_language(
@@ -2765,7 +2780,7 @@ CREATE TABLE field_language(
 	special TEXT NOT NULL DEFAULT '' COLLATE NOCASE, 
 	description TEXT NOT NULL DEFAULT '' COLLATE NOCASE,
 	
-	CONSTRAINT fk_field_template
+	CONSTRAINT fk_field_input
 		FOREIGN KEY ( field_id ) 
 		REFERENCES form_fields ( id ) 
 		ON DELETE CASCADE,
@@ -2777,6 +2792,47 @@ CREATE TABLE field_language(
 );-- --
 CREATE INDEX idx_form_lang_field ON field_language( field_id );-- --
 CREATE INDEX idx_form_lang ON field_language( lang_id );-- --
+
+-- Form views
+CREATE VIEW form_view AS SELECT 
+	f.id AS id,
+	f.title AS title,
+	f.enctype AS enctype,
+	f.form_method AS form_method,
+	p.url AS url
+	
+	FROM forms
+	LEFT JOIN page_paths p ON f.path_id;-- --
+
+CREATE VIEW form_field_view AS SELECT
+	ff.id AS id,
+	f.id AS form_id,
+	f.title AS form_title,
+	ff.field_name AS name,
+	ff.filter AS filter,
+	ff.create_template AS create_template,
+	ff.edit_template AS edit_template,
+	ff.view_template AS view_template,
+	sy.label AS style_label,
+	st.label AS template_label,
+	st.render AS template_render,
+	fl.title AS title,
+	fl.label AS label,
+	fl.special AS special,
+	fl.description AS description, 
+	l.label AS lang_label,
+	l.display AS lang_display,
+	l.iso_code AS lang_iso,
+	ff.settings AS settings_override,
+	g.settings AS settings
+	
+	FROM form_fields ff
+	JOIN forms f ON ff.form_id = f.id
+	LEFT JOIN styles sy ON ff.style_id = sy.id 
+	LEFT JOIN style_templates st ON sy.id = st.template_id 
+	LEFT JOIN field_language fl ON ff.id = fl.field_id 
+	LEFT JOIN languages l ON fl.lang_id = l.id 
+	LEFT JOIN settings g ON ff.settings_id = g.id;-- --
 
 
 
