@@ -504,7 +504,7 @@ CREATE TABLE role_privileges(
 );-- --
 CREATE INDEX idx_privilege_role ON role_privileges( role_id );-- --
 CREATE INDEX idx_privilege_provider ON role_privileges ( permission_id )
-	WHERE permission_id IS NOT NULL
+	WHERE permission_id IS NOT NULL;-- --
 CREATE INDEX idx_privilege_settings ON role_privileges ( settings_id )
 	WHERE settings_id IS NOT NULL;-- --
 
@@ -850,7 +850,8 @@ CREATE TABLE role_path_settings(
 		REFERENCES settings ( id ) 
 		ON DELETE CASCADE
 );-- --
-CREATE UNIQUE INDEX idx_role_path_role( path_id, role_id );-- --
+CREATE UNIQUE INDEX idx_role_path_role ON 
+	role_path_settings ( path_id, role_id );-- --
 CREATE INDEX idx_role_path_settings ON role_path_settings ( settings_id )
 	WHERE settings_id IS NOT NULL;-- --
 
@@ -874,8 +875,9 @@ CREATE TABLE user_path_settings(
 		REFERENCES settings ( id ) 
 		ON DELETE CASCADE
 );-- --
-CREATE UNIQUE INDEX idx_user_path_user( path_id, user_id );-- --
-CREATE INDEX idx_role_path_settings ON user_path_settings ( settings_id )
+CREATE UNIQUE INDEX idx_user_path_user ON 
+	user_path_settings ( path_id, user_id );-- --
+CREATE INDEX idx_user_path_settings ON user_path_settings ( settings_id )
 	WHERE settings_id IS NOT NULL;-- --
 
 
@@ -887,8 +889,7 @@ CREATE VIEW path_global_view AS SELECT
 	p.id AS id,
 	p.url AS url,
 	s.settings AS path_settings,
-	COALESCE( '{}', gs.settings ) AS path_settings_override,
-	
+	COALESCE( '{}', gs.settings ) AS path_settings_override
 	
 	FROM paths p
 	LEFT JOIN global_path_settings gs ON paths.id = gs.path_id 
@@ -2173,7 +2174,7 @@ CREATE TABLE module_access(
 		ON DELETE SET NULL
 );-- --
 
-CREATE VIEW module_load AS SELECT 
+CREATE VIEW module_load_view AS SELECT 
 	m.id AS id,
 	m.label AS label,
 	m.src AS src,
@@ -2181,7 +2182,7 @@ CREATE VIEW module_load AS SELECT
 	m.created AS created,
 	ma.auth AS auth,
 	ma.reference AS auth_reference,
-	ma.created AS auth_created
+	ma.created AS auth_created,
 	ma.settings AS settings_override,
 	g.settings AS settings
 	
