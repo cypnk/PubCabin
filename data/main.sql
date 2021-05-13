@@ -1434,7 +1434,7 @@ CREATE VIEW comment_view AS SELECT
 	( SELECT id FROM comments prev 
 		WHERE strftime( '%s', prev.created ) < 
 			strftime( '%s', c.created ) 
-			AND prev.post_id = c.post_id 
+			AND prev.page_id = c.page_id 
 			AND prev.is_approved > 0 
 		ORDER BY prev.created DESC LIMIT 1 
 	) AS prev_id, 
@@ -1443,7 +1443,7 @@ CREATE VIEW comment_view AS SELECT
 	( SELECT id FROM comments nxt 
 		WHERE strftime( '%s', nxt.created ) > 
 			strftime( '%s', c.created ) 
-			AND nxt.post_id = c.post_id
+			AND nxt.page_id = c.page_id
 			AND nxt.is_approved > 0 
 		ORDER BY nxt.created ASC LIMIT 1 
 	) AS next_id,
@@ -2682,6 +2682,7 @@ CREATE TABLE forms(
 );-- --
 CREATE UNIQUE INDEX idx_form_title ON forms( title );-- --
 CREATE INDEX idx_form_path ON forms( path_id );-- --
+CREATE INDEX idx_form_method ON forms( form_method );-- --
 CREATE INDEX idx_form_created ON forms( created );-- --
 CREATE INDEX idx_form_updated ON forms( updated );-- --
 
