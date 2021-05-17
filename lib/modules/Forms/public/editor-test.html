@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Editor Test</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<p>This is a rough sketch of an editor template with text box and WYSIWYG</p>
+<p>
+	<a href="addfolder" class="btn addfolder">Add folder</a> 
+	<a href="addpage" class="btn addpage">Add page</a> 
+	<a href="addcomment" class="btn addcomment">Add comment</a> 
+	<a href="settings" class="btn settings">Settings</a> 
+</p>
+<form>
+<p><label for="title">Page title <span>(required)</span></label>
+<input type="text" name="title" id="title" placeholder="Title" class="wide"></p>
+
+<div class="editor">
+<p><label id="body-label">Page body <span>(required)</span></label></p>
+<div id="editor" class="wysiwyg" aria-described-by="body-label"></div>
+<p><input type="submit" value="Post"> <input type="submit" value="Save" class="save"></p>
+</div>
+</form>
+<script type="text/javascript" src="js/squire.js"></script>
+<script type="text/javascript" src="js/main.js"></script>
+</body>
+</html>
+
