@@ -1,0 +1,182 @@
+/**
+ *  Basic test styles
+ */
+
+* { 
+	font: inherit;
+	background: inherit;
+	color: inherit;
+	box-sizing: border-box;
+	padding: 0;
+	margin: 0;
+	border: 0;
+}
+
+body { 
+	font: 400 14px/1.24 helvetica, arial, sans-serif; 
+	width: 640px;
+	margin: 1rem auto;
+	line-height: 1.5;
+	color: #222;
+}
+
+* + h1, * + h2, * + h3, * + h4, * + h5, * + h6, * + p {
+	margin-top: 1rem;
+}
+
+h1, h2, h3 {
+	font-weight: 400;
+}
+
+h1 {
+	font-size: 2rem;
+}
+
+h2 {
+	font-size: 1.6rem;
+}
+
+a {
+	cursor: pointer;
+}
+
+ul, ol {
+	margin: 1rem;
+}
+
+ul li ul {
+	margin-top: .5rem;
+}
+
+nav ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	vertical-align: top;
+}
+
+nav ul li  {
+	display: inline-block;
+}
+
+nav details { 
+	display: inline-block;
+	float: left;
+}
+
+nav details summary {
+	min-width: 100px;
+}
+
+summary::-webkit-details-marker {
+	display: none;
+}
+
+em, i {
+	font-style: italic;
+}
+
+strong, b {
+	font-weight: 600;
+}
+
+nav ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+nav.toolbar {
+	line-height: 1;
+	margin-top: 2rem;
+}
+
+nav.toolbar a {
+	color: #444;
+	cursor: pointer;
+}
+nav.toolbar li {
+	margin: 0;
+	margin-left: 5px;
+}
+
+nav.toolbar li:first-child {
+	margin: 0;
+}
+
+nav.toolbar img {
+	vertical-align: bottom;
+}
+
+
+blockquote {
+	margin: 1rem;
+	padding: 0.5rem;
+	font-style: italic;
+	border-left: .3rem solid #ccc;
+}
+
+input, textarea, select {
+	font: inherit;
+	border: 0;
+	padding: 0;
+	line-height: inherit;
+}
+
+pre, code {
+	border:1px solid #ccc;
+	padding:1px 3px;
+	background:#f6f6f6;
+	font-family:menlo,consolas,monospace;
+	font-size:90%;'
+}
+
+#editor {
+	border: 1px solid #444;
+	padding: 1rem;
+	margin-top: 1rem;
+	line-height: 1.6rem;
+	outline: none;
+}
+
+pre,code,#editor {
+	border-radius: 3px;
+}
+
+input[type="submit"], input[type="button"], .btn {
+	font-weight: 600;
+	text-decoration: none;
+	color: #222;
+	cursor: pointer;
+	border: 1px solid #444;
+	border-radius: 3px;
+	display: inline-block;
+	padding: 0.3rem 0.5rem 0.3rem 2rem;
+	background: 0.2rem center url(../icons/publish-24px.svg) no-repeat;
+}
+
+input[type="submit"]:hover, input[type="button"]:hover, .btn:hover {
+	background-color: #efefef;
+}
+
+.btn.save, input[type="submit"].save {
+	background-image: url(../icons/archive-24px.svg);
+}
+
+.addcomment {
+	background-image: url(../icons/insert_comment-24px.svg);
+}
+
+.addpage {
+	background-image: url(../icons/post_add-24px.svg);
+}
+
+.addfolder {
+	background-image: url(../icons/create_new_folder-24px.svg);
+}
+
+.settings {
+	background-image: url(../icons/settings-24px.svg);
+}
+
+
