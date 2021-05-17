@@ -128,18 +128,33 @@ pre, code {
 	padding:1px 3px;
 	background:#f6f6f6;
 	font-family:menlo,consolas,monospace;
-	font-size:90%;'
+	font-size:90%;
+	border-radius: 3px;
 }
 
-#editor {
+form {
+	margin-top: 2rem;
+}
+
+form label {
+	display: block;
+}
+
+form label span {
+	font-style: italic;
+	font-size: 80%;
+}
+
+input.wide, textarea {
+	display: block;
+	width: 100%;
+}
+
+input[type="text"], textarea, .wysiwyg {
 	border: 1px solid #444;
-	padding: 1rem;
-	margin-top: 1rem;
-	line-height: 1.6rem;
+	padding: 0.4rem;
 	outline: none;
-}
-
-pre,code,#editor {
+	line-height: 1.6rem;
 	border-radius: 3px;
 }
 
