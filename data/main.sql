@@ -784,6 +784,25 @@ BEGIN
 	UPDATE path_search SET url = NEW.url WHERE docid = OLD.id;
 END;-- --
 
+-- URL Routing and page handling
+CREATE TABLE route_markers(
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	pattern TEXT NOT NULL COLLATE NOCASE,
+	replacement TEXT NOT NULL COLLATE NOCASE
+);-- --
+CREATE UNIQUE INDEX idx_route_marker_pattern ON routes( pattern );-- --
+
+CREATE TABLE routes(
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	path_id INTEGER NOT NULL,
+	handler TEXT NOT NULL COLLATE NOCASE,
+	
+	CONSTRAINT fk_route_path
+		FOREIGN KEY ( path_id ) 
+		REFERENCES page_paths ( id ) 
+		ON DELETE CASCADE
+);-- --
+CREATE UNIQUE INDEX idx_route_handler ON routes( path_id, handler );-- --
 
 -- Render clusters
 CREATE TABLE page_area(
