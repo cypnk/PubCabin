@@ -66,6 +66,15 @@ class Message {
 		$this->protocol = $_SERVER['SERVER_PROTOCOL'] ?? $assume;
 		return $this->protocol;
 	}
+	
+	/**
+	 *  Helper to append or replace currently set headers
+	 *  
+	 *  @param array	$_headers	New set of headers
+	 */
+	public function mergeHeaders( array $_headers ) {
+		$this->headers = \array_merge( $this->headers, $_headers );
+	}
 }
 
 
