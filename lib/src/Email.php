@@ -10,7 +10,7 @@ class Email extends Message {
 	/**
 	 *  Multipart content separator boundary
 	 */
-	const BOUNDARY_PREFIX	= '--Multipart_';
+	const BOUNDARY_PREFIX	= 'Multipart_';
 	
 	/**
 	 *  Message ID format
@@ -46,7 +46,7 @@ class Email extends Message {
 		$mime	= FileUtil::adjustMime( \mime_content_type( $name ) );
 		
 		return
-		"{$sep}\r\n" . 
+		"--{$sep}\r\n" . 
 		"Content-Type: {$mime}; name=\"{$fname}\"\r\n" . 
 		"Content-Transfer-Encoding: base64\r\n" . 
 		"Content-Disposition: attachment; filename=\"{$fname}\"\r\n\r\n" . 
@@ -189,7 +189,7 @@ class Email extends Message {
 		switch( $mode ) {
 			case 'html':
 				// Encode for HTML
-				$msg =  $br. $br . $sep . $br . 
+				$msg =  $br. $br . '--' . $sep . $br . 
 				'Content-Type: text/html; charset="UTF-8"' . $br . 
 				'Content-Transfer-Encoding: base64' . $br . 
 				\base64_encode( $msg ) . $br;
@@ -197,7 +197,7 @@ class Email extends Message {
 			
 			default:
 				// Strip tags from plain text
-				$msg =  $br. $br . $sep . $br . 
+				$msg =  $br. $br . '--' . $sep . $br . 
 				'Content-Type: text/plain; charset="UTF-8"' . $br . 
 				'Content-Transfer-Encoding: quoted-printable' . $br . 
 				static::phrase( \strip_tags( $msg ), true ) . $br;
