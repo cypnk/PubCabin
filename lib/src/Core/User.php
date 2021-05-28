@@ -234,6 +234,67 @@ class User extends \PubCabin\Entity {
 				return parent::__get( $name );
 		}
 	}
+	
+	/**
+	 *  Hash password to storage safe format
+	 *  
+	 *  @param string	$password	Raw password as entered
+	 *  @return string
+	 */
+	public static function hashPassword( string $password ) : string {
+		return 
+		\base64_encode(
+			\password_hash(
+				\base64_encode(
+					\hash( 'sha384', $password, true )
+				),
+				\PASSWORD_DEFAULT
+			)
+		);
+	}
+	
+	/**
+	 *  Check hashed password
+	 *  
+	 *  @param string	$password	Password exactly as entered
+	 *  @param string	$stored		Hashed password in database
+	 */
+	public static function verifyPassword( 
+		string		$password, 
+		string		$stored 
+	) : bool {
+		$stored = \base64_decode( $stored, true );
+		if ( false === $stored ) {
+			return false;
+		}
+		
+		return 
+		\password_verify(
+			\base64_encode( 
+				\hash( 'sha384', $password, true )
+			),
+			$stored
+		);
+	}
+	
+	/**
+	 *  Check if user password needs rehashing
+	 *  
+	 *  @param string	$stored		Already hashed, stored password
+	 *  @return bool
+	 */
+	public static function passNeedsRehash( 
+		string		$stored 
+	) : bool {
+		$stored = \base64_decode( $stored, true );
+		if ( false === $stored ) {
+			return false;
+		}
+		
+		return 
+		\password_needs_rehash( $stored, \PASSWORD_DEFAULT );
+	}
+	
 }
 
 
