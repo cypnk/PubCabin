@@ -784,13 +784,33 @@ BEGIN
 	UPDATE path_search SET url = NEW.url WHERE docid = OLD.id;
 END;-- --
 
+-- Page descendant path
+CREATE VIEW page_hierarchy AS WITH RECURSIVE ph ( 
+	id, uuid, site_id, ptype, parent_id, is_home, created, 
+		published, settings, settings_id, sort_order, status 
+) AS (
+	SELECT id, uuid, site_id, ptype, parent_id, is_home, 
+		created, published, settings, settings_id, 
+		sort_order, status
+			
+		FROM pages
+		
+	UNION ALL
+		SELECT p.id, p.uuid, p.site_id, p.ptype, p.parent_id, p.is_home, 
+		p.created, p.published, p.settings, p.settings_id, 
+		p.sort_order, p.status
+		
+		FROM pages p 
+		INNER JOIN ph ON p.parent_id = ph.id
+) SELECT * FROM ph;-- --
+
 -- URL Routing and page handling
 CREATE TABLE route_markers(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	pattern TEXT NOT NULL COLLATE NOCASE,
 	replacement TEXT NOT NULL COLLATE NOCASE
 );-- --
-CREATE UNIQUE INDEX idx_route_marker_pattern ON routes( pattern );-- --
+CREATE UNIQUE INDEX idx_route_marker_pattern ON route_markers( pattern );-- --
 
 CREATE TABLE routes(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
