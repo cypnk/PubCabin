@@ -1649,6 +1649,94 @@ BEGIN
 	DELETE FROM attachment_search WHERE docid = OLD.id;
 END;-- --
 
+-- Scheduled tasks
+CREATE TABLE tasks(
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	title TEXT NOT NULL COLLATE NOCASE,
+	description TEXT NOT NULL COLLATE NOCASE,
+	weight INTEGER DEFAULT 0,
+	created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);-- --
+CREATE UNIQUE INDEX idx_task_title ON tasks( title );-- --
+
+CREATE TRIGGER task_update BEFORE UPDATE ON tasks FOR EACH ROW 
+BEGIN
+	UPDATE tasks SET updated = CURRENT_TIMESTAMP 
+		WHERE id = OLD.id;
+END;-- --
+
+-- Assigned page tasks
+CREATE TABLE page_tasks(
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	
+	-- Dependency
+	parent_id INTEGER DEFAULT NULL,
+	
+	page_id INTEGER NOT NULL,
+	
+	-- Assigned user
+	user_id INTEGER DEFAULT NULL,
+	-- Task creator
+	open_id INTEGER NOT NULL,
+	-- Task closer
+	close_id INTEGER DEFAULT NULL,
+	
+	task_id INTEGER NOT NULL,
+	sort_order INTEGER DEFAULT 0,
+	progress INTEGER NOT NULL DEFAULT 0,
+	created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	completed TIMESTAMP DEFAULT NULL,
+	due TIMESTAMP DEFAULT NULL,
+	expires TIMESTAMP DEFAULT NULL,
+	
+	CONSTRAINT fk_page_task_parent 
+		FOREIGN KEY ( parent_id ) 
+		REFERENCES page_tasks ( id ) 
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_page_task_page
+		FOREIGN KEY ( page_id ) 
+		REFERENCES pages ( id ) 
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_page_task_user
+		FOREIGN KEY ( user_id ) 
+		REFERENCES users ( id ) 
+		ON DELETE SET NULL,
+	
+	CONSTRAINT fk_page_task_open
+		FOREIGN KEY ( open_id ) 
+		REFERENCES users ( id ) 
+		ON DELETE RESTRICT,
+		
+	CONSTRAINT fk_page_task 
+		FOREIGN KEY ( task_id ) 
+		REFERENCES tasks ( id ) 
+		ON DELETE CASCADE
+);-- --
+CREATE INDEX idx_page_tasks_page ON page_tasks( page_id );-- --
+CREATE INDEX idx_page_tasks_user ON page_tasks( user_id ) 
+	WHERE user_id IS NOT NULL;-- --
+CREATE INDEX idx_page_tasks_opened ON page_tasks( open_id );-- --
+CREATE INDEX idx_page_tasks_closed ON page_tasks( close_id );-- --
+CREATE INDEX idx_page_tasks_task ON page_tasks( task_id );-- --
+CREATE INDEX idx_page_tasks_sort ON page_tasks( sort_order );-- --
+CREATE INDEX idx_page_tasks_progress ON page_tasks( progress );-- --
+CREATE INDEX idx_page_tasks_created ON page_tasks( created );-- --
+CREATE INDEX idx_page_tasks_updated ON page_tasks( updated );-- --
+CREATE INDEX idx_page_tasks_due ON page_tasks( due )
+	WHERE due IS NOT NULL;-- --
+CREATE INDEX idx_page_tasks_expires ON page_tasks( expires )
+	WHERE expires IS NOT NULL;-- --
+
+CREATE TRIGGER page_tasks_update BEFORE UPDATE ON page_tasks FOR EACH ROW 
+BEGIN
+	UPDATE page_tasks SET updated = CURRENT_TIMESTAMP 
+		WHERE id = OLD.id;
+END;-- --
+
 
 -- Content menues and navigation
 CREATE TABLE menues(
