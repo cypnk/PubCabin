@@ -89,6 +89,23 @@ class Response extends Message {
 		}
 		
 		switch ( $policy ) {
+			case 'common':
+			case 'common-policy':
+				if ( isset( $this->parsed['common'] ) ) {
+					return $this->parsed['common'];
+				}
+				
+				// Common header override
+				$cfj = 
+				$this->config->setting( 
+					'common-policy', 
+					'lines', 
+					'\\PubCabin\\Util::bland' 
+				);
+				$this->parsed['common'] = \implode( "\n", $cfj );
+				
+				return $this->parsed['common'];
+				
 			case 'permissions':
 			case 'permissions-policy':
 				if ( isset( $this->parsed['permissions'] ) ) {
@@ -114,9 +131,9 @@ class Response extends Message {
 					$this->parsePermPolicy( $k, $v );
 				}
 				
-				$this->policy['permissions'] = 
+				$this->parsed['permissions'] = 
 					\implode( ', ', $prm );
-				return $this->policy['permissions'];
+				return $this->parsed['permissions'];
 			
 			case 'content-security':
 			case 'content-security-policy':
