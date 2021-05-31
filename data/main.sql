@@ -1655,15 +1655,35 @@ CREATE TABLE tasks(
 	title TEXT NOT NULL COLLATE NOCASE,
 	description TEXT NOT NULL COLLATE NOCASE,
 	weight INTEGER DEFAULT 0,
-	created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+	created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );-- --
 CREATE UNIQUE INDEX idx_task_title ON tasks( title );-- --
+CREATE INDEX idx_task_created ON tasks( created );-- --
+CREATE INDEX idx_task_updated ON tasks( updated );-- --
+
+-- Task searching
+CREATE VIRTUAL TABLE task_search 
+	USING fts4( body, tokenize=unicode61 );-- --
+
+CREATE TRIGGER task_insert AFTER INSERT ON tasks FOR EACH ROW 
+BEGIN
+	INSERT INTO task_search( docid, body ) 
+		VALUES ( NEW.id, NEW.title || ' ' || NEW.description );
+END;-- --
 
 CREATE TRIGGER task_update BEFORE UPDATE ON tasks FOR EACH ROW 
 BEGIN
+	UPDATE task_search SET body = NEW.title || ' ' || NEW.description 
+		WHERE docid = NEW.id;
+	
 	UPDATE tasks SET updated = CURRENT_TIMESTAMP 
 		WHERE id = OLD.id;
+END;-- --
+
+CREATE TRIGGER task_delete BEFORE DELETE ON tasks FOR EACH ROW 
+BEGIN
+	DELETE FROM task_search WHERE docid = OLD.id;
 END;-- --
 
 -- Assigned page tasks
@@ -1685,8 +1705,8 @@ CREATE TABLE page_tasks(
 	task_id INTEGER NOT NULL,
 	sort_order INTEGER DEFAULT 0,
 	progress INTEGER NOT NULL DEFAULT 0,
-	created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	completed TIMESTAMP DEFAULT NULL,
 	due TIMESTAMP DEFAULT NULL,
 	expires TIMESTAMP DEFAULT NULL,
@@ -1720,7 +1740,8 @@ CREATE INDEX idx_page_tasks_page ON page_tasks( page_id );-- --
 CREATE INDEX idx_page_tasks_user ON page_tasks( user_id ) 
 	WHERE user_id IS NOT NULL;-- --
 CREATE INDEX idx_page_tasks_opened ON page_tasks( open_id );-- --
-CREATE INDEX idx_page_tasks_closed ON page_tasks( close_id );-- --
+CREATE INDEX idx_page_tasks_closed ON page_tasks( close_id )
+	WHERE close_id IS NOT NULL;-- --
 CREATE INDEX idx_page_tasks_task ON page_tasks( task_id );-- --
 CREATE INDEX idx_page_tasks_sort ON page_tasks( sort_order );-- --
 CREATE INDEX idx_page_tasks_progress ON page_tasks( progress );-- --
