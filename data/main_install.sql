@@ -236,22 +236,42 @@ VALUES ( 1, 'default_site_settings', '{
 		"https:\/\/lbry.tv",
 		"https:\/\/odysee.com"
 	], 
-	"default_jcsp" : {
-		"default-src"		: "''none''",
-		"img-src"		: "*",
-		"base-uri"		: "''self''",
-		"style-src"		: "''self''",
-		"script-src"		: "''self''",
-		"font-src"		: "''self''",
-		"form-action"		: "''self''",
-		"frame-ancestors"	: "''self''",
-		"frame-src"		: "*",
-		"media-src"		: "''self''",
-		"connect-src"		: "''self''",
-		"worker-src"		: "''self''",
-		"child-src"		: "''self''",
-		"require-trusted-types-for" : "''script''"
-	}, 
+	"default_secpolicy" : {
+		"content-security-policy": {
+			"default-src"			: "''none''",
+			"img-src"			: "*",
+			"base-uri"			: "''self''",
+			"style-src"			: "''self''",
+			"script-src"			: "''self''",
+			"font-src"			: "''self''",
+			"form-action"			: "''self''",
+			"frame-ancestors"		: "''self''",
+			"frame-src"			: "*",
+			"media-src"			: "''self''",
+			"connect-src"			: "''self''",
+			"worker-src"			: "''self''",
+			"child-src"			: "''self''",
+			"require-trusted-types-for"	: "''script''"
+		},
+		"permissions-policy": {
+			"accelerometer"			: [ "none" ],
+			"camera"			: [ "none" ],
+			"fullscreen"			: [ "self" ],
+			"geolocation"			: [ "none" ],
+			"gyroscope"			: [ "none" ],
+			"interest-cohort"		: [],
+			"payment"			: [ "none" ],
+			"usb"				: [ "none" ],
+			"microphone"			: [ "none" ],
+			"magnetometer"			: [ "none" ]
+		}, 
+		"common-policy": [
+			"X-XSS-Protection: 1; mode=block",
+			"X-Content-Type-Options: nosniff",
+			"X-Frame-Options: SAMEORIGIN",
+			"Referrer-Policy: no-referrer, strict-origin-when-cross-origin"
+		]
+	},
 	"tag_white" : {
 		"p"		: [ "style", "class", "align", 
 					"data-pullquote", "data-video", 
