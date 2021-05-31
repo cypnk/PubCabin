@@ -197,7 +197,13 @@ JSON
 		"usb"				: [ "none" ],
 		"microphone"			: [ "none" ],
 		"magnetometer"			: [ "none" ]
-	}
+	}, 
+	"common-policy": [
+		"X-XSS-Protection: 1; mode=block",
+		"X-Content-Type-Options: nosniff",
+		"X-Frame-Options: SAMEORIGIN",
+		"Referrer-Policy: no-referrer, strict-origin-when-cross-origin"
+	]
 }
 JSON
 ,
