@@ -1053,6 +1053,27 @@ CREATE INDEX idx_term_source_ttl ON text_sources ( ttl );-- --
 CREATE INDEX idx_term_source_created ON text_sources ( created );-- --
 CREATE INDEX idx_term_source_updated ON text_sources ( updated );-- --
 
+-- Segmented page content
+CREATE TABLE text_blocks (
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	text_id INTEGER NOT NULL,
+	body TEXT NOT NULL COLLATE NOCASE,
+	bare TEXT NOT NULL COLLATE NOCASE,
+	sort_order INTEGER NOT NULL DEFAULT 0,
+	created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	
+	CONSTRAINT fk_block_texts
+		FOREIGN KEY ( text_id ) 
+		REFERENCES page_texts ( id ) 
+		ON DELETE CASCADE
+);-- --
+CREATE INDEX idx_text_block_sort ON text_blocks ( sort_order );-- --
+CREATE INDEX idx_text_block ON text_blocks ( text_id );-- --
+CREATE INDEX idx_text_block_created ON text_blocks ( created );-- --
+CREATE INDEX idx_text_block_updated ON text_blocks ( updated );-- --
+
+
 -- Content authorship
 CREATE TABLE page_users(
 	page_id INTEGER NOT NULL, 
@@ -1087,6 +1108,24 @@ CREATE TABLE page_text_users(
 );-- --
 CREATE UNIQUE INDEX idx_page_text_users ON 
 	page_text_users( text_id, user_id );-- --
+
+CREATE TABLE text_block_users(
+	block_id INTEGER NOT NULL, 
+	user_id INTEGER NOT NULL, 
+	ttype TEXT NOT NULL DEFAULT 'editor',
+	
+	CONSTRAINT fk_text_block_text 
+		FOREIGN KEY ( block_id ) 
+		REFERENCES text_blocks ( id ) 
+		ON DELETE CASCADE,
+		
+	CONSTRAINT fk_texts_block_user 
+		FOREIGN KEY ( user_id ) 
+		REFERENCES users ( id ) 
+		ON DELETE RESTRICT
+);-- --
+CREATE UNIQUE INDEX idx_text_block_users ON 
+	text_block( block_id, user_id );-- --
 
 -- Page text revision history ( this should be append-only )
 CREATE TABLE page_revisions (
@@ -1274,6 +1313,31 @@ CREATE TRIGGER page_text_delete BEFORE DELETE ON page_texts FOR EACH ROW
 BEGIN
 	DELETE FROM page_text_search WHERE docid = OLD.id;
 END;-- --
+
+-- Text block searching
+CREATE VIRTUAL TABLE text_block_search 
+	USING fts4( body, tokenize=unicode61 );-- --
+
+CREATE TRIGGER text_block_insert AFTER INSERT ON text_blocks FOR EACH ROW 
+BEGIN
+	INSERT INTO text_block_search( docid, body ) 
+		VALUES ( NEW.bare );
+END;-- --
+
+CREATE TRIGGER text_block_update AFTER UPDATE ON text_blocks FOR EACH ROW 
+BEGIN
+	UPDATE text_block_search SET body = NEW.bare
+		WHERE docid = NEW.id;
+	
+	UPDATE text_blocks SET updated = CURRENT_TIMESTAMP 
+		WHERE id = NEW.id;
+END;-- --
+
+CREATE TRIGGER text_block_delete BEFORE DELETE ON text_blocks FOR EACH ROW 
+BEGIN
+	DELETE FROM text_block_search WHERE docid = OLD.id;
+END;-- --
+
 
 -- Content tagging and categorizing
 CREATE TABLE terms (
