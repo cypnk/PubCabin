@@ -82,7 +82,7 @@ class Site extends \PubCabin\Entity {
 				is_active = :active, is_maintenance = :maint 
 			WHERE id = :id LIMIT 1;";
 		
-		return $data->setInsert( $sql, $params, static::MAIN_DATA );
+		return $data->setUpdate( $sql, $params, static::MAIN_DATA );
 	}
 }
 
