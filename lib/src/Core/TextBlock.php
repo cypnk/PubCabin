@@ -32,15 +32,33 @@ class TextBlock extends \PubCabin\Entity {
 	 */
 	public $bare;
 	
-	// TODO
+	// TODO: Parse authorship
 	public function save( \PubCabin\Data $data ) : bool {
-		if ( isset( $this->id ) ) {
+		$params	= [
+			':body'	=> $this->body,
+			':bare'	=> $this->bare
+		];
+		
+		if ( empty( $this->id ) ) {
+			$sql			= 
+			"INSERT INTO text_blocks (
+				body, bare, text_id
+			) VALUES ( :body, :bare, :text_id )";
 			
-		} else {
+			$params[':text_id']	= $this->text_id;
 			
+			$this->id		= 
+			$data->setInsert( $sql, $params, static::MAIN_DATA );
+			
+			return empty( $this->id ) ? false : true;
 		}
 		
-		return true;
+		$params[':id'] => $this->id;
+		$sql = 
+		"UPDATE text_blocks SET body = :body, bare = :bare 
+			WHERE id = :id LIMIT 1;";
+		
+		return $data->setUpdate( $sql, $params, static::MAIN_DATA );
 	}
 	
 	public function __set( $name, $value ) {
