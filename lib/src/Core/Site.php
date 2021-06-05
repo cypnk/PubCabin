@@ -51,7 +51,6 @@ class Site extends \PubCabin\Entity {
 	 *  @return bool			True on success
 	 */
 	public function save( \PubCabin\Data $data ) : bool {
-		$db	= $data->getDb( static::MAIN_DATA );
 		$params	= [
 			':label'	=> $this->label,
 			':basename'	=> $this->basename,
