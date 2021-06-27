@@ -67,6 +67,8 @@ CREATE UNIQUE INDEX idx_site_path ON sites ( basename, basepath );-- --
 CREATE UNIQUE INDEX idx_site_label ON sites ( label );-- --
 CREATE INDEX idx_site_settings ON sites ( settings_id )
 	WHERE settings_id IS NOT NULL;-- --
+CREATE INDEX idx_site_active ON sites ( is_active );-- --
+CREATE INDEX idx_site_maint ON sites ( is_maintenance );-- --
 
 -- Mirrored sites
 CREATE TABLE site_aliases (
@@ -228,8 +230,11 @@ CREATE TABLE users (
 CREATE UNIQUE INDEX idx_username ON users( username );-- --
 CREATE UNIQUE INDEX idx_user_uuid ON users( uuid )
 	WHERE uuid IS NOT NULL;-- --
+CREATE INDEX idx_user_created ON users ( created );-- --
+CREATE INDEX idx_user_updated ON users ( updated );-- --
 CREATE INDEX idx_user_settings ON users ( settings_id )
 	WHERE settings_id IS NOT NULL;-- --
+CREATE INDEX idx_user_status ON users ( status );-- --
 
 -- User searching
 CREATE VIRTUAL TABLE user_search 
@@ -251,6 +256,7 @@ CREATE TABLE logins(
 );-- --
 CREATE UNIQUE INDEX idx_login_user ON logins( user_id );-- --
 CREATE UNIQUE INDEX idx_login_lookup ON logins( lookup );-- --
+CREATE INDEX idx_login_updated ON logins( updated );-- --
 CREATE INDEX idx_login_hash ON logins( hash )
 	WHERE hash IS NOT NULL;-- --
 
@@ -3020,8 +3026,8 @@ CREATE VIEW form_view AS SELECT
 
 CREATE VIEW form_field_view AS SELECT
 	ff.id AS id,
-	f.id AS form_id,
-	f.title AS form_title,
+	fr.id AS form_id,
+	fr.title AS form_title,
 	ff.field_name AS name,
 	ff.filter AS filter,
 	ff.create_template AS create_template,
@@ -3041,7 +3047,7 @@ CREATE VIEW form_field_view AS SELECT
 	g.settings AS settings
 	
 	FROM form_fields ff
-	JOIN forms f ON ff.form_id = f.id
+	JOIN forms fr ON ff.form_id = fr.id
 	LEFT JOIN styles sy ON ff.style_id = sy.id 
 	LEFT JOIN style_templates st ON sy.id = st.template_id 
 	LEFT JOIN field_language fl ON ff.id = fl.field_id 
