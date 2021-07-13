@@ -1571,6 +1571,51 @@ CREATE VIEW comment_view AS SELECT
 	LEFT JOIN user_auth e ON e.user_id = u.id;-- --
 
 
+-- Topic subscriptions
+CREATE TABLE reading(
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	user_id INTEGER NOT NULL,
+	term_id INTEGER NOT NULL,
+	created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	sort_order INTEGER NOT NULL DEFAULT 0,
+	
+	CONSTRAINT fk_read_user
+		FOREIGN KEY ( user_id ) 
+		REFERENCES users ( id ) 
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_read_term
+		FOREIGN KEY ( term_id ) 
+		REFERENCES terms ( id ) 
+		ON DELETE CASCADE
+);-- --
+CREATE UNIQUE INDEX idx_reading_topics ON reading( user_id, term_id );-- --
+CREATE INDEX idx_reading_created ON reading( created );-- --
+CREATE INDEX idx_reading_order ON reading( sort_order ASC );-- --
+
+-- Reading archive view
+-- Usage:
+-- SELECT * FROM reading_view WHERE user_id = :user_id LIMIT 10
+-- SELECT * FROM reading_view WHERE user_id = :user_id AND strftime('%s', since) > :start_range LIMIT 10
+CREATE VIEW reading_view AS SELECT
+	p.id AS id, 
+	p.uuid AS uuid,
+	p.site_id AS site_id,
+	p.is_home AS is_home,
+	p.render AS render,
+	p.ptype AS ptype,
+	p.created AS created,
+	p.updated AS updated,
+	p.published AS published,
+	r.term_id AS term_id,
+	r.created AS since,
+	r.user_id AS user_id,
+	r.sort_order AS sort_order
+	
+	FROM reading r
+	JOIN terms t ON r.term_id = t.id
+	LEFT JOIN page_terms pt ON t.id = pt.term_id
+	LEFT JOIN pages p ON pt.page_id = p.id;-- --
 
 
 -- Content uploads
