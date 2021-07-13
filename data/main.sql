@@ -1131,7 +1131,7 @@ CREATE TABLE text_block_users(
 		ON DELETE RESTRICT
 );-- --
 CREATE UNIQUE INDEX idx_text_block_users ON 
-	text_block( block_id, user_id );-- --
+	text_block_users ( block_id, user_id );-- --
 
 -- Page text revision history ( this should be append-only )
 CREATE TABLE page_revisions (
@@ -1610,12 +1610,25 @@ CREATE VIEW reading_view AS SELECT
 	r.term_id AS term_id,
 	r.created AS since,
 	r.user_id AS user_id,
-	r.sort_order AS sort_order
+	r.sort_order AS sort_order,
+	
+	GROUP_CONCAT(
+		'id='		|| texts.id		|| '&' || 
+		'tid='		|| terms.id		|| '&' || 
+		'label='	|| terms.taxonomy	|| '&' || 
+		'term='		|| texts.body		|| '&' || 
+		'title='	|| COALESCE( texts.title, '' ) || '&' || 
+		'lang='		|| l.iso_code		|| '&' ||
+		'slug='		|| texts.slug		|| '&' ||
+		'sort='		|| pt.sort_order
+	) AS taxonomy
 	
 	FROM reading r
-	JOIN terms t ON r.term_id = t.id
-	LEFT JOIN page_terms pt ON t.id = pt.term_id
-	LEFT JOIN pages p ON pt.page_id = p.id;-- --
+	JOIN terms ON r.term_id = terms.id
+	LEFT JOIN page_terms pt ON terms.id = pt.term_id
+	LEFT JOIN term_texts texts ON texts.term_id = terms.id
+	LEFT JOIN pages p ON pt.page_id = p.id
+	LEFT JOIN languages l ON l.id = texts.lang_id;-- --
 
 
 -- Content uploads
