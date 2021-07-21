@@ -540,10 +540,10 @@ SELECT
 	GROUP_CONCAT( DISTINCT roles.label ) AS label,
 	GROUP_CONCAT( 
 		COALESCE( '{}', rp.settings ), ',' 
-	) AS role_settings_override,
+	) AS privilege_settings_override,
 	GROUP_CONCAT( 
 		COALESCE( '{}', rg.settings ), ',' 
-	) AS role_settings,
+	) AS privilege_settings,
 	GROUP_CONCAT( 
 		COALESCE( '{}', pr.settings ), ',' 
 	) AS provider_settings
