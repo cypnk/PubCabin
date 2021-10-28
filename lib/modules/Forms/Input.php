@@ -236,6 +236,13 @@ HTML
 {input_before}{input_button_before}<input type="button" id="{id}" 
 	name="{name}" value="{value}" class="{button_classes}" 
 	{extra}>{input_button_after}{input_after}
+HTML
+,
+		// Captcha hidden and image fields
+		'tpl_captcha'			=> <<<HTML
+<input type="hidden" name="cap_a" value="{cap_a}">
+<img src="{captcha}" alt="{lang:forms:captcha:alt}" 
+	class="{captcha_classes}">
 HTML;
 	
 	
@@ -392,6 +399,13 @@ HTML;
 			// Captcha is basically text
 			case 'captcha':
 				$params['type']	= 'text';
+				
+				// Override input_before with hidden field and image
+				$params['{input_before}'] = 
+					( $params['{input_before}'] ?? '' ) . 
+					static::$templates['tpl_captcha'];
+				
+				// Append additional replacements
 				return $this->buildField( $params );
 			
 			// Textarea is a special type
@@ -621,19 +635,27 @@ HTML;
 		$itpl = '';
 		// Append other fields
 		foreach ( $opts['fields'] as $f ) {
+			$ft	= $f['type'] ?? 'text';
 			// Wysiwyg added?
-			$wys = 
-			( 0 == \strcasecmp( 'wysiwyg', $f['type'] ?? 'text' ) ) ? 
+			$wys	= ( 0 == \strcasecmp( 'wysiwyg', $ft ) ) ? 
+				true : false;
+			
+			// Captcha added?
+			$cap	= ( 0 == \strcasecmp( 'captcha', $ft ) ) ? 
 				true : false;
 			
 			if ( $wys ) {
 				$hooks->event( [ 'wysiwygload', [ 'field' => $f ] );
+			} elseif ( $cap ) {
+				$hooks->event( [ 'captchaload', [ 'field' => $f ] );
 			}
 			
 			$out .= $this->createFormField( $f );
 			
 			if ( $wys ) {
 				$hooks->event( [ 'wysiwygload', '' ] );
+			} elseif ( $cap ) {
+				$hooks->event( [ 'captchaload', '' ] );
 			}
 		}
 		
