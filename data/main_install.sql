@@ -117,6 +117,13 @@ INSERT INTO translations (
 			"msg"		: "Editing page body <span>(required)<\/span>",
 			"msgdesc"	: "Simple HTML and a subset of <a href=\"{formatting}\">Markdown<\/a> supported.",
 			"submit"	: "Save changes"
+		},
+		"captcha"	: {
+	  		"title"		: "Captcha",
+	  		"titledesc"	: "Copy the text in the image shown",
+	  		"msg"		: "This field is required to continue",
+	  		"msgdesc"	: "<a href=\"{accessibility\"}>Accessibility options<\/a>.",
+			"alt"		: "captcha"
 		}
 	},
 	"sections" : {
