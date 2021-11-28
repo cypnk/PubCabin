@@ -36,4 +36,8 @@ if [ -f logs.db ]; then
 	sqlite3 logs.db .dump > backup/logs-$DATE.sql
 fi
 
+if [ -f firewall.db ]; then
+	sqlite3 firewall.db .dump > backup/firewall-$DATE.sql
+fi
+
 exit
