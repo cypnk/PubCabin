@@ -236,6 +236,108 @@ class User extends \PubCabin\Entity {
 	}
 	
 	/**
+	 *  Create or update user
+	 *  
+	 *  @param \PubCabin\Date	$data	Storage handler
+	 *  @return bool			True on success
+	 */
+	public function save( \PubCabin\Data $data ) : bool {
+		$params	= [
+			':display'	=> $this->display ?? '',
+			':bio'		=> $this->bio ?? '',
+			':settings'	=> \PubCabin\Util::encode( $this->settings ),
+			':status'	=> ( int ) ( $this->status ?? 0 )
+		];
+		
+		// New user
+		if ( empty( $this->id ) ) {
+			// Provider must be set if not using password to login
+			if ( empty( $this->password ) && empty( $this->provider_id ) ) {
+				return false;	
+			}
+			
+			$sql	= 
+			"INSERT INTO users ( display, bio, settings, status, username, password ) 
+				VALUES( :display, :bio, :settings, :status, :username, :password )";
+			$params[':username']	= $this->username;
+			$params[':password']	= static::hashPasword( $this->password ?? '' );
+			
+			$this->id = 
+			$data->setInsert( $sql, $params, static::MAIN_DATA );
+			
+			$ok	= empty( $this->id ) ? false : true;
+			
+			// Create basic auth info
+			if ( $ok ) {
+				$this->createAuth();
+			}
+			return $ok;
+		} 
+		
+		// Editing existing user
+		$params[':id'] => $this->id;
+		$sql	= 
+		"UPDATE users SET bio = :bio, display = :display, 
+			settings = :settings,
+			status = :status WHERE id = :id;";
+		
+		return $data->setUpdate( $sql, $params, static::MAIN_DATA );
+	}
+	
+	/**
+	 *  Set a new password for the user
+	 *  
+	 *  @param string	$param		Raw password as entered
+	 *  @return bool
+	 */
+	public function savePassword( string $password ) : bool {
+		if ( !isset( $this->id ) ) {
+			return false;	
+		}
+		
+		$sql	= 
+		"UPDATE users SET password = :password 
+			WHERE id = :id";
+		
+		return 
+		$data->setUpdate( $sql, [ 
+			':password'	=> static::hashPassword( $password ), 
+			':id'		=> ( int ) $this->id 
+		], static::MAIN_DATA );
+	}
+	
+	/**
+	 *  Authentication creation helper
+	 */
+	private function createAuth() {
+		$params = [
+			':user_id'	=> $this->id,
+			':email'	=> $this->email ?? '',
+			':info'		=> $this->info ?? '',
+			':is_approved'	=> $this->is_approved ? 1 : 0,
+			':is_locked'	=> $this->is_locked ? 1 : 0
+		];
+		
+		// Local password login
+		if ( empty( $this->provider_id ) ) {
+			$sql	= 
+			"INSERT INTO user_auth ( user_id, email, info, is_approved, is_locked  ) 
+				VALUES( :user_id, :email, :info, :is_approved, :is_locked )";
+			
+		// Third party login
+		} else {
+			$sql	= 
+			"INSERT INTO user_auth ( user_id, email, info, 
+				is_approved, is_locked, provider_id ) 
+			VALUES( :user_id, :email, :info, 
+				:is_approved, :is_locked, :provider_id )";
+			$params[':provider_id'] = ( int ) $this->provider_id;
+		}
+
+		$data->setInsert( $sql, $params, static::MAIN_DATA );	
+	}
+	
+	/**
 	 *  Hash password to storage safe format
 	 *  
 	 *  @param string	$password	Raw password as entered
