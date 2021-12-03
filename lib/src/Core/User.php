@@ -277,9 +277,9 @@ class User extends \PubCabin\Entity {
 		// Editing existing user
 		$params[':id'] => $this->id;
 		$sql	= 
-		"UPDATE users SET bio = :bio, display = :display, 
-			settings = :settings,
-			status = :status WHERE id = :id;";
+		"UPDATE users SET display = :display, bio = :bio, 
+			settings = :settings, status = :status 
+			WHERE id = :id;";
 		
 		return $data->setUpdate( $sql, $params, static::MAIN_DATA );
 	}
@@ -321,7 +321,7 @@ class User extends \PubCabin\Entity {
 		// Local password login
 		if ( empty( $this->provider_id ) ) {
 			$sql	= 
-			"INSERT INTO user_auth ( user_id, email, info, is_approved, is_locked  ) 
+			"INSERT INTO user_auth ( user_id, email, info, is_approved, is_locked ) 
 				VALUES( :user_id, :email, :info, :is_approved, :is_locked )";
 			
 		// Third party login
