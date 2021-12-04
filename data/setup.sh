@@ -61,6 +61,12 @@ else
 	sqlite3 logs.db < logs.sql
 fi
 
+if [ -f firewall.db ]; then
+	sqlite3 firewall.db .dump > backup/firewall-$DATE.sql
+else
+	sqlite3 firewall.db < firewall.sql
+fi
+
 # If a user is supplied and exists, set as owner
 if id "$W_USER" >/dev/null 2>&1; then
 	chown -R $W_USER backup
@@ -87,6 +93,7 @@ if id "$W_USER" >/dev/null 2>&1; then
 	chmod 0755 sessions.db
 	chmod 0755 cache.db
 	chmod 0755 errors.log
+	chmod 0755 firewall.db
 	
 	if [ -f config.json ]; then
 		chown $W_USER config.json
