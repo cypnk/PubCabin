@@ -1,0 +1,12 @@
+<?xml version="1.0" ?>
+<!--
+Dynamic categories referenced in service doc
+-->
+<app:categories
+	xmlns:app="http://www.w3.org/2007/app"
+	xmlns:atom="http://www.w3.org/2005/Atom"
+	fixed="no">
+	<atom:category term="movies" scheme="http://example.com/cats/movies" />
+	<atom:category term="comics" scheme="http://example.com/cats/comics"/>
+	<atom:category term="songs" scheme="http://example.com/cats/songs" />
+</app:categories>
