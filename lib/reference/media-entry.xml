@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Media entry feed item
+Can be duplicated for media only feeds
+-->
+<entry>
+	<title>A Video Post</title>
+	<link href="http://example.org/2017/12/23/a-video-post"/>
+	<id>urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa9a</id>
+	<published>2017-12-23T18:35:02Z</published>
+	<updated>2017-12-23T18:35:02Z</updated>
+	<summary>Video description</summary>
+	<content type="video/mp4" src="http://example.org/media/1225c695-cfb8-4ebb-aaaa-80da344efa9a" />
+	<link rel="edit" 
+		href="http://example.org/entry/edit/1225c695-cfb8-4ebb-aaaa-80da344efa9a" />
+</entry>
+
