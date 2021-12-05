@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Atom Service document
+-->
+<service xmlns="http://www.w3.org/2007/app"
+	xmlns:atom="http://www.w3.org/2005/Atom">
+	<!--
+	Accepted methods:
+	GET	= Retrieve resource at given URL
+	POST	= Create new resource at given collection URL
+	PUT	= Edit existing resource at given URL
+	DELETE	= Remove resource located at given URL
+	-->
+	<workspace>
+		<atom:title>Main</atom:title>
+		
+		<!--
+		New posts
+		-->
+		<collection href="http://example.org/blog">
+			<atom:title>Posts</atom:title>
+			<categories 
+				href="http://example.org/categories" />
+			<accept>application/atom+xml;type=entry</accept>
+		</collection>
+		
+		<!--
+		New media
+		-->
+		<collection href="http://exampe.org/media">
+			<atom:title>Media</atom:title>
+			<categories 
+				href="http://example.org/categories" />
+			<accept>image/png</accept>
+			<accept>image/jpeg</accept>
+			<accept>image/gif</accept>
+			<accept>image/bmp</accept>
+			
+			<accept>video/mp4</accept>
+			<accept>video/mp3</accept>
+			<accept>video/ogg</accept>
+			<accept>video/webm</accept>
+		</collection>
+		<!--
+		New categories
+		-->
+		<collection
+			href="http://example.org/categories">
+			<atom:title>Categories</atom:title>
+			<accept>application/atom+xml;type=entry</accept>
+		</collection>
+	</workspace>
+	<workspace>
+		<atom:title>Extras</atom:title>
+		
+		<!--
+		Header items
+		-->
+		<collection
+			href="http://example.org/extras/header">
+			<atom:title>Header</atom:title>
+			<accept>application/atom+xml;type=entry</accept>
+		</collection>
+		
+		<!--
+		Footer items
+		-->
+		<collection
+			href="http://example.org/extras/footer">
+			<atom:title>Footer</atom:title>
+			<accept>application/atom+xml;type=entry</accept>
+		</collection>
+		
+		<!--
+		Sidebar links
+		-->
+		<collection
+			href="http://example.org/extras/sidebar">
+			<atom:title>Sidebar</atom:title>
+			<accept>application/atom+xml;type=entry</accept>
+		</collection>
+	</workspace>
+</service>
