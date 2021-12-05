@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+A full single entry or summary preview
+-->
+<entry>
+	<title>A New Post</title>
+	<link href="http://example.org/2017/12/13/a-new-post"/>
+	<id>urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a</id>
+	<published>2017-12-23T18:30:02Z</published>
+	<updated>2017-12-23T18:30:02Z</updated>
+	<summary>Some text.</summary>
+		<!-- 
+		Embedded full content post
+		<content type="xhtml" xml:lang="en">
+			<div xmlns="http://www.w3.org/1999/xhtml">
+			<p>A new post was created <em>today</em></p>
+			</div>
+		</content>
+		-->
+	<link rel="edit" 
+		href="http://example.org/entry/edit/1225c695-cfb8-4ebb-aaaa-80da344efa6a" />
+</entry>
