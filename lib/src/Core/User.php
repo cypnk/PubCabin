@@ -238,7 +238,7 @@ class User extends \PubCabin\Entity {
 	/**
 	 *  Create or update user
 	 *  
-	 *  @param \PubCabin\Date	$data	Storage handler
+	 *  @param \PubCabin\Data	$data	Storage handler
 	 *  @return bool			True on success
 	 */
 	public function save( \PubCabin\Data $data ) : bool {
@@ -285,12 +285,44 @@ class User extends \PubCabin\Entity {
 	}
 	
 	/**
+	 *  Authenticate loaded user with given password
+	 *  
+	 *  @param \PubCabin\Data	$data	Storage handler
+	 *  @param string	$password	Raw entered password 
+	 *  @return bool
+	 */
+	public function passwordAuth( 
+		\PubCabin\Data $data, 
+		string $password 
+	) : bool {
+		if ( empty( $this->id ) ) {
+			return false;
+		}
+		
+		$res	= 
+		$data->getSingle( 
+			$this->id, 
+			"SELECT password FROM users WHERE id = :id", 
+			static::MAIN_DATA 
+		);
+		
+		return 
+		static::verifyPassword( 
+			$password, 
+			$res['password'] ?? '' 
+		);
+	}
+	
+	/**
 	 *  Set a new password for the user
 	 *  
 	 *  @param string	$param		Raw password as entered
 	 *  @return bool
 	 */
-	public function savePassword( string $password ) : bool {
+	public function savePassword( 
+		\PubCabin\Data $data, 
+		string $password 
+	) : bool {
 		if ( !isset( $this->id ) ) {
 			return false;	
 		}
@@ -365,6 +397,10 @@ class User extends \PubCabin\Entity {
 		string		$password, 
 		string		$stored 
 	) : bool {
+		if ( empty( $stored ) ) {
+			return false;
+		}
+		
 		$stored = \base64_decode( $stored, true );
 		if ( false === $stored ) {
 			return false;
