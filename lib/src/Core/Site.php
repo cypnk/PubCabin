@@ -47,7 +47,7 @@ class Site extends \PubCabin\Entity {
 	/**
 	 *  Create or update site entity
 	 *  
-	 *  @param \PubCabin\Date	$data	Storage handler
+	 *  @param \PubCabin\Data	$data	Storage handler
 	 *  @return bool			True on success
 	 */
 	public function save( \PubCabin\Data $data ) : bool {
