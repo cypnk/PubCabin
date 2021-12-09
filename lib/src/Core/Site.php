@@ -89,30 +89,57 @@ class Site extends \PubCabin\Entity {
 	 *  
 	 *  @param \PubCabin\Data	$data	Storage handler
 	 *  @param string		$path	URI String including domain
+	 *  @param int			$depth	Maximum subdirectory depth
 	 *  @return array
 	 */
 	public static function findByPath(
 		\PubCabin\Data	$data, 
-		string		$path 
+		string		$path, 
+		int		$depth
 	) : array {
-		$path	= \PubCabin\Util::slashPath( $path, true );
-		$segs	= explode( '/', $path );
-		$domain	= \array_shift( $segs );
-		$dirs	= [];
-		
-		foreach( $segs as $s ) {
-			$dirs[] = implode( '/', $dirs ) . $s;
+		$segs	= \PubCabin\Util::trimmedList( $path, false, '/' );
+		if ( empty( $segs ) ) {
+			return [];
 		}
 		
-		$params	= [ ':domain' => $domain ];
+		$domain	= \array_shift( $segs );
 		
-		$ins	= $data->getInParam( $dirs, $params );
-		$sql	= 
-		"SELECT * FROM sites WHERE domain = :domain AND {$ins}
-			ORDER BY basepath DESC;";
+		// Trim to max depth
+		if ( count( $segs ) > $depth ) {
+			$segs = \array_slice( $segs, 0, $depth );
+		}
+		
+		$dirs	= [];
+		$paths	= [];
+		foreach( $segs as $s ) {
+			$dirs[]		= $s;
+			$paths[]	= 
+			implode( '/', $dirs ) . '/' . $s;
+		}
+		
+		$params	= [ 
+			':balias'	=> $domain,
+			':bname'	=> $domain
+		];
+		
+		$ins	= $data->getInParam( $paths, $params );
+		$db	= $data->getDb( static::MAIN_DATA );
+		$stm	= 
+		$db->prepare( 
+			"SELECT * FROM sites_enabled WHERE 
+				( base_alias = :balias OR 
+					basename = :bname ) 
+				AND basepath {$ins}
+				ORDER BY basepath DESC;"
+		);
 		
 		return 
-		$data->getResults( $sql, $params, static::MAIN_DATA );
+		$data->getDataResult( 
+			$db, 
+			$params, 
+			'class, \\PubCabin\Core\\Site', 
+			$stm 
+		);
 	}
 }
 
