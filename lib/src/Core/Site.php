@@ -83,5 +83,36 @@ class Site extends \PubCabin\Entity {
 		
 		return $data->setUpdate( $sql, $params, static::MAIN_DATA );
 	}
+	
+	/**
+	 *  Find site by domain prefixed path and base URI
+	 *  
+	 *  @param \PubCabin\Data	$data	Storage handler
+	 *  @param string		$path	URI String including domain
+	 *  @return array
+	 */
+	public static function findByPath(
+		\PubCabin\Data	$data, 
+		string		$path 
+	) : array {
+		$path	= \PubCabin\Util::slashPath( $path, true );
+		$segs	= explode( '/', $path );
+		$domain	= \array_shift( $segs );
+		$dirs	= [];
+		
+		foreach( $segs as $s ) {
+			$dirs[] = implode( '/', $dirs ) . $s;
+		}
+		
+		$params	= [ ':domain' => $domain ];
+		
+		$ins	= $data->getInParam( $dirs, $params );
+		$sql	= 
+		"SELECT * FROM sites WHERE domain = :domain AND {$ins}
+			ORDER BY basepath DESC;";
+		
+		return 
+		$data->getResults( $sql, $params, static::MAIN_DATA );
+	}
 }
 
