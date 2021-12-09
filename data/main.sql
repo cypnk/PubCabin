@@ -46,10 +46,10 @@ CREATE TABLE sites (
 	label TEXT NOT NULL COLLATE NOCASE,
 	
 	-- Domain name
-	basename TEXT NOT NULL,
+	basename TEXT NOT NULL COLLATE NOCASE,
 	
 	-- Relative path
-	basepath TEXT NOT NULL, 
+	basepath TEXT NOT NULL COLLATE NOCASE, 
 	
 	-- Serialized JSON
 	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
