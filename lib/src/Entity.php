@@ -226,6 +226,19 @@ abstract class Entity {
 	public function swapSettingID( int $_new ) {
 		$this->_n_settings_id	= $_new;
 	}
+	
+	public static function populateFromArray( array $cols ) {
+		$obj	= new self;
+		$props	= \get_object_vars( $obj );
+		
+		foreach( $props as $k => $v ) {
+			if ( !\array_key_exists( $k, $cols ) ) {
+				continue;
+			}
+			$obj->{$k} = $cols[$k];
+		}
+		return $obj;
+	}
 }
 
 
