@@ -876,6 +876,66 @@ class Util {
 	}
 	
 	/**
+	 *  Process search pattern for full text searching
+	 *  This assumes stop words/phrases have already been removed
+	 *  
+	 *  @param string	$find	Sent search parameters
+	 *  @param int		$smax	Maximum number of unique search words
+	 *  @return string
+	 */
+	public static function searchData( string $find, int $smax = 10 ) : string {
+		// Remove tags and trim
+		$find	= static::bland( $find );
+		if ( empty( $find ) ) {
+			return '';
+		}
+		
+		// Search words including quoted terms
+		if ( \preg_match_all( '/"(?:\\\\.|[^\\\\"])*"|\S+/', $find, $m ) ) {
+			if ( empty( $m ) ) {
+				return '';
+			}
+			$fdata	= \array_unique( $m[0] ?? [] );
+		} else {
+			return '';
+		}
+		
+		if ( empty( $fdata ) ) {
+			return '';
+		}
+		
+		// Limit maximum number of unique words to search
+		$smax	= static::intRange( $smax, 1, 1000 );
+		if ( count( $fdata ) > $smax ) {
+			$fdata = \array_slice( $fdata, 0, $smax );
+		}
+		
+		// Insert ' OR ' for multiple terms
+		$find	= \implode( ' OR ', $fdata );
+		
+		// Remove conflicting/duplicate params
+		$find	= 
+		\preg_replace( '/\b(AND|OR|NEAR|NOT)(?:\s\1)+/iu', 'OR', $find );
+		
+		$find	= \preg_replace( '/\bOR NEAR/iu', 'NEAR', $find );
+		$find	= \preg_replace( '/\bNEAR OR/iu', 'NEAR', $find );
+		$find	= \preg_replace( '/\bOR AND/iu', 'AND', $find );
+		$find	= \preg_replace( '/\bAND OR/iu', 'AND', $find );
+		$find	= \preg_replace( '/\bOR NOT/iu', 'NOT', $find );
+		$find	= \preg_replace( '/\bNOT OR/iu', 'NOT', $find );
+		
+		$find	= 
+		\preg_replace( '/\b(AND|OR|NEAR|NOT)(?:\s\1)+/iu', 'OR', $find );
+		
+		// Return with keywords removed from beginning and end
+		return 
+		\preg_replace( 
+			'/^(AND|OR|NEAR|NOT)(.*)(AND|OR|NEAR|NOT)$/ius', 
+			'$2', \trim( $find )
+		);
+	}
+	
+	/**
 	 *  Safely encode array to JSON
 	 *  
 	 *  @return string
