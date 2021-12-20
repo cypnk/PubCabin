@@ -801,6 +801,81 @@ class Util {
 	}
 	
 	/**
+	 *  Estimate reading time in minutes based on words/characters in a text block
+	 *  
+	 *  @param string	$text	Text input
+	 *  @param array	$lang	Custom language set in ['words/chars', speed, regex ] format
+	 *  @return int
+	 */
+	public static function readingTime( string $text, array $lang = [] ) : int {
+		static $sets;
+		if ( !isset( $sets ) ) {
+			// Default character and measurement sets
+			$sets = [
+				// Matching type, average matches / minute, character pattern
+				[ 'words', 230, '/[\p{Latin}\p{Greek}\p{Cyrillic}]/u' ],
+				[ 'words', 250, '/[\p{Arabic}\p{Hebrew}]/u' ],
+				
+				[ 'chars', 1000, '/[\p{Han}\p{Hiragana}\p{Katakana}]/u' ]
+			];
+		}
+		
+		// Append custom set, if given and valid
+		if ( count( $lang ) == 3 && !\in_array( $sets, $lang, true ) ) {
+			if ( 
+				\in_array( $lang[0], [ 'words', 'chars' ], true )	&&
+				$lang[1] == static::intRange( $lang[1], 10, 5000 )	&&
+				\preg_match( ( string ) $lang[2], '' ) !== false
+			) {
+				$sets[]	= $lang;
+			}
+		}
+		
+		// Remove tags and trim
+		$text	= static::bland( $text );
+		if ( empty( $text ) ) {
+			return 1;
+		}
+		
+		// Default
+		$speed	= 200;
+		$set	= 'words';
+		
+		// Total characters
+		$chars	= static::wordcount( $text, 'chars' );
+		
+		// Previous character count
+		$prev	= 0;
+		
+		// Guess language type based on search chars to total chars ratio
+		foreach( $sets as $k => $v ) {
+			if ( !\preg_match( $v[2], $text ) ) {
+				continue;
+			}
+			
+			// Character set found
+			$m = \preg_split( $v[2], $text );
+			if ( false === $m ) {
+				continue;
+			}
+			
+			$c = count( $m );
+			if ( !$c ) { continue; }
+			
+			// Current character ratio exceeds previous? Set new defaults
+			if ( ( $c / $chars ) > ( $prev / $chars ) ) {
+				$set	= $v[0];
+				$speed	= $v[1];
+				$prev	= $c;
+			}
+		}
+		
+		// Always send back at least 1 minute reading time
+		$rt = ( int ) ceil( static::wordcount( $text, $set ) / $speed );
+		return ( $rt < 1 ) ? 1 : $rt;
+	}
+	
+	/**
 	 *  Safely encode array to JSON
 	 *  
 	 *  @return string
