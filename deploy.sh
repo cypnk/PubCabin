@@ -22,13 +22,16 @@ mkdir -p $SVR/../snaps-$DATE
 mv -b $SVR/* $SVR/../snaps-$DATE
 cp -r -n * $SVR/
 
-chown -R $W_USER $SVR/data
-chmod -R 0755 $SVR/data
+if id "$W_USER" >/dev/null 2>&1; then
+	chown -R $W_USER $SVR/data
+	chmod -R 0755 $SVR/data
+fi
 
 cd $SVR/data
 
 chmod +x backup.sh
 chmod +x setup.sh
+chmod +x genkeys.sh
 sh setup.sh
 
 exit
