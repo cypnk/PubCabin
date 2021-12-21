@@ -467,6 +467,82 @@ END;-- --
 
 
 
+-- Public key storage
+CREATE TABLE public_keys(
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	user_id INTEGER NOT NULL,
+	label TEXT DEFAULT NULL COLLATE NOCASE,
+	public_key TEXT NOT NULL NULL COLLATE NOCASE,
+	created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	expires DATETIME DEFAULT NULL,
+	
+	CONSTRAINT fk_pubkey_user 
+		FOREIGN KEY ( user_id ) 
+		REFERENCES users ( id )
+		ON DELETE CASCADE
+);-- --
+CREATE INDEX idx_pubkey_user ON public_keys( user_id );-- --
+CREATE INDEX idx_pubkey_label ON public_keys( label ) 
+	WHERE label IS NOT NULL;-- --
+CREATE INDEX idx_pubkey_created ON public_keys( created );-- --
+CREATE INDEX idx_pubkey_updated ON public_keys( updated );-- --
+CREATE INDEX idx_pubkey_expires ON public_keys( expires )
+	WHERE expires IS NOT NULL;-- --
+
+-- Key triggers
+CREATE TRIGGER pubkey_after_insert AFTER INSERT ON public_keys FOR EACH ROW 
+WHEN NEW.expires IS NOT NULL
+BEGIN
+	-- Remove expired keys
+	DELETE FROM public_keys WHERE 
+		strftime( '%s', expires ) < 
+		strftime( '%s', updated );
+END;-- --
+
+-- Change update date
+CREATE TRIGGER pubkey_after_update AFTER UPDATE ON public_keys FOR EACH ROW 
+WHEN NEW.expires IS NOT NULL
+BEGIN
+	UPDATE public_keys SET updated = CURRENT_TIMESTAMP WHERE rowid = NEW.rowid;
+	
+	-- Remove any expired as well
+	DELETE FROM public_keys WHERE 
+		strftime( '%s', expires ) < 
+		strftime( '%s', updated );
+END;-- --
+
+-- Set key to expire in 1 year if not specified
+CREATE TRIGGER pubkey_exp_after_insert AFTER INSERT ON public_keys FOR EACH ROW 
+WHEN NEW.expires IS NULL
+BEGIN
+	UPDATE public_keys SET updated = CURRENT_TIMESTAMP, 
+		expires = datetime( 
+			( strftime( '%s','now' ) + 31557600 ), 
+			'unixepoch' 
+		) WHERE rowid = NEW.rowid;
+	
+	DELETE FROM public_keys WHERE 
+		strftime( '%s', expires ) < 
+		strftime( '%s', updated );
+END;-- --
+
+CREATE TRIGGER pubkey_exp_after_update AFTER UPDATE ON public_keys FOR EACH ROW 
+WHEN NEW.expires IS NULL
+BEGIN
+	UPDATE public_keys SET updated = CURRENT_TIMESTAMP, 
+		expires = datetime( 
+			( strftime( '%s','now' ) + 31557600 ), 
+			'unixepoch' 
+		) WHERE rowid = NEW.rowid;
+	
+	DELETE FROM public_keys WHERE 
+		strftime( '%s', expires ) < 
+		strftime( '%s', updated );
+END;-- --
+
+
+
 -- User roles
 CREATE TABLE roles(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
