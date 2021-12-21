@@ -1,18 +1,13 @@
 #!/bin/sh
 
 # Test server installation helper
+
 # Set the web user and group (used by PHP to read/write to these)
-# On Arch linux:
-W_USER=http
+# On Arch linux, the web user is http. On OpenBSD, it's www
+W_USER=${1:-http}
 
-# On OpenBSD:
-#W_USER=www
-
-# On Arch linux:
-SVR=/usr/share/nginx/pubcabin
-
-# On OpenBSD:
-#SVR=/var/www/pubcabin
+# Default deployment folder on Arch. On OpenBSD, /var/www/pubcabin
+SVR=${2:-/usr/share/nginx/pubcabin}
 
 # Timestamp
 DATE=`date +%Y-%m-%d-%H-%M-%S`
@@ -30,8 +25,11 @@ fi
 cd $SVR/data
 
 chmod +x backup.sh
-chmod +x setup.sh
-chmod +x genkeys.sh
+chmod +x setup.sh $W_USER
 sh setup.sh
 
 exit
+
+# To use with custom user and folder:
+# sh deploy.sh www /var/www/pubcabin
+
