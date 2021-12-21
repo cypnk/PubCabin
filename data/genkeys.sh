@@ -23,7 +23,7 @@ PCLR=$DEST$NAME.key
 # If either exists, avoid overwrite
 if [ -f "$PRIK" ] || [ -f "$PUBK" ]; then
 	echo "A key by that name already exists"
-	exit 0
+	exit 1
 fi
 
 # Generate encrypted private key and plaintext public key
