@@ -8,6 +8,6 @@ namespace PubCabin\Modules\Manager;
 class Module extends \PubCabin\Modules\Module {
 	
 	public function dependencies() : array {
-		return [ 'Styles', 'Forms', 'Menues', 'Sites', 'Membership' ];
+		return [ 'Hooks', 'Sessions', 'Styles', 'Forms', 'Menues', 'Sites', 'Membership' ];
 	}
 }
