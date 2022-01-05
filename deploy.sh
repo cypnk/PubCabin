@@ -26,7 +26,7 @@ cd $SVR/data
 
 chmod +x backup.sh
 chmod +x setup.sh $W_USER
-sh setup.sh
+sh setup.sh $W_USER
 
 exit
 
