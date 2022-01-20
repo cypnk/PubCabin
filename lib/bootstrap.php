@@ -57,6 +57,7 @@ define( 'PUBCABIN_NOTICES',	\PUBCABIN_DATA . 'notices.log' );
  *  Environment preparation
  */
 \date_default_timezone_set( 'UTC' );
+\ignore_user_abort( true );
 
 /**
  *  Isolated message holder
