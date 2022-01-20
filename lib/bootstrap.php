@@ -43,8 +43,14 @@ define( 'PUBCABIN_BACKUP',	\PUBCABIN_DATA . 'backup/' );
 // Module created files
 define( 'PUBCABIN_MODSTORE',	\PUBCABIN_DATA . 'modules/' );
 
+// Outgoing mail spool
+define( 'PUBCABIN_OUTBOX',	\PUBCABIN_DATA . 'outbox/' );
+
 // Error log file
 define( 'PUBCABIN_ERRORS',	\PUBCABIN_DATA . 'errors.log' );
+
+// Notification log file
+define( 'PUBCABIN_NOTICES',	\PUBCABIN_DATA . 'notices.log' );
 
 
 /**
@@ -52,18 +58,25 @@ define( 'PUBCABIN_ERRORS',	\PUBCABIN_DATA . 'errors.log' );
  */
 \date_default_timezone_set( 'UTC' );
 
-
 /**
- *  Isolated error holder
+ *  Isolated message holder
+ *  
+ *  @param string	$message	Log content body
+ *  @param string	$type		Message type, determines storage location
+ *  @param bool		$ret		Optional, returns stored log if true
  */
-function errors( string $message, bool $ret = false ) {
+function messages( string $message, string $type, bool $ret = false ) {
 	static $log	= [];
 	
 	if ( $ret ) {
 		return $log;
 	}
 	
-	$log[] = 
+	if ( !isset( $log[$type] ) ) {
+		$log[$type] = [];	
+	}
+	
+	$log[$type] = 
 	\preg_replace( 
 		'/[\x00-\x08\x0B\x0C\x0E-\x1F\x80-\x9F[\x{fdd0}-\x{fdef}\p{Cs}\p{Cf}\p{Cn}]/u', 
 		'', 
@@ -72,25 +85,62 @@ function errors( string $message, bool $ret = false ) {
 }
 
 /**
+ *  Error storage. Preserved for backward compatibility
+ */
+function errors( string $message, bool $ret = false ) {
+	if ( $ret ) {
+		return messages( '', '', true )['error'] ?? [];
+	}
+	
+	messages( 'error', $message );
+}
+
+/**
+ *  Write messages to given error file
+ */
+function logToFile( array $msgs, string $dest ) {
+	\error_log( 
+		\gmdate( 'D, d M Y H:i:s T', time() ) . "\n" . 
+			implode( "\n", $msgs ) . "\n\n\n\n", 
+		3, 
+		$dest
+	);
+}
+
+/**
  *  Internal error logger
  */
 \register_shutdown_function( function() {
-	$msgs = errors( '', true );
-	
-	if ( empty( $msgs ) ) {
-		return;
-	}
 	
 	if ( !\is_readable( \PUBCABIN_ERRORS ) ) {
 		\touch( \PUBCABIN_ERRORS );
 	}
 	
-	\error_log( 
-		\gmdate( 'D, d M Y H:i:s T', time() ) . "\n" . 
-			implode( "\n", $msgs ) . "\n\n\n\n", 
-		3, 
-		\PUBCABIN_ERRORS
-	);
+	if ( !\is_readable( \PUBCABIN_NOTICES ) ) {
+		\touch( \PUBCABIN_NOTICES );
+	}
+	
+	$msgs = messages( '', '', true );
+	
+	if ( empty( $msgs ) ) {
+		return;
+	}
+	
+	foreach ( $msgs as $k => $v ) {
+		switch ( $k ) {
+			case 'error':
+				logToFile( $v, \PUBCABIN_ERRORS );
+				break;
+				
+			case 'notice':
+				logToFile( $v, \PUBCABIN_NOTICES );
+				break;
+				
+			case 'mail':
+				// TODO: Handle outbox contents
+				break;
+		}
+	}
 } );
 
 
@@ -131,7 +181,7 @@ if ( !\function_exists( 'str_starts_with' ) ) {
 		if ( \is_readable( $file ) ) {
 			require $file;
 		} else {
-			errors( 'Unable to read file: ' . $file );
+			messages( 'error', 'Unable to read file: ' . $file );
 		}
 		break;
 	}
