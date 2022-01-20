@@ -25,6 +25,7 @@ mkdir -p cache/workspaces/collections/categories/entries
 mkdir -p cache/static
 mkdir -p cache/volatile
 mkdir -p modules
+mkdir -p outbox
 
 echo "	- Folders created" >> setup.log
 
@@ -108,6 +109,7 @@ if id "$W_USER" >/dev/null 2>&1; then
 	chmod -R 0755 uploads
 	chmod -R 0755 cache
 	chmod -R 0755 modules
+	chmod -R 0755 outbox
 	
 	chmod 0755 logs.db
 	chmod 0755 config.db
