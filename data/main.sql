@@ -1858,7 +1858,7 @@ CREATE TABLE tasks(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	title TEXT NOT NULL COLLATE NOCASE,
 	description TEXT NOT NULL COLLATE NOCASE,
-	weight INTEGER DEFAULT 0,
+	weight INTEGER NOT NULL DEFAULT 0,
 	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
 	settings_id INTEGER DEFAULT NULL,
 	created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1979,6 +1979,7 @@ CREATE VIEW page_task_view AS SELECT
 	pt.due AS due,
 	pt.expires AS expires,
 	
+	t.weight AS task_weight,
 	t.settings AS settings_override,
 	COALESCE( s.settings, '{}' ) AS settings,
 	
