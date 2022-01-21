@@ -91,9 +91,9 @@ CREATE VIEW sites_enabled AS SELECT
 	s.basepath AS basepath, 
 	s.is_active AS is_active,
 	s.is_maintenance AS is_maintenance,
-	s.settings AS settings_override, 
 	a.basename AS base_alias,
-	g.settings AS settings
+	s.settings AS settings_override, 
+	COALESCE( g.settings, '{}' ) AS settings
 	
 	FROM sites s 
 	LEFT JOIN settings g ON p.settings_id = g.id
@@ -615,13 +615,13 @@ SELECT
 	user_id AS id, 
 	GROUP_CONCAT( DISTINCT roles.label ) AS label,
 	GROUP_CONCAT( 
-		COALESCE( '{}', rp.settings ), ',' 
+		COALESCE( rp.settings, '{}' ), ',' 
 	) AS privilege_settings_override,
 	GROUP_CONCAT( 
-		COALESCE( '{}', rg.settings ), ',' 
+		COALESCE( rg.settings, '{}' ), ',' 
 	) AS privilege_settings,
 	GROUP_CONCAT( 
-		COALESCE( '{}', pr.settings ), ',' 
+		COALESCE( pr.settings, '{}' ), ',' 
 	) AS provider_settings
 	
 	FROM user_roles
@@ -716,12 +716,12 @@ CREATE VIEW area_view AS SELECT
 	a.site_id AS site_id,
 	a.permissions AS permissions, 
 	a.settings AS settings_override,
-	ag.settings AS settings,
+	COALESCE( ag.settings, '{}' ) AS settings,
 	GROUP_CONCAT( st.label, '|' ) AS templates,
 	GROUP_CONCAT( st.render, '|' ) AS template_render,
 	ar.status AS status,
-	ar.settings AS render_settings_override,
-	rg.settings AS render_settings
+	COALESCE( ar.settings, '{}' ) AS render_settings_override,
+	COALESCE( rg.settings, '{}' ) AS render_settings
 	
 	FROM area_render ar
 	JOIN areas a ON ar.area_id = a.id 
@@ -1009,8 +1009,8 @@ CREATE INDEX idx_user_path_settings ON user_path_settings ( settings_id )
 CREATE VIEW path_global_view AS SELECT
 	p.id AS id,
 	p.url AS url,
-	s.settings AS path_settings,
-	COALESCE( '{}', gs.settings ) AS path_settings_override
+	COALESCE( s.settings, '{}' ) AS path_settings,
+	COALESCE( gs.settings, '{}' ) AS path_settings_override
 	
 	FROM paths p
 	LEFT JOIN global_path_settings gs ON paths.id = gs.path_id 
@@ -1024,8 +1024,8 @@ CREATE VIEW path_role_view AS SELECT
 	p.id AS id,
 	p.url AS url,
 	s.settings AS path_settings,
-	COALESCE( '{}', gs.settings ) AS global_settings_override,
-	COALESCE( '{}', rs.settings ) AS role_settings_override
+	COALESCE( gs.settings, '{}' ) AS global_settings_override,
+	COALESCE( rs.settings, '{}' ) AS role_settings_override
 	
 	FROM paths p
 	LEFT JOIN global_path_settings gs ON paths.id = gs.path_id
@@ -1037,15 +1037,15 @@ CREATE VIEW path_user_view AS SELECT
 	p.id AS id,
 	p.url AS url,
 	us.user_id AS user_id,
-	s.settings AS path_settings,
-	COALESCE( '{}', gs.settings ) AS global_settings_override,
+	COALESCE( s.settings, '{}' ) AS path_settings,
+	COALESCE( gs.settings, '{}' ) AS global_settings_override,
 	
 	-- User may be in multiple roles
 	GROUP_CONCAT( 
-		COALESCE( '{}', rs.settings ), ',' 
+		COALESCE( rs.settings, '{}' ), ',' 
 	) AS role_settings_override,
 	
-	COALESCE( '{}', us.settings ) AS user_settings_override
+	COALESCE( us.settings, '{}' ) AS user_settings_override
 	
 	FROM paths p
 	LEFT JOIN global_path_settings gs ON paths.id = gs.path_id
@@ -1283,7 +1283,7 @@ CREATE VIEW page_area_view AS SELECT
 	) AS archive_ymd, 
 	
 	p.settings AS settings_override,
-	g.settings AS settings,
+	COALESCE( g.settings, '{}' ) AS settings,
 	
 	pa.area_id AS area_id,
 	a.label AS area_label,
@@ -1859,10 +1859,14 @@ CREATE TABLE tasks(
 	title TEXT NOT NULL COLLATE NOCASE,
 	description TEXT NOT NULL COLLATE NOCASE,
 	weight INTEGER DEFAULT 0,
+	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
+	settings_id INTEGER DEFAULT NULL,
 	created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );-- --
 CREATE UNIQUE INDEX idx_task_title ON tasks( title );-- --
+CREATE INDEX idx_task_settings ON tasks( settings_id )
+	WHERE settings_id IS NOT NULL;-- --
 CREATE INDEX idx_task_created ON tasks( created );-- --
 CREATE INDEX idx_task_updated ON tasks( updated );-- --
 
@@ -1961,6 +1965,47 @@ BEGIN
 	UPDATE page_tasks SET updated = CURRENT_TIMESTAMP 
 		WHERE id = OLD.id;
 END;-- --
+
+
+CREATE VIEW page_task_view AS SELECT
+	pt.id AS id,
+	pt.parent_id AS parent_id,
+	pt.page_id AS page_id,
+	pt.sort_order AS sort_order,
+	pt.progress AS progress,
+	pt.created AS created,
+	pt.updated AS updated,
+	pt.completed AS completed,
+	pt.due AS due,
+	pt.expires AS expires,
+	
+	t.settings AS settings_override,
+	COALESCE( s.settings, '{}' ) AS settings,
+	
+	p.ptype AS ptype,
+	COALESCE( p.settings, '{}' ) AS page_settings_override,
+	COALESCE( g.settings, '{}' ) AS page_settings,
+	
+	pt.open_id AS opened_user_id,
+	ou.username AS opened_username,
+	ou.display AS opened_user_display,
+	
+	COALESCE( pt.user_id, 0 ) AS assigned_user_id,
+	COALESCE( au.username, 'none' ) AS assigned_username,
+	COALESCE( au.display, '' ) AS assigned_user_display,
+	
+	COALESCE( pt.close_id, 0 ) AS closed_user_id,
+	COALESCE( cu.username, 'none' ) AS closed_username,
+	COALESCE( cu.display, '' ) AS closed_user_display
+	
+	FROM page_tasks pt
+	JOIN tasks t ON pt.task_id = t.id
+	JOIN users ou ON pt.open_id = ou.id 
+	JOIN pages p ON pt.page_id = p.id 
+	LEFT JOIN users au ON pt.user_id = au.id
+	LEFT JOIN users cu ON pt.closed_id = cu.id
+	LEFT JOIN settings s ON t.settings_id = s.id
+	LEFT JOIN settings g ON p.settings_id = g.id;-- --
 
 
 -- Content menues and navigation
@@ -2096,7 +2141,7 @@ CREATE VIEW user_place_view AS SELECT
 	p.geo_lat AS geo_lat,
 	p.geo_lon AS geo_lon,
 	p.settings AS settings_override,
-	g.settings AS settings
+	COALESCE( g.settings, '{}' ) AS settings
 	
 	FROM user_places l
 	LEFT JOIN places p ON l.place_id = p.id
@@ -2127,7 +2172,7 @@ CREATE VIEW page_place_view AS SELECT
 	p.geo_lat AS geo_lat,
 	p.geo_lon AS geo_lon,
 	p.settings AS settings_override,
-	g.settings AS settings
+	COALESCE( g.settings, '{}' ) AS settings
 	
 	FROM page_places l
 	LEFT JOIN places p ON l.place_id = p.id
@@ -2158,7 +2203,7 @@ CREATE VIEW comment_place_view AS SELECT
 	p.geo_lat AS geo_lat,
 	p.geo_lon AS geo_lon,
 	p.settings AS settings_override,
-	g.settings AS settings
+	COALESCE( g.settings, '{}' ) AS settings
 	
 	FROM comment_places l
 	LEFT JOIN places p ON l.place_id = p.id
@@ -2219,7 +2264,7 @@ CREATE VIEW global_event_view AS SELECT
 	o.trigger_id AS trigger_id, 
 	GROUP_CONCAT( DISTINCT t.callback, ',' ) AS callback,
 	o.settings AS settings_override,
-	g.settings AS settings
+	COALESCE( g.settings, '{}' ) AS settings
 	
 	FROM global_events o
 	LEFT JOIN events e ON o.event_id = e.id
@@ -2273,7 +2318,7 @@ CREATE VIEW site_event_view AS SELECT
 	s.trigger_id AS trigger_id, 
 	GROUP_CONCAT( DISTINCT t.callback, ',' ) AS callback,
 	s.settings AS settings_override,
-	g.settings AS settings
+	COALESCE( g.settings, '{}' ) AS settings
 	
 	FROM site_events s
 	LEFT JOIN events e ON s.event_id = e.id
@@ -2326,7 +2371,7 @@ CREATE VIEW user_event_view AS SELECT
 	u.trigger_id AS trigger_id, 
 	GROUP_CONCAT( DISTINCT t.callback, ',' ) AS callback,
 	u.settings AS settings_override,
-	g.settings AS settings
+	COALESCE( g.settings, '{}' ) AS settings
 	
 	FROM user_events u
 	LEFT JOIN events e ON u.event_id = e.id
@@ -2379,7 +2424,7 @@ CREATE VIEW page_event_view AS SELECT
 	p.trigger_id AS trigger_id, 
 	GROUP_CONCAT( DISTINCT t.callback, ',' ) AS callback,
 	p.settings AS settings_override,
-	g.settings AS settings
+	COALESCE( g.settings, '{}' ) AS settings
 	
 	FROM page_events p
 	LEFT JOIN events e ON p.event_id = e.id
@@ -2432,7 +2477,7 @@ CREATE VIEW comment_event_view AS SELECT
 	c.trigger_id AS trigger_id, 
 	GROUP_CONCAT( DISTINCT t.callback, ',' ) AS callback,
 	c.settings AS settings_override,
-	g.settings AS settings
+	COALESCE( g.settings, '{}' ) AS settings
 	
 	FROM comment_events c
 	LEFT JOIN events e ON c.event_id = e.id
@@ -2484,7 +2529,7 @@ CREATE VIEW menu_event_view AS SELECT
 	s.trigger_id AS trigger_id, 
 	GROUP_CONCAT( DISTINCT t.callback, ',' ) AS callback,
 	m.settings AS settings_override,
-	g.settings AS settings
+	COALESCE( g.settings, '{}' ) AS settings
 	
 	FROM menu_events m
 	LEFT JOIN events e ON m.event_id = e.id
@@ -2536,7 +2581,7 @@ CREATE VIEW module_load_view AS SELECT
 	ma.reference AS auth_reference,
 	ma.created AS auth_created,
 	ma.settings AS settings_override,
-	g.settings AS settings
+	COALESCE( g.settings, '{}' ) AS settings
 	
 	FROM modules m
 	LEFT JOIN module_access ma ON m.id = ma.module_id
@@ -2602,7 +2647,7 @@ CREATE VIEW redirect_event_view AS SELECT
 	s.trigger_id AS trigger_id, 
 	GROUP_CONCAT( DISTINCT t.callback, ',' ) AS callback,
 	r.settings AS settings_override,
-	g.settings AS settings
+	COALESCE( g.settings, '{}' ) AS settings
 	
 	FROM redirect_events r
 	LEFT JOIN events e ON r.event_id = e.id
@@ -3178,7 +3223,7 @@ CREATE VIEW form_field_view AS SELECT
 	l.display AS lang_display,
 	l.iso_code AS lang_iso,
 	ff.settings AS settings_override,
-	g.settings AS settings
+	COALESCE( g.settings, '{}' ) AS settings
 	
 	FROM form_fields ff
 	JOIN forms fr ON ff.form_id = fr.id
