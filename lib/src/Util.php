@@ -78,30 +78,58 @@ class Util {
 	
 	/**
 	 *  Check if script is running with the latest supported PHP version
+	 *  This function remains for backward compatibility
+	 */ 
+	public static function newPHP( string $spec = '8.0' ) : bool {
+		return libVersion( $spec );
+	}
+	
+	/**
+	 *  Check if a specific library or if PHP is the given version or above
 	 *  
-	 *  @param string	$spec		Last supported PHP version
+	 *  @param string	$spec		Minimum supported version
+	 *  @param string	$lib		Optional library name, case sensitive
 	 *  @return bool
 	 */
-	public static function newPHP( string $spec = '7.3' ) : bool {
-		static $v;
+	public static function libVersion( 
+		string		$spec, 
+		?string		$lib 
+	) : bool {
+		static $ext;
 		
-		if ( !isset( $v ) ) {
-			// Default supported list
-			$v	= static::trimmedList( \SUPPORTED_PHP );
-			
-			// Fix for 7.4.0 etc... appearing higher than 7.4
-			$v	= 
-			\array_map( function( $r ) {
-				return \rtrim( $r, '.0' );
-			}, $v );
-		}
+		// Fix for 7.4.0 etc... appearing higher than 7.4
+		$spec = \rtrim( $spec, '.0' );
 		
-		if ( \in_array( $spec, $v ) ) {
+		// Empty library? Check PHP
+		if ( empty( $lib ) ) {
 			return 
-			\version_compare( \PHP_VERSION, $spec, '>=' ) ? 
-				true : false;
+			\version_compare( 
+				\rtrim( \PHP_VERSION, '.0' ), $spec, '>=' 
+			);
 		}
 		
+		// Currently running extensions
+		if ( empty( $ext ) ) {
+			$ext = \get_loaded_extensions();
+		}
+		
+		foreach ( $ext as $e ) {
+			if ( \str_starts_with( $e, $lib ) ) {
+				$lv = \phpversion( $e );
+				
+				// Error getting version?
+				if ( false === $lv ) {
+					return false;
+				}
+				
+				return 
+				\version_compare( 
+					\rtrim( $lv, '.0' ), $spec, '>=' 
+				);
+			}
+		}
+		
+		// Extension not found
 		return false;
 	}
 	
