@@ -29,6 +29,42 @@ final class FileUtil {
 	 */
 	private static $presets	= [];
 	
+	/**
+	 *  Logging safe string
+	 */
+	public static function logStr(
+			$text, 
+		int	$len = 255 
+	) : string {
+		return 
+		Util::truncate( 
+			Util::unifySpaces( 
+				( string ) ( $text ?? '' ) 
+			), 0, $len 
+		);
+	}
+	
+	/**
+	 *  Check log file size and rollover, if needed
+	 *  
+	 *  @param string	$file	Log file name
+	 */
+	function logRollover( string $file ) {
+		// Nothing to rollover
+		if ( !\file_exists( $file ) ) {
+			return;
+		}
+		
+		$fs	= \filesize( $file );
+		// Empty file
+		if ( false === $fs ) {
+			return;
+		}
+		
+		if ( $fs > 5000000 ) {
+			static::backupFile( $file, false, 'old', 0 );
+		}
+	}
 	
 	/**
 	 *  Build a coherent path from given set of components
@@ -302,18 +338,13 @@ final class FileUtil {
 	}
 	
 	/**
-	 *  Adjust text mime-type based on path extension
+	 *  File mime-type detection helper
 	 *  
-	 *  @param mixed	$mime		Discovered mime-type
-	 *  @param string	$path		File name or path name
-	 *  @param mixed	$ext		Given extension (optional)
-	 *  @return string			Adjusted mime type
+	 *  @param string	$path	Fixed file path
+	 *  @return string
 	 */
-	public static function adjustMime( 
-				$mime, 
-		string		$path, 
-				$ext		= null 
-	) : string {
+	public static function detectMime( string $path ) : string {
+		$mime = \mime_content_type( $path );
 		if ( false === $mime ) {
 			return 'application/octet-stream';
 		}
@@ -321,10 +352,9 @@ final class FileUtil {
 		// Override text types with special extensions
 		// Required on some OSes like OpenBSD
 		if ( 0 === \strcasecmp( $mime, 'text/plain' ) ) {
-			$e	= 
-			$ext ?? \pathinfo( $path, \PATHINFO_EXTENSION ) ?? '';
+			$ext = \pathinfo( $path, \PATHINFO_EXTENSION ) ?? '';
 			
-			switch( \strtolower( $e ) ) {
+			switch( \strtolower( $ext ) ) {
 				case 'css':
 					return 'text/css';
 					
@@ -333,35 +363,13 @@ final class FileUtil {
 					
 				case 'svg':
 					return 'image/svg+xml';
-				
+					
 				case 'vtt':
 					return 'text/vtt';
 			}
 		}
 		
 		return \strtolower( $mime );
-	}
-	
-	/**
-	 *  File mime-type detection helper
-	 *  
-	 *  @param string	$path	Fixed file path
-	 *  @return string
-	 */
-	public static function detectMime( string $path ) : string {
-		if ( !missing( 'mime_content_type' ) ) { 
-			return 
-			static::adjustMime( \mime_content_type( $path ), $path );
-		}
-		
-		$info	= \finfo_open( \FILEINFO_MIME_TYPE );
-		$mime	= 
-		static::adjustMime( 
-			\finfo_open( $info, $path ), $path 
-		);
-		
-		\finfo_close( $info );
-		return $mime;
 	}
 	
 	/**
