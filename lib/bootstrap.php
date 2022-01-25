@@ -109,6 +109,43 @@ function logToFile( array $msgs, string $dest ) {
 }
 
 /**
+ *  Environment check
+ */
+function baseEnv() : bool {
+	$req	= [
+		'mb_strlen'		=> 'mbstring',
+		'mime_content_type'	=> 'fileinfo',
+		'tidy_repair_string'	=> 'tidy',
+		'normalizer_normalize'	=> 'intl',
+		'libxml_clear_errors'	=> 'libxml',
+		'imagecreatetruecolor'	=> 'GD',
+		// 'openssl_pkey_new'	=> 'openssl'
+	];
+	
+	$miss	= [];
+	foreach ( $req as $f => $name ) {
+		if ( !\function_exists( $name ) ) {
+			$miss[] = $name;
+		}
+	}
+	
+	if ( !defined( 'PDO::ATTR_DEFAULT_FETCH_MODE' ) ) {
+		$miss[] = 'pdo-sqlite';
+	}
+	
+	if ( empty( $miss ) ) {
+		return true;
+	}
+	
+	messages(
+		'error', 
+		'The following needs to be installed or enabled: ' . 
+			\implode( ', ', $miss ) 
+	);
+	return false;
+}
+
+/**
  *  Internal error logger
  */
 \register_shutdown_function( function() {
@@ -143,16 +180,6 @@ function logToFile( array $msgs, string $dest ) {
 		}
 	}
 } );
-
-
-/**
- *  Older PHP polyfill
- */
-if ( !\function_exists( 'str_starts_with' ) ) {
-	function str_starts_with( $h, $n ) {
-		return ( 0 === \strpos( $h, $n ) );
-	}
-}
 
 
 /**
@@ -191,7 +218,9 @@ if ( !\function_exists( 'str_starts_with' ) ) {
 /**
  *  Begin
  */
-$cabin	= new \PubCabin\Modules\Cabin\Module();
+if ( baseEnv() ) {
+	$cabin	= new \PubCabin\Modules\Cabin\Module();
+}
 
 
 
