@@ -62,11 +62,11 @@ define( 'PUBCABIN_NOTICES',	\PUBCABIN_DATA . 'notices.log' );
 /**
  *  Isolated message holder
  *  
- *  @param string	$message	Log content body
  *  @param string	$type		Message type, determines storage location
+ *  @param string	$message	Log content body
  *  @param bool		$ret		Optional, returns stored log if true
  */
-function messages( string $message, string $type, bool $ret = false ) {
+function messages( string $type, string $message, bool $ret = false ) {
 	static $log	= [];
 	
 	if ( $ret ) {
