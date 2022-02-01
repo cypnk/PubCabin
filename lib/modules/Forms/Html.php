@@ -156,14 +156,28 @@ class Html {
 	 * Convert an unformatted text block to paragraphs
 	 * 
 	 * @link http://stackoverflow.com/a/2959926
-	 * @param string	$val		Filter variable
-	 * @param bool		$skipCode	Ignore code blocks
+	 * @param string		$val		Filter variable
+	 * @param \PubCabin\Render	$render		Template render helper
+	 * @param bool			$skipCode	Ignore code blocks
 	 */
 	public static function makeParagraphs( 
-		string		$val, 
-		bool		$skipCode	= false 
+		string			$val, 
+		\PubCabin\Render	$render,
+		bool			$skipCode	= false 
 	) {
-		$out = $val;
+		// Escape excluded markdown-sensitive characters
+		static $esc	= [
+			'\\#'	=> '&#35;',
+			'\\*'	=> '&#42;',
+			'\\-'	=> '&#45;',
+			'\\:'	=> '&#58;',
+			'\\>'	=> '&#62;',
+			'\\['	=> '&#91;',
+			'\\]'	=> '&#93;',
+			'\\`'	=> '&#96;',
+			'\\~'	=> '&#126;'
+		];
+		$out	= \strtr( $val, $esc );
 		
 		// Escape block level code first
 		if ( !$skipCode ) {
@@ -176,11 +190,10 @@ class Html {
 						return '';
 				}
 				return 
-				\sprintf( '<pre><code>%s</code></pre>', 
-					\PubCabin\Util::entities( 
-						\trim( $m[1] ), false, false 
-					)
-				);
+				\strtr( $render->template( 'tpl_codeblock' ), [ 
+				'{code}' => 
+					\PubCabin\Util::entities( \trim( $m[1] ), false, false )
+				] );
 			}, $out );	
 		}
 		
@@ -224,28 +237,36 @@ class Html {
 		}
 		
 		$filters	= [
+			// Remove <br>, <p> tags inside <pre> and <code>
+			'#<(pre|code)(.*)?>(.*)<\/\1>#ism'	=>
+			function( $m ) {
+				$v = \preg_replace( '#<br\s*/?>#', "\n", $m[3] );
+				$v = \strtr( $v, [ 
+					'</p><p>'	=> "\n\n",
+					'<p>'		=> ''
+				] );
+				return 
+				'<' . $m[1] . ( $m[2] ?? '' ) . '>' . 
+				$v . 
+				'</' . $m[1] . '>';
+			},
+			
 			// Block of code
-			'#^\n`{3,}([\s\S]*)(^(?!\s)`{3,}.*$)\n#smU' =>
+			'#^`{3,}([^`{3,}]+)`{3,}#mU' =>
 			function( $m ) {
 				return
-				\sprintf(
-					'<pre><code>%s</code></pre>',
+				\strtr(
+					$render->template( 'tpl_codeblock' ), [
+					'{code}' => 
 					\PubCabin\Util::entities( 
 						trim( $m[1], '`' ), 
 						false, 
 						false 
-					)
+					) ]
 				);
 			},
 			
-			// Remove <br> tags inside <pre> and <code>
-			'#<(pre|code)>(.*)<\/\1>#ism'	=>
-			function( $m ) {
-				return 
-				'<' . $m[1] . '>' . 
-				\preg_replace( '#<br\s*/?>#', "", $m[2] ) . 
-				'</' . $m[1] . '>';
-			}
+			
 		];
 		
 		return \preg_replace_callback_array( $filters, $out );
@@ -290,17 +311,194 @@ class Html {
 	}
 	
 	/**
+	 *  Post formatting handler
+	 *  
+	 *  @param string			$html	Raw HTML entered by the user
+	 *  @param \PubCabin\Render		$render		Template render helper
+	 *  @param \PubCabin\Modules\Hooks	$hooks	Event hooks module
+	 *  @param string			$prefix	Link path prefix
+	 *  @return string
+	 */
+	public static function formatHTML( 
+		string					$html, 
+		\PubCabin\Render			$render,
+		\PubCabin\Modules\Hooks\Module		$hooks, 
+		string 					$prefix		= ''
+	) {
+		$hooks->event( [ 'formatting', [ 
+			'html'		=> $html, 
+			'prefix'	=> $prefix 
+		] ] );
+		
+		// Check if formatting was handled or use the default markdown formatter
+		$sent	= $hooks->arrayResult( 'formatting' );
+		
+		return empty( $sent ) ? 
+			static::markdown( $html, $render, $hooks, $prefix ) : 
+			( $sent['html'] ?? static::markdown( $html, $render, $hooks, $prefix ) );
+	}
+	
+	/**
+	 *  Convert Markdown formatted text into HTML tags
+	 *  
+	 *  Inspired by : 
+	 *  @link https://gist.github.com/jbroadway/2836900
+	 *  
+	 *  @param string				$html		Pacified text to transform into HTML
+	 *  @param \PubCabin\Render			$render		Template render helper
+	 *  @param \PubCabin\Modules\Hooks\Module	$hooks		Event hooks module
+	 *  @param string				$prefix		URL prefix to prepend text
+	 *  @return string
+	 */
+	public static function markdown(
+		string					$html,
+		\PubCabin\Render			$render,
+		\PubCabin\Modules\Hooks\Module		$hooks, 
+		string					$prefix		= '' 
+	) {
+		static $filters;
+		
+		if ( empty( $filters ) ) {
+			$filters	= 
+			[
+			// Links / Images with alt text and titles
+			'/(\!)?\[([^\[]+)\]\(([^\"\)]+)(?:\"(([^\"]|\\\")+)\")?\)/s'	=> 
+			function( $m ) use ( $prefix ) {
+				$i = \trim( $m[1] );
+				$t = \trim( $m[2] );
+				$u = \trim( $m[3] );
+			
+				// Use prefix for relative paths
+				$u = \PubCabin\Util::prependPath( $u, $prefix );
+				
+				// If this is a plain link
+				if ( empty( $i ) ) {
+					return 
+					\sprintf( "<a href='%s'>%s</a>", $u, 
+						 \PubCabin\Util::entities( $t ) );
+				}
+				
+				// This is an image
+				// Fix titles / alt text
+				$a = 
+				\PubCabin\Util::entities( 
+					\strtr( $m[4] ?? $t, [ '\"' => '"' ] ), 
+					false, 
+					false 
+				);
+				
+				return
+				\sprintf( "<img src='%s' alt='%s' title='%s' />", $u, 
+					 \PubCabin\Util::entities( $t ), $a );
+			},
+			
+			// Bold / Italic / Deleted / Quote text
+			'/(\*(\*)?|\~\~|\:\")(.*?)\1/'	=>
+			function( $m ) {
+				$i = \strlen( $m[1] );
+				$t = \trim( $m[3] );
+				
+				switch ( true ) {
+					case ( false !== \strpos( $m[1], '~' ) ):
+						return \sprintf( "<del>%s</del>", $t );
+						
+					case ( false !== \strpos( $m[1], ':' ) ):
+						return \sprintf( "<q>%s</q>", $t );
+							
+					default:
+						return ( $i > 1 ) ?
+							\sprintf( "<strong>%s</strong>", $t ) : 
+							\sprintf( "<em>%s</em>", $t );
+				}
+			},
+			
+			// Centered text
+			'/(\n(\-\>+)|\<center\>)([\pL\pN\s]+)((\<\-)|\<\/center\>)/'	=> 
+			function( $m ) {
+				$t = \trim( $m[3] );
+				return \sprintf( '<div class="center;">%s</div>', $t );
+			},
+			
+			// Headings
+			'/\n([#]{1,6}+)\s?(.+)/'			=>
+			function( $m ) {
+				$h = \strlen( trim( $m[1] ) );
+				$t = \trim( $m[2] );
+				return \sprintf( "<h%s>%s</h%s>", $h, $t, $h );
+			}, 
+			
+			// List items
+			'/\n(\*|([0-9]\.+))\s?(.+)/'		=>
+			function( $m ) {
+				$i = \strlen( $m[2] );
+				$t = \trim( $m[3] );
+				return ( $i > 1 ) ?
+					\sprintf( '<ol><li>%s</li></ol>', $t ) : 
+					\sprintf( '<ul><li>%s</li></ul>', $t );
+			},
+			
+			// Merge duplicate lists
+			'/<\/(ul|ol)>\s?<\1>/'			=> 
+			function( $m ) { return ''; },
+			
+			// Blockquotes
+			'/\n\>\s(.*)/'				=> 
+			function( $m ) {
+				$t = \trim( $m[1] );
+				return \sprintf( '<blockquote><p>%s</p></blockquote>', $t );
+			},
+			
+			// Merge duplicate blockquotes
+			'/<\/(p)><\/(blockquote)>\s?<\2>/'	=>
+			function( $m ) { return ''; },
+			
+			// Horizontal rule
+			'/\n-{5,}/'				=>
+			function( $m ) { return '<hr />'; },
+			
+			// Fix paragraphs after block elements
+			'/\n([^\n(\<\/ul|ol|li|h|blockquote|code|pre)?]+)\n/'		=>
+			function( $m ) {
+				return '</p><p>';
+			}, 
+			
+			// Inline code (untrimmed)
+			'/[^\`]\`([^\n`]+)\`/'			=>
+			function( $m ) {
+				return 
+				\strtr( $render->template( 'tpl_codeinline' ), [ 
+					'{code}' => 
+					\PubCabin\Util::entities( \trim( $m[1] ), false, false )
+				] );
+			}
+			];
+			
+			// Merge custom markdown filters
+			$hooks->event( [ 'markdownfilter', [ 'filters' => $filters ] ] );
+			$filters = 
+			$hooks->arrayResult( 'markdownfilter' )['filters'] ?? $filters;
+		}
+		
+		return
+		\preg_replace_callback_array( $filters, $html );
+	}
+	
+	/**
 	 *  HTML filter
 	 *  
-	 *  @param string	$value		Unformatted content
-	 *  @param string	$prefix		URL path prefix
-	 *  @param array	$white		Whitelist of tags, attributes
+	 *  @param string				$value		Unformatted content
+	 *  @param string				$prefix		URL path prefix
+	 *  @param \PubCabin\Render			$render		Template render helper
+	 *  @param \PubCabin\Modules\Hooks\Module	$hooks		Event hooks module
+	 *  @param array				$white		Whitelist of tags, attributes
 	 *  @return string
 	 */
 	public static function html( 
 		string	$value, 
-		string	$prefix		= '', 
-		array	$white		= []
+		\PubCabin\Render		$render,
+		\PubCabin\Modules\Hooks\Module	$hooks,
+		string	$prefix			= '', 
+		array	$white			= []
 	) : string {
 		static $sanity;
 		
@@ -331,8 +529,11 @@ class Html {
 			return '';
 		}
 		
+		// Apply formatting handler
+		$html		= static::formatHTML( $html, $render, $hooks, $prefix );
+		
 		// Format linebreaks and code
-		$html		= static::makeParagraphs( $html );
+		$html		= static::makeParagraphs( $html, $render );
 		
 		// Clean up HTML
 		$html		= static::tidyup( $html );
@@ -400,7 +601,7 @@ class Html {
 		$dom->formatOutput	= true;
 		$clean			= $dom->saveHTML();
 		$clean			= 
-			static::makeParagraphs( $clean, true );
+			static::makeParagraphs( $clean, $render, true );
 		
 		// Final clean
 		$clean			= static::tidyup( $clean );
