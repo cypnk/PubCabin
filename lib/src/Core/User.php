@@ -323,6 +323,81 @@ class User extends \PubCabin\Entity {
 	}
 	
 	/**
+	 *  Login user credentials
+	 *  
+	 *  @param string	$username	Login name to search
+	 *  @param string	$password	User provided password
+	 *  @param int		$status		Authentication success etc...
+	 *  @return array
+	 */
+	public function authByCredentials(
+		\PubCabin\Data	$data, 
+		string		$username,
+		string		$password,
+		int		&$status
+	) : array {
+		$user = static::findUserByUsername( $data, $username );
+		
+		// No user found?
+		if ( empty( $user ) ) {
+			$status = self::AUTH_STATUS_NOUSER;
+			return [];
+		}
+		
+		// Verify credentials
+		if ( \PubCabin\Crypto::verifyPassword( 
+			$password, $user['password'] 
+		) ) {
+			
+			// Refresh password if needed
+			if ( \PubCabin\Crypto::passNeedsRehash( 
+				$user['password'] 
+			) ) {
+				$this->savePassword( 
+					$data, 
+					( int ) $user['id'], 
+					$password 
+				);
+			}
+			
+			$status = self::AUTH_STATUS_SUCCESS;
+			return $user;
+		}
+		
+		// Login failiure
+		$status = self::AUTH_STATUS_FAILED;
+		return [];
+	}
+	
+	/**
+	 *  Set a new password for the user
+	 *  
+	 * 
+	 *  @param \PubCabin\Data	$data	Storage handler
+	 *  @param string		$param	Raw password as entered
+	 *  @return bool
+	 */
+	public function savePassword( 
+		\PubCabin\Data	$data, 
+		string		$password 
+	) : bool {
+		if ( !isset( $this->id ) ) {
+			return false;	
+		}
+		
+		$sql	= 
+		"UPDATE users SET password = :password 
+			WHERE id = :id";
+		
+		return 
+		$data->setUpdate( $sql, [ 
+			':password'	=> 
+				\PubCabin\Crypto::hashPassword( $password ), 
+			':id'		=> ( int ) $this->id 
+		], static::MAIN_DATA );
+	}
+	
+	/**
 	 *  Authentication creation helper
 	 * 
 	 *  @param \PubCabin\Data	$data	Storage handler
@@ -353,6 +428,134 @@ class User extends \PubCabin\Entity {
 		}
 
 		$data->setInsert( $sql, $params, static::MAIN_DATA );	
+	}
+	
+	/**
+	 *  Reset cookie lookup token and return new lookup
+	 *  
+	 *  @param \PubCabin\Data	$data	Storage handler
+	 *  @param int			$id	Logged in user's ID
+	 *  @return string
+	 */
+	public static function resetLookup( 
+		\PubCabin\Data	$data, 
+		int		$id 
+	) : string {
+		$db	= $data->getDb( static::MAIN_DATA );
+		$stm	= 
+		$db->prepare( 
+			"UPDATE logout_view SET lookup = '' 
+				WHERE user_id = :id;" 
+		);
+		
+		if ( $stm->execute( [ ':id' => $id ] ) ) {
+			// SQLite should have generated a new random lookup
+			$rst = 
+			$db->prepare( 
+				"SELECT lookup FROM logins WHERE 
+					user_id = :id;"
+			);
+			
+			if ( $rst->execute( [ ':id' => $id ] ) ) {
+				return $stm->fetchColumn();
+			}
+		}
+		
+		return '';
+	}
+	
+	/**
+	 *  Find user authorization by cookie lookup
+	 *  
+	 *  @param \PubCabin\Data	$data	Storage handler
+	 *  @param string		$lookup	Raw cookie lookup term
+	 *  @param int			$cexp	Cookie expiration
+	 *  @param bool			$reset	Reset lookup if expired
+	 *  @return array
+	 */
+	public static function findCookie( 
+		\PubCabin\Data	$data, 
+		string		$lookup, 
+		int		$cexp, 
+		bool		$reset		= false
+	) : array {
+		$sql	= "SELECT * FROM login_view
+			WHERE lookup = :lookup LIMIT 1;";	
+		$db	= $data->getDb( static::MAIN_DATA );
+		$stm	= $db->prepare( $sql );
+		
+		// First find lookup
+		if ( $stm->execute( [ ':lookup' => $lookup ] ) ) {
+			$results = $stm->fetchAll();
+		}
+		
+		// No logins found
+		if ( empty( $results ) ) {
+			return [];
+		}
+		
+		// One login found
+		$user	= $results[0];
+		$xpired = 
+		( time() - ( ( int ) $user['updated'] ) ) > $cexp;
+		
+		// Check for cookie expiration
+		if ( $reset && $expired ) {
+			$user['lookup']	= 
+			static::resetLookup( ( int ) $user['id'] );
+			
+		} elseif ( $expired ) {
+			return [];
+		}
+		
+		return $user;
+	}
+	
+	/**
+	 *  Get profile details by id
+	 *  
+	 *  @param \PubCabin\Data	$data	Storage handler
+	 *  @param int			$id	User's id
+	 *  @return array
+	 */
+	public static function findUserById(
+		\PubCabin\Data	$data, 
+		int		$id 
+	) : array {
+		$sql		= 
+		"SELECT * FROM users WHERE id = :id LIMIT 1;";
+		$results	= 
+		$data->getResults( 
+			$sql, [ ':id' => $id ], static::MAIN_DATA
+		);
+		if ( empty( $results ) ) {
+			return [];
+		}
+		return $results[0];
+	}
+	
+	/**
+	 *  Get login details by username
+	 *  
+	 *  @param \PubCabin\Data	$data		Storage handler
+	 *  @param string		$username	User's login name as entered
+	 *  @return array
+	 */
+	public static function findUserByUsername( 
+		\PubCabin\Data	$data, 
+		string		$username 
+	) : array {
+		$sql		= 
+		"SELECT * FROM login_pass WHERE username = :user LIMIT 1;";
+		$results	= 
+		$data->getResults( 
+			$sql, [ ':user' => $username ], static::MAIN_DATA 
+		);
+		
+		if ( empty( $results ) ) {
+			return [];
+		}
+		return $results[0];
 	}
 }
 
