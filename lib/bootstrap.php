@@ -119,7 +119,7 @@ function baseEnv() : bool {
 		'normalizer_normalize'	=> 'intl',
 		'libxml_clear_errors'	=> 'libxml',
 		'imagecreatetruecolor'	=> 'GD',
-		// 'openssl_pkey_new'	=> 'openssl'
+		'sodium_crypto_box'	=> 'sodium'
 	];
 	
 	$miss	= [];
