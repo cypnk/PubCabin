@@ -43,7 +43,7 @@ class Email extends Message {
 			[ "\"" => '', '\'' => ''] 
 		);
 		
-		$mime	= FileUtil::adjustMime( \mime_content_type( $name ) );
+		$mime	= FileUtil::detectMime( $name );
 		
 		return
 		"--{$sep}\r\n" . 
