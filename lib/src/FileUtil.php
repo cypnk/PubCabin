@@ -151,6 +151,21 @@ final class FileUtil {
 	}
 	
 	/**
+	 *  Filter file extension
+	 *  
+	 *  @param string	$ext		Raw file extension or empty
+	 *  @return string
+	 */
+	public static filterExt( ?string $ext ) : string {
+		return 
+		empty( $ext ) ? '' : 
+		\preg_replace( 
+			'/[[:space:]]+/', 
+			Util::bland( Util::title( $ext ), true ), '' 
+		);
+	}
+	
+	/**
 	 *  Create a datestamped backup of the given file before moving or copying it
 	 *  
 	 *  @param string	$file	File name path
@@ -171,12 +186,7 @@ final class FileUtil {
 			return true;
 		}
 		
-		// Filter file extension
-		$ext	= 
-		\preg_replace( 
-			'/[[:space:]]+/', 
-			Util::bland( Util::title( $ext ), true ), '' 
-		);
+		$ext	= static::filterExt( $ext );
 		
 		// Extension mode
 		$prefix = $fx == 1 ? \rtrim( $ext, '.' ) . '.' : '';
@@ -270,6 +280,102 @@ final class FileUtil {
 		return 
 		( false === \file_put_contents( $file, $data, \LOCK_EX ) ) ? 
 			false : true;
+	}
+	
+	/** 
+	 *  Return uploaded $_FILES array into a more sane format
+	 * 
+	 *  @return array
+	 */
+	public static function parseUploads() : array {
+		$files = [];
+		
+		foreach ( $_FILES as $name => $file ) {
+			if ( \is_array($file['name']) ) {
+				foreach ( $file['name'] as $n => $f ) {
+					$files[$name][$n] = [];
+					
+					foreach ( $file as $k => $v ) {
+						$files[$name][$n][$k] = 
+							$file[$k][$n];
+					}
+				}
+				continue;
+			}
+			
+        		$files[$name][] = $file;
+		}
+		return $files;
+	}
+	
+	/**
+	 *  Filter upload file name into a safe format
+	 *  
+	 *  @param string	$name		Original raw filename
+	 *  @return string
+	 */
+	public static function filterUpName( ?string $name ) : string {
+		if ( empty( $name ) ) {
+			return '_';
+		}
+		
+		$name	= \preg_replace('/[^\pL_\-\d\.\s]', ' ' );
+		return \preg_replace( '/\s+/', '-', \trim( $name ) );
+	}
+	
+	/**
+	 *  Rename file to prevent overwriting existing ones by 
+	 *  appending _i where 'i' is incremented by 1 until no 
+	 *  more files with the same name are found
+	 *   
+	 *  @param string	$up		Unmodified filename
+	 *  @return string
+	 */
+	public static function dupRename( string $up ) {
+		$info	= \pathinfo( $up );
+		$ext	= static::filterExt( $info['extension'] ?? '' );
+		$name	= $info['filename'] ?? '';
+		$dir	= $info['dirname'];
+		$file	= $up;
+		$i	= 0;
+		
+		while ( \file_exists( $file ) ) {
+			$file = Util::slashPath( $dir, true ) . 
+				$name . '_' . $i++ . 
+				\rtrim( '.' . $ext, '.' );
+		}
+		
+		return $file;
+	}
+	
+	/**
+	 * Move uploaded files to the same directory as the post
+	 */
+	public static function saveUploads( 
+		string	$path, 
+		string	$root 
+	) {
+		$files	= static::parseUploads();
+		$store	= 
+		Util::slashPath( $root, true ) . 
+		Util::slashPath( $path, true );
+		
+		foreach ( $files as $name ) {
+			foreach( $name as $file ) {
+				// If errors were found, skip
+				if ( $file['error'] != \UPLOAD_ERR_OK ) {
+					continue;
+				}
+				
+				$tn	= $file['tmp_name'];
+				$n	= 
+				static::filterUpName( $file['name'] );
+				
+				// Check for duplicates and rename 
+				$up	= static::dupRename( $store . $n );
+				\move_uploaded_file( $tn, $up );
+			}
+		}
 	}
 	
 	/**
