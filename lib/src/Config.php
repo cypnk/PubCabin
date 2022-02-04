@@ -67,7 +67,7 @@ JSON
 		'script_limit'		=> 10,
 		'meta_limit'		=> 15,
 		'folder_limit'		=> 15,
-		'shared_assets'		=> '/',
+		'shared_assets'		=> '\/',
 		'frame_whitelist'	=> '',
 		'default_stylesheets'	=> '',
 		'default_scripts'	=> '',
@@ -235,7 +235,7 @@ JSON
 		'session_limit_medium'	=> 3,
 		'session_limit_heavy'	=> 1,
 		'cookie_exp'		=> 86400,
-		'cookie_path'		=> '/',
+		'cookie_path'		=> '\/',
 		'cookie_restrict'	=> 1,
 		'form_delay'		=> 30,
 		'form_expire'		=> 7200
