@@ -156,7 +156,7 @@ final class FileUtil {
 	 *  @param string	$ext		Raw file extension or empty
 	 *  @return string
 	 */
-	public static filterExt( ?string $ext ) : string {
+	public static function filterExt( ?string $ext ) : string {
 		return 
 		empty( $ext ) ? '' : 
 		\preg_replace( 
