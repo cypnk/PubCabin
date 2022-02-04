@@ -44,6 +44,15 @@ class Site extends \PubCabin\Entity {
 	 */
 	public $is_maintenance;
 	
+	const DEFAULT_BASEPATH =<<<JSON
+{
+	"basepath"		: "\/",
+	"is_active"		: 1,
+	"is_maintenance"	: 0,
+	"settings"		: []
+}
+JSON;
+	
 	/**
 	 *  Create or update site entity
 	 *  
@@ -140,6 +149,138 @@ class Site extends \PubCabin\Entity {
 			'class, \\PubCabin\Core\\Site', 
 			$stm 
 		);
+	}
+	
+	/**
+	 *  Format available sites with default parameters
+	 *  
+	 *  @param array	$sites		Available sites
+	 *  @return array
+	 */
+	public static function formatSites( array $sites ) : array {
+		if ( empty( $sites ) ) {
+			return [];
+		}
+		
+		$se = [];
+		foreach ( $sites as $host => $base ) {
+			// Skip if invalid hostname
+			if ( false === \filter_var( 
+				$host, 
+				\FILTER_VALIDATE_DOMAIN,
+				\FILTER_FLAG_HOSTNAME
+			) ) {
+				continue;
+			}
+			
+			// Add default site if empty
+			if ( empty( $base ) ) {
+				$base	= [
+					\PubCabin\Config::setting( 
+						'default_basepath', 
+						self::DEFAULT_BASEPATH, 
+						'json' 
+					)
+				];
+			}
+		
+			// Decode went wrong or setting is invalid
+			if ( !\is_array( $base ) ) {
+				continue;
+			}
+			
+			// Found sub sites
+			$f = [];
+			
+			// Set default sub parameters
+			foreach ( $base as $b ) {
+				if ( !\is_array( $b ) ) {
+					continue;
+				}
+				
+				// Slash basepath
+				$b['basepath'] = 
+				\PubCabin\Util::slashPath( $b['basepath'] ?? '/' );
+			
+				// Set active mode if not set
+				$b['is_active'] ??= 1;
+				
+				// Set maintenance mode
+				$b['is_maintenance'] ??= 0;
+				
+				// Custom site settings or empty array
+				$b['settings'] ??= [];
+				$f[] = $b;
+			}
+			
+			// No valid sites?
+			if ( empty( $f ) ) {
+				continue;
+			}
+			// Append to enabled sites under this host
+			$se[$host] = $f;
+		}
+		
+		\natcasesort( $se );
+		return $se;
+	}
+	
+	/**
+	 *  Get whitelisted paths for current host
+	 *  
+	 *  @param string	$host	Current server host
+	 *  @param array	$sp	Enabled websites
+	 *  @return array
+	 */
+	public static function getHostPaths( string $host, array $sp ) : array {
+		static $paths	= [];
+		if ( !empty( $paths[$host] ) ) {
+			return $paths[$host];
+		}
+		
+		$sa	= [];
+		foreach ( $sp[$host] as $s ) {
+			// Assume inactive site if not explicitly enabled
+			$a = ( bool ) ( $s['is_active'] ?? false );
+			if ( $a ) {
+				$sa[] = 
+				\PubCabin\Util::slashPath( $s['basepath'] ?? '/' );
+			}
+		}
+		
+		\natcasesort( $sa );
+		$sa	= \array_unique( $sa, \SORT_STRING );
+		
+		$paths[$host]	= $sa;
+		return $paths[$host];
+	}
+	
+	/**
+	 *  Check if the current host and path are in the whitelist
+	 *  
+	 *  @param string	$host		Server host name
+	 *  @param string	$path		Current URI
+	 *  @param array	$sp		Enabled websites
+	 *  @return bool
+	 */
+	public static function hostPathMatch( string $host, string $path, array $sp ) : bool {
+		$pm	= static::getHostPaths( $host, $sp );
+		
+		// Root folder is allowed?
+		if ( \in_array( '/', $pm, true ) ) {
+			return true;
+		}
+		
+		// Shortest matching allowed subfolder
+		$pe	= explode( '/', $path );
+		$px	= '';
+		foreach ( $pe as $k => $v ) {
+			$px .= \PubCabin\Util::slashPath( $v );
+			if ( \in_array( $px, $pm, true ) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
 
