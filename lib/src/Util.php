@@ -81,7 +81,7 @@ class Util {
 	 *  This function remains for backward compatibility
 	 */ 
 	public static function newPHP( string $spec = '8.0' ) : bool {
-		return libVersion( $spec );
+		return static::libVersion( $spec );
 	}
 	
 	/**
