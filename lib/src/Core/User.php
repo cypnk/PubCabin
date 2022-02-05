@@ -268,8 +268,8 @@ class User extends \PubCabin\Entity {
 			"INSERT INTO users ( display, bio, settings, status, username, password ) 
 				VALUES( :display, :bio, :settings, :status, :username, :password )";
 			$params[':username']	= $this->username;
-			$params[':password']	= 
-				\PubCabin\Crypto::hashPasword( $this->password ?? '' );
+			$params[':password']	= empty( $this->password ) ? 
+				'' : \PubCabin\Crypto::hashPasword( $this->password );
 			
 			$this->id = 
 			$data->setInsert( $sql, $params, static::MAIN_DATA );
