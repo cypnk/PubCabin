@@ -370,7 +370,7 @@ JSON
 			default:
 				return 
 				static::$options[$name] ?? 
-				static::$defaults[$name];
+				static::$defaults[$name] ?? null;
 		}
 	}
 	
