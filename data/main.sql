@@ -91,7 +91,7 @@ CREATE VIEW sites_enabled AS SELECT
 	s.basepath AS basepath, 
 	s.is_active AS is_active,
 	s.is_maintenance AS is_maintenance,
-	a.basename AS base_alias,
+	GROUP_CONCAT( DISTINCT a.basename, ',' ) AS base_alias,
 	s.settings AS settings_override, 
 	COALESCE( g.settings, '{}' ) AS settings
 	
@@ -299,6 +299,9 @@ CREATE TABLE user_auth(
 	failed_last_start DATETIME DEFAULT NULL,
 	failed_last_attempt DATETIME DEFAULT NULL,
 	
+	created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	expires DATETIME DEFAULT NULL,
+	
 	CONSTRAINT fk_auth_user 
 		FOREIGN KEY ( user_id ) 
 		REFERENCES users ( id )
@@ -311,7 +314,7 @@ CREATE TABLE user_auth(
 );-- --
 CREATE UNIQUE INDEX idx_user_email ON user_auth( email );-- --
 CREATE INDEX idx_user_auth_user ON user_auth( user_id );-- --
-CREATE INDEX idx_user_provider ON user_auth( provider_id )
+CREATE INDEX idx_user_auth_provider ON user_auth( provider_id )
 	WHERE provider_id IS NOT NULL;-- --
 CREATE INDEX idx_user_pin ON user_auth( mobile_pin ) 
 	WHERE mobile_pin IS NOT NULL;-- --
@@ -323,6 +326,9 @@ CREATE INDEX idx_user_login ON user_auth( last_login )
 	WHERE last_login IS NOT NULL;-- --
 CREATE INDEX idx_user_failed_last ON user_auth( failed_last_attempt )
 	WHERE failed_last_attempt IS NOT NULL;-- --
+CREATE INDEX idx_user_auth_created ON user_auth( created );-- --
+CREATE INDEX idx_user_auth_expires ON user_auth( expires )
+	WHERE expires IS NOT NULL;-- --
 
 
 -- User auth last activity
