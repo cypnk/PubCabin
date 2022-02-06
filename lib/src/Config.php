@@ -36,6 +36,7 @@ class Config {
 		'mod_file_path'		=> '{modstore}',
 		'error'			=> '{error}',
 		'notice'		=> '{store}notice.log',
+		'allow_post'		=> 1,
 		
 		'default_basepath'	=> <<<JSON
 {
