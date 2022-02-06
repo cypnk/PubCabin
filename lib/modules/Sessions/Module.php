@@ -260,22 +260,8 @@ class Module extends \PubCabin\Modules\Module {
 			'sessioncookieparams', $options 
 		] );
 		
-		if ( newPHP( '7.3' ) ) {
-			return 
-			\setcookie( $app . "[$name]", $data, $options );
-		}
-		
-		// PHP < 7.3
 		return 
-		\setcookie( 
-			$app . "[$name]", 
-			$data,
-			$options['expires'],
-			$options['path'],
-			$options['domain'],
-			$options['secure'],
-			$options['httponly']
-		);
+		\setcookie( $app . "[$name]", $data, $options );
 	}
 	
 	/**
@@ -352,19 +338,7 @@ class Module extends \PubCabin\Modules\Module {
 			'sessioncookieparams', $opts 
 		] );
 		
-		if ( \PubCabin\Util::newPHP( '7.3' ) ) {
-			return \session_set_cookie_params( $options );
-		}
-		
-		// PHP < 7.3
-		return 
-		\session_set_cookie_params( 
-			$options['lifetime'], 
-			$options['path'], 
-			$options['domain'],
-			$options['secure'],
-			$options['httponly']
-		);
+		return \session_set_cookie_params( $options );
 	}
 	
 	/**
