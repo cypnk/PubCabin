@@ -482,6 +482,48 @@ class User extends \PubCabin\Entity {
 	}
 	
 	/**
+	 *  Reset public/secret keypairs and return generated secret key
+	 *  
+	 *  @param \PubCabin\Data	$data		Storage handler
+	 *  @param int			$id		Logged in user's ID
+	 *  @param string		$label		Public key short description
+	 *  @param string		$expires	Key expiration date
+	 *  @return string
+	 */
+	public static function resetKeypair( 
+		\PubCabin\Data	$data, 
+		int		$id, 
+		?string		$label,
+		?string		$expires
+	) : string {
+		$keys = \PubCabin\Crypto::keypair();
+		if ( empty( $keys ) ) {
+			return '';
+		}
+		
+		$db	= $data->getDb( static::MAIN_DATA );
+		$stm	= 
+		$db->prepare( 
+			"UPDATE public_keys SET public_key = :pubkey, 
+				label = :label, expires = :expires
+				WHERE user_id = :id;" 
+		);
+		$params = [
+			':pubkey'	=> $keys['public'],
+			':label'	=> empty( $label ) ? 
+				null : \PubCabin\Util::title( $label ),
+			':expires'	=> empty( $expires ) ? 
+				null : \PubCabin\Util::utc( $expires ),
+			':id'		=> $id
+		];
+		
+		if ( $stm->execute( $params ) ) {
+			return $keys['secret'];
+		}
+		return '';
+	}
+	
+	/**
 	 *  Find user authorization by cookie lookup
 	 *  
 	 *  @param \PubCabin\Data	$data	Storage handler
