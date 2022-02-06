@@ -163,6 +163,12 @@ class User extends \PubCabin\Entity {
 	 */
 	public $failed_last_attempt;
 	
+	/**
+	 *  Authentication expiration date
+	 *  @var string
+	 */
+	protected $_auth_expires;
+	
 	// TODO
 	public function save( \PubCabin\Data $data ) : bool {
 		if ( isset( $this->id ) ) {
@@ -211,6 +217,11 @@ class User extends \PubCabin\Entity {
 			case 'is_locked':
 				$this->_is_locked = ( bool ) $value;
 				break;
+			
+			case 'auth_expires':
+				$this->_auth_expires = 
+					\PubCabin\Util::utc( ( string ) $value );
+				break;
 				
 			default:
 				parent::__set( $name, $value );
@@ -237,6 +248,9 @@ class User extends \PubCabin\Entity {
 			
 			case 'is_locked':
 				return $this->_is_locked ?? false;
+			
+			case 'auth_expires':
+				return $this->_auth_expires ?? null;
 				
 			default:
 				return parent::__get( $name );
@@ -421,10 +435,13 @@ class User extends \PubCabin\Entity {
 		} else {
 			$sql	= 
 			"INSERT INTO user_auth ( user_id, email, info, 
-				is_approved, is_locked, provider_id ) 
+				is_approved, is_locked, provider_id, expires ) 
 			VALUES( :user_id, :email, :info, 
-				:is_approved, :is_locked, :provider_id )";
+				:is_approved, :is_locked, :provider_id, :expires )";
 			$params[':provider_id'] = ( int ) $this->provider_id;
+			
+			// Third party logins may have an expiration
+			$params[':expires'] = $this->auth_expires;
 		}
 
 		$data->setInsert( $sql, $params, static::MAIN_DATA );	
