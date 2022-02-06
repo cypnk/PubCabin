@@ -48,7 +48,7 @@ class Upload {
 		$height		= $imgsize[1];
 		
 		$t_width	= 
-		$this->config->setting( 'thumbnail_width', self::THUMBNAIL_WIDTH, 'int' );
+		$this->config->setting( 'thumbnail_width', 'int' ) ?? self::THUMBNAIL_WIDTH;
 		
 		// Width too small to generate thumbnail
 		if ( $t_width > $width ) {
@@ -86,7 +86,7 @@ class Upload {
 		
 		// Thunbnail destination
 		$tnp	= 
-		$this->config->setting( 'thumbnail_prefix', self::THUMBNAIL_PREFIX );
+		$this->config->setting( 'thumbnail_prefix' ) ?? self::THUMBNAIL_PREFIX;
 		
 		$dest	= 
 		FileUtil::dupRename( Util::prefixPath( $src, Util::labelName( $tnp ) ) );
@@ -219,12 +219,13 @@ class Upload {
 		}
 		
 		$tn		= 
-		$this->config->setting( 'thumbnail_gen', self::THUMBNAIL_GEN, 'bool' );
+		$this->config->setting( 'thumbnail_gen', 'bool' ) ?? self::THUMBNAIL_GEN;
 		
 		$img		= 
-		Util::trimmedList( $this->config->setting( 
-			'thumbnail_types', self::THUMBNAIL_TYPES 
-		) );
+		Util::trimmedList( 
+			$this->config->setting( 'thumbnail_types' ) ?? 
+			self::THUMBNAIL_TYPES 
+		);
 		
 		// Once uploaded and moved, format info
 		$processed	= [];
