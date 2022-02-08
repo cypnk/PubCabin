@@ -1390,8 +1390,15 @@ END;-- --
 
 CREATE TRIGGER page_text_update AFTER UPDATE ON page_texts FOR EACH ROW 
 BEGIN
-	UPDATE page_search SET body = NEW.title || ' ' || NEW.bare 
-		WHERE docid = NEW.id;
+	REPLACE INTO page_search( docid, body ) 
+		VALUES( NEW.id, NEW.title || ' ' || NEW.bare );
+	
+	-- Avoid empty search content
+	DELETE FROM page_search WHERE docid IN ( 
+		SELECT GROUP_CONCAT( page_texts.id ) AS id 
+			FROM page_texts
+			WHERE page_texts.title = '' AND page_texts.bare = ''
+	);
 	
 	UPDATE pages SET updated = CURRENT_TIMESTAMP 
 		WHERE id = NEW.page_id;
@@ -1407,6 +1414,7 @@ CREATE VIRTUAL TABLE text_block_search
 	USING fts4( body, tokenize=unicode61 );-- --
 
 CREATE TRIGGER text_block_insert AFTER INSERT ON text_blocks FOR EACH ROW 
+WHEN NEW.bare IS NOT ''
 BEGIN
 	INSERT INTO text_block_search( docid, body ) 
 		VALUES ( NEW.bare );
@@ -1414,8 +1422,14 @@ END;-- --
 
 CREATE TRIGGER text_block_update AFTER UPDATE ON text_blocks FOR EACH ROW 
 BEGIN
-	UPDATE text_block_search SET body = NEW.bare
-		WHERE docid = NEW.id;
+	REPLACE INTO text_block_search( docid, body )
+		VALUES( NEW.id, NEW.bare );
+	
+	DELETE FROM text_block_search WHERE docid IN ( 
+		SELECT GROUP_CONCAT( text_blocks.id ) AS id 
+			FROM text_blocks
+			WHERE text_blocks.bare = ''
+	);
 	
 	UPDATE text_blocks SET updated = CURRENT_TIMESTAMP 
 		WHERE id = NEW.id;
