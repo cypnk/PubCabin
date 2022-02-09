@@ -118,6 +118,7 @@ function baseEnv() : bool {
 		'tidy_repair_string'	=> 'tidy',
 		'normalizer_normalize'	=> 'intl',
 		'libxml_clear_errors'	=> 'libxml',
+		'iconv'			=> 'iconv',
 		'imagecreatetruecolor'	=> 'GD',
 		'sodium_crypto_box'	=> 'sodium'
 	];
