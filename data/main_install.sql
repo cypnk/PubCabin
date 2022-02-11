@@ -124,6 +124,33 @@ INSERT INTO translations (
 	  		"msg"		: "This field is required to continue",
 	  		"msgdesc"	: "<a href=\"{accessibility\"}>Accessibility options<\/a>.",
 			"alt"		: "captcha"
+		}, 
+		"anonpost"	: {
+			"page"		: "Create message",
+			"title"		: "Message title",
+			"titledesc"	: "Between 4 and 100 characters. Letters, numbers, and spaces supported.",
+			"name"		: "Name <span>(optional)<\/span>",
+			"namedesc"	: "Between 4 and 80 characters. Letters, numbers, and spaces supported. Name#secret format supported.",
+			"msg"		: "Message <span>(required)<\/span>",
+			"msgdesc"	: "Simple HTML and a subset of <a href=\"{formatting}\">Markdown<\/a> supported.",
+			"submit"	: "Post"
+		},
+		"userpost"	: {
+			"page"		: "Create message",
+			"title"		: "Message title",
+			"titledesc"	: "Between 4 and 100 characters. Letters, numbers, and spaces supported.",
+			"name"		: "Posting as <a href=\"{userlink}\">{username}<\/a>",
+			"msg"		: "Message <span>(required)<\/span>",
+			"msgdesc"	: "Simple HTML and a subset of <a href=\"{formatting}\">Markdown<\/a> supported.",
+			"submit"	: "Post"
+		},
+		"editpost"	: {
+			"page"		: "Edit message",
+			"title"		: "Message title",
+			"titledesc"	: "Between 4 and 100 characters. Letters, numbers, and spaces supported.",
+			"msg"		: "Editing Message <span>(required)<\/span>",
+			"msgdesc"	: "Simple HTML and a subset of <a href=\"{formatting}\">Markdown<\/a> supported.",
+			"submit"	: "Save changes"
 		}
 	},
 	"sections" : {
@@ -221,6 +248,12 @@ INSERT INTO translations (
 		"registerwait"	: "Please wait a few minutes before trying to register again",
 		"messagereq"	: "Message is required",
 		"messageinv"	: "Message is invalid"
+	}, 
+	"mod"		: {
+		"usercontent" : {
+			"select"	: "Select",
+			"IP"		: "IP {ip}"
+		}
 	}
 }' );-- --
 
@@ -229,7 +262,9 @@ INSERT INTO settings( id, label, info )
 VALUES ( 1, 'default_site_settings', '{ 
 	"page_title" : "Rustic Cyberpunk",
 	"page_sub" : "Coffee. Code. Cabins.",
-	"timezone" : "America/New_York",
+	"timezone" : "America\/New_York",
+	"language" : "en",
+	"locale" : "US",
 	"mail_from" : "domain@localhost", 
 	"mail_whitelist" : [
 		"root@localhost",
@@ -243,6 +278,27 @@ VALUES ( 1, 'default_site_settings', '{
 		"https:\/\/lbry.tv",
 		"https:\/\/odysee.com"
 	], 
+	"app_name": "PubCabin",
+	"app_start": "2017-03-14T04:30:55Z",
+	"skip_local": 1,
+	"cache_ttl": 3200,
+	"site_depth": 25,
+	"max_search_words": 10,
+	"style_limit": 20,
+	"script_limit": 10,
+	"meta_limit": 15,
+	"folder_limit": 15,
+	"shared_assets": "\/",
+	"default_stylesheets": [],
+	"default_scripts": [],
+	"token_bytes": 8,
+	"nonce_hash": "tiger160,4",
+	"default_meta": {
+		"meta" : [
+			{ "name" : "generator", "content" : 
+				"Bare; https:\/\/github.com\/cypnk\/PubCabin" }
+			]
+	},
 	"default_secpolicy" : {
 		"content-security-policy": {
 			"default-src"			: "''none''",
@@ -390,7 +446,17 @@ VALUES ( 1, 'default_site_settings', '{
 		":file"	: "(?<file>[\\pL_\\-\\d\\.\\s]{1,120})",
 		":find"	: "(?<find>[\\pL\\pN\\s\\-_,\\.\\:\\+]{2,255})",
 		":redir": "(?<redir>[a-z_\\:\\/\\-\\d\\.\\s]{1,120})"
-	}
+	},
+	"session_exp": 300,
+	"session_bytes": 12,
+	"session_limit_count": 5,
+	"session_limit_medium": 3,
+	"session_limit_heavy": 1,
+	"cookie_exp": 86400,
+	"cookie_path": "\/",
+	"cookie_restrict": 1,
+	"form_delay": 30,
+	"form_expire": 7200
 }' );-- --
 
 
@@ -803,7 +869,149 @@ class="{picture_wrap_classes}">{picture}
 class="{picture_wrap_classes}">{picture}</figure>{picture_wrap_after}' ), 
 
 ( 1, 'tpl_gallery', '{gallery_wrap_before}<div 
-class="{gallery_wrap_classes}">{pictures}</div>{gallery_wrap_after}' );-- --
+class="{gallery_wrap_classes}">{pictures}</div>{gallery_wrap_after}' ),
+
+( 1, 'tpl_user_comment', '<article class="{comment_classes}">
+	<header>
+		<time datetime="{date_utc}">{date_nice}</time>
+		<address><a href="{author_link}">{author}</a></address>
+	</header>
+	<section>{body}</section>
+</article>' ), 
+
+( 1, 'tpl_anon_comment', '<article class="{comment_classes}">
+	<header>
+		<time datetime="{date_utc}">{date_nice}</time>
+		<address>{author}</address>
+	</header>
+	<section>{body}</section>
+</article>' )
+
+( 1, 'tpl_moduser_comment', '<article class="{comment_classes}">
+	<header>
+		<time datetime="{date_utc}">{date_nice}</time>
+		<address><a href="{author_link}">{author}</a></address>
+	</header>
+	<section>{body}</section>
+	<footer>
+		<label class="func">
+			<input type="checkbox" name="select[]" value="{id}"> 
+			{lang:mod:usercontent:select}
+		</label>
+		{lang:mod:usercontent:ip}
+	</footer>
+</article>' ), 
+
+( 1, 'tpl_modanon_comment', '<article class="{comment_classes}">
+	<header>
+		<time datetime="{date_utc}">{date_nice}</time>
+		<address>{author}</address>
+	</header>
+	<section>{body}</section>
+	<footer>
+		<label class="func">
+			<input type="checkbox" name="select[]" value="{id}"> 
+			{lang:mod:usercontent:select}
+		</label>
+		{lang:mod:usercontent:ip}
+	</footer>
+</article>' ), 
+
+( 1, 'tpl_anonpost_form', '<form action="{action}" method="post" class="{form_classes}" id="post_form">
+	<input type="hidden" name="token" value="{token}">
+	<input type="hidden" name="nonce" value="{nonce}">
+	<p>
+		<label for="postname">{lang:forms:anonpost:name}</label>
+		<input id="postname" type="text" aria-describedby="postname-desc" name="author" maxlength="80" pattern="([^\s][\w\s]{3,80})">
+		<small id="postname-desc" class="desc">{lang:forms:anonpost:namedesc}</small>
+	</p>
+	<p>
+		<label for="postname">{lang:forms:anonpost:title}</label>
+		<input id="postname" type="text" aria-describedby="postname-desc" name="title" maxlength="80" pattern="([^\s][\w\s]{3,100})">
+		<small id="postname-desc" class="desc">{lang:forms:anonpost:titledesc}</small>
+	</p>
+	<p>
+		<label for="message">{lang:forms:anonpost:msg}</label>
+		<textarea id="message" name="message" rows="3" cols="60" aria-describedby="message-desc" required>{message}</textarea>
+		<small id="message-desc" class="desc">{lang:forms:anonpost:msgdesc}</small>
+	</p>
+	<p><label class="ib right"><input type="checkbox" name="terms" value="1" required> Agree to the <a href="{terms}" target="_blank">site terms</a></label> 
+		<input type="submit" value="{lang:forms:anonpost:submit}"></p>
+</form>' ),
+
+( 1, 'tpl_userpost_form', '<form action="{action}" method="post" class="{form_classes}" id="post_form">
+	<input type="hidden" name="token" value="{token}">
+	<input type="hidden" name="nonce" value="{nonce}">
+	<p>
+		<label for="postname">{lang:forms:userpost:title}</label>
+		<input id="postname" type="text" aria-describedby="postname-desc" name="title" maxlength="80" pattern="([^\s][\w\s]{3,100})">
+		<small id="postname-desc" class="desc">{lang:forms:userpost:titledesc}</small>
+	</p>
+	<p>
+		<label for="message">{lang:forms:userpost:msg}</label>
+		<textarea id="message" name="message" rows="3" cols="60" aria-describedby="message-desc" required>{message}</textarea>
+		<small id="message-desc" class="desc">{lang:forms:userpost:msgdesc}</small>
+	</p>
+	<p><input type="submit" value="{lang:forms:userpost:submit}"></p>
+</form>' ), 
+
+( 1, 'tpl_editpost_form', '<form action="{action}" method="post" class="{form_classes}" id="edit_form">
+	<input type="hidden" name="id" value="{id}">
+	<input type="hidden" name="token" value="{token}">
+	<input type="hidden" name="nonce" value="{nonce}">
+	<p>
+		<label for="postname">{lang:forms:editpost:title}</label>
+		<input id="postname" type="text" aria-describedby="postname-desc" name="title" maxlength="80" pattern="([^\s][\w\s]{3,100})" value="{title}">
+		<small id="postname-desc" class="desc">{lang:forms:editpost:titledesc}</small>
+	</p>
+	<p>
+		<label for="message">{lang:forms:editpost:msg}</label>
+		<textarea id="message" name="message" rows="3" cols="60" aria-describedby="message-desc" required>{message}</textarea>
+		<small id="message-desc" class="desc">{lang:forms:editpost:msgdesc}</small>
+	</p>
+	<p><input type="submit" value="{lang:forms:editpost:submit}"></p>
+</form>' ), 
+
+( 1, 'tpl_anoncomment_form', '<form action="{action}" method="post" class="{form_classes}" id="anon_post_form">
+	<input type="hidden" name="token" value="{token}">
+	<input type="hidden" name="nonce" value="{nonce}">
+	<p>
+		<label for="message">{lang:forms:anonpost:msg}</label>
+		<textarea id="message" name="message" rows="3" cols="60" aria-describedby="message-desc" required>{message}</textarea>
+		<small id="message-desc" class="desc">{lang:forms:anonpost:msgdesc}</small>
+	</p>
+	<p>
+		<label for="postname">{lang:forms:anonpost:name}</label>
+		<input id="postname" type="text" aria-describedby="postname-desc" name="author" maxlength="80" pattern="([^\s][\w\s]{3,80})">
+		<small id="postname-desc" class="desc">{lang:forms:anonpost:namedesc}</small>
+	</p>
+	<p><label class="ib right"><input type="checkbox" name="terms" value="1" required> Agree to the <a href="{terms}" target="_blank">site terms</a></label> 
+		<input type="submit" value="{lang:forms:anonpost:submit}"></p>
+</form>' ), 
+
+( 1, 'tpl_usercomment_form', '<form action="{action}" method="post" class="{form_classes}" id="comment_form">
+	<input type="hidden" name="token" value="{token}">
+	<input type="hidden" name="nonce" value="{nonce}">
+	<p>{lang:forms:userpost:name}</p>
+	<p>
+		<label for="message">{lang:forms:userpost:msg}</label>
+		<textarea id="message" name="message" rows="3" cols="60" aria-describedby="message-desc" required>{message}</textarea>
+		<small id="message-desc" class="desc">{lang:forms:userpost:msgdesc}</small>
+	</p>
+	<p><input type="submit" value="{lang:forms:userpost:submit}"></p>
+</form>' ), 
+
+( 1, 'tpl_editcomment_form', '<form action="{action}" method="post" class="{form_classes}" id="edit_comment_form">
+	<input type="hidden" name="id" value="{id}">
+	<input type="hidden" name="token" value="{token}">
+	<input type="hidden" name="nonce" value="{nonce}">
+	<p>
+		<label for="message">{lang:forms:editpost:msg}</label>
+		<textarea id="message" name="message" rows="3" cols="60" aria-describedby="message-desc" required>{message}</textarea>
+		<small id="message-desc" class="desc">{lang:forms:editpost:msgdesc}</small>
+	</p>
+	<p><input type="submit" value="{lang:forms:editpost:submit}"></p>
+</form>' );-- --
 
 
 
