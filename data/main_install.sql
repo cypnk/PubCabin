@@ -1011,7 +1011,167 @@ class="{gallery_wrap_classes}">{pictures}</div>{gallery_wrap_after}' ),
 		<small id="message-desc" class="desc">{lang:forms:editpost:msgdesc}</small>
 	</p>
 	<p><input type="submit" value="{lang:forms:editpost:submit}"></p>
-</form>' );-- --
+</form>' ), 
+
+( 1, 'tpl_modaction', '<p><label for="{prefix}-action">{lang:sections:moderation:drop:action}</label>
+	<select id="{prefix}-action" name="action">
+		<option value="">--</option>
+		
+		<option value="pub">{lang:sections:moderation:drop:pub}</option>
+		<option value="delete">{lang:sections:moderation:drop:del}</option>
+		
+		<option value="hold">{lang:sections:moderation:drop:hold}</option>
+		<option value="delete">{lang:sections:moderation:drop:del}</option>
+		
+		<option value="holdsusp">{lang:sections:moderation:drop:holdsusp}</option>
+		<option value="delsusp">{lang:sections:moderation:drop:delsusp}</option>
+		
+		<option value="holdsuspip">{lang:sections:moderation:drop:holdsuspip}</option>
+		<option value="delsuspip">{lang:sections:moderation:drop:delsuspip}</option>
+		
+		<option value="holdsuspuip">{lang:sections:moderation:drop:holdsuspuip}</option>
+		<option value="delsuspuip">{lang:sections:moderation:drop:delsuspuip}</option>
+		
+		<option value="holdblock"{lang:sections:moderation:drop:holdblock}</option>
+		<option value="delblock">{lang:sections:moderation:drop:delblock}</option>
+		
+		<option value="holdblockip">{lang:sections:moderation:drop:holdblockip}</option>
+		<option value="delblockip">{lang:sections:moderation:drop:delblockip}</option>
+		
+		<option value="holdblockuip">{lang:sections:moderation:drop:holdblockuip}</option>
+		<option value="delblockuip">{lang:sections:moderation:drop:delblockuip}</option>
+	</select>
+</p>' ),
+
+( 1, 'tpl_modoptdur', '<option value="{value}">{value}{lang:sections:moderation:drop:dur}</option>' ), 
+( 1, 'tpl_modopt', '<option value="{value}">{value}</option>' ), 
+
+( 1, 'tpl_moddelsel', '<form action="{action}" method="post">
+	<input type="hidden" name="token" value="{token}">
+	<input type="hidden" name="nonce" value="{nonce}">
+	<select multiple size="6" class="selector" name="delete">
+		{list_items}
+	</select>
+	<p><input type="submit" value="{lang:sections:moderation:delselect}"></p>
+</form>' ), 
+
+( 1, 'tpl_moddursel', '<p>
+	<label for="{prefix}-duration">{lang:sections:moderation:duration}</label>
+	<input id="{prefix}-duration" type="text" aria-describedby="{prefix}-duration-desc" maxlength="80" pattern="([^\s][\w\s]{3,80})">
+	<small id="{prefix}-duration-desc" class="desc">{lang:sections:moderation:durdesc}</small>
+</p>' ), 
+
+( 1, 'tpl_defaultmodip_form', '<form action="{action}" method="post" class="{form_classes}" id="modip_form">
+	<input type="hidden" name="token" value="{token}">
+	<input type="hidden" name="nonce" value="{nonce}">
+	<p>
+		<label for="ip">{lang:sections:moderation:filters:iplbl}</label>
+		<input id="ip" type="text" aria-describedby="ip-desc" pattern="([^\s][\w\s,\.\:/]{3,255})" required>
+		<small id="ip-desc" class="desc">{lang:sections:moderation:filters:ipdesc}</small>
+	</p>
+	<p>
+		<label for="host">{lang:sections:moderation:filters:hostlbl}</label>
+		<input id="host" type="text" aria-describedby="host-desc" pattern="([^\s][\w\s,\.\:/\-]{3,255})" required>
+		<small id="host-desc" class="desc">{lang:sections:moderation:filters:hostdesc}</small>
+	</p>
+	
+	{duration_select}
+	{filter_action}
+	
+	<p><input type="submit" value="{lang:sections:moderation:add}"></p>
+</form>' ), 
+
+( 1, 'tpl_modip', '<div class="{section_classes}">
+	<input id="panel-iprange" type="checkbox" name="panels">
+	<label for="panel-iprange" role="tab">{lang:sections:moderation:filters:ip}</label>
+	<div class="{section_content_classes}">
+	
+	{mod_form}
+	{delselect_form}
+	
+	</div>
+</div>' ), 
+
+( 1, 'tpl_modword_form', '<form action="{action}" method="post" class="{form_classes}" id="modword_form">
+	<input type="hidden" name="token" value="{token}">
+	<input type="hidden" name="nonce" value="{nonce}">
+	<p>
+		<label for="word">{lang:sections:moderation:filters:wordlbl}</label>
+		<input id="word" type="text" aria-describedby="word-desc" maxlength="255" pattern="([^\s][\w\s,]{3,255})" required>
+		<small id="word-desc" class="desc">{lang:sections:moderation:filters:worddesc}</small>
+	</p>
+	
+	{duration_select}
+	{filter_action}
+	
+	<p><input type="submit" value="{lang:sections:moderation:add}"></p>
+</form>' ),
+
+( 1, 'tpl_modwords', '<div class="{section_classes}">
+	<input id="panel-words" type="checkbox" name="panels">
+	<label for="panel-words" role="tab">{lang:sections:moderation:filters:word}</label>
+	<div class="{section_content_classes}">
+	
+	{mod_form}
+	{delselect_form}
+	
+	</div>
+</div>' ), 
+
+( 1, 'tpl_moduserform', '<form action="{action}" method="post" class="{form_classes}" id="moduser_form">
+	<input type="hidden" name="token" value="{token}">
+	<input type="hidden" name="nonce" value="{nonce}">
+	<p>
+		<label for="user">{lang:sections:moderation:filters:userlbl}</label>
+		<input id="user" type="text" aria-describedby="user-desc" maxlength="255" pattern="([^\s][\w\s,]{3,255})" required>
+		<small id="user-desc" class="desc">{lang:sections:moderation:filters:userdesc}</small>
+	</p>
+	
+	{duration_select}
+	{filter_action}
+</form>' ), 
+
+( 1, 'tpl_moduser', '<div class="{section_classes}">
+	<input id="panel-usernames" type="checkbox" name="panels">
+	<label for="panel-usernames" role="tab">{lang:sections:moderation:filters:user}</label>
+	<div class="{section_content_classes">
+	
+	{mod_form}
+	{delselect_form}
+	
+	</div>
+</div>' ),
+
+( 1, 'tpl_modurl_form', '<form action="{action}" method="post" class="{form_classes}" id="modurl_form">
+	<input type="hidden" name="token" value="{token}">
+	<input type="hidden" name="nonce" value="{nonce}">
+	<p>
+		<label for="url">{lang:sections:moderation:filters:urllbl}</label>
+		<input id="url" type="text" aria-describedby="url-desc" maxlength="255" pattern="([^\s][\w\s]{3,255})" required>
+		<small id="url-desc" class="desc">{lang:sections:moderation:filters:urldesc}</small>
+	</p>
+	
+	<p><label for="url-action">{lang:sections:moderation:drop:action}</label>
+		<select id="url-action" name="action">
+			<option value="">--</option>
+			<option value="noanon">{lang:sections:moderation:drop:noanon}</option>
+			<option value="close">{lang:sections:moderation:drop:close}</option>
+			<option value="hide">{lang:sections:moderation:drop:hide}</option>
+		</select>
+	</p>
+	<p><input type="submit" value="{lang:sections:moderation:add}"></p>
+</form>' ),
+
+( 1, 'tpl_modurl', '<div class="{section_classes}">
+	<input id="panel-urls" type="checkbox" name="panels">
+	<label for="panel-urls" role="tab">{lang:sections:moderation:filters:url}</label>
+	<div class="{section_content_classes}">
+	
+	{mod_form}
+	{delselect_form}
+	
+	</div>
+</div>' );-- --
 
 
 
