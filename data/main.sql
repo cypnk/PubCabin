@@ -652,6 +652,12 @@ CREATE TABLE style_templates(
 	render TEXT NOT NULL DEFAULT '' COLLATE NOCASE,
 	style_id INTEGER NOT NULL, 
 	
+	-- 0 = No cache
+	-- 1 = Cache special/reserved values only
+	-- 2 = Cache language only 
+	-- 3 = Cache language and special values
+	cache_level INTEGER NOT NULL DEFAULT 1,
+	
 	CONSTRAINT fk_render_style
 		FOREIGN KEY ( style_id ) 
 		REFERENCES styles ( id ) 
