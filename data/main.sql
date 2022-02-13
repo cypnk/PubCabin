@@ -667,6 +667,18 @@ CREATE UNIQUE INDEX idx_template ON style_templates ( style_id, label );-- --
 CREATE INDEX idx_template_style ON style_templates ( style_id );-- --
 CREATE INDEX idx_template_label ON style_templates ( label );-- --
 
+-- CSS classes and placeholder content
+CREATE TABLE style_definitions(
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+	style_id INTEGER NOT NULL, 
+	content TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
+	
+	CONSTRAINT fk_definition_style
+		FOREIGN KEY ( style_id ) 
+		REFERENCES styles ( id ) 
+		ON DELETE CASCADE
+);-- --
+CREATE UNIQUE INDEX idx_style_definition_style ON style_definitions ( style_id );-- --
 
 -- Site content regions/paged collections
 CREATE TABLE areas (
