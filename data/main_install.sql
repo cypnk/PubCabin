@@ -578,6 +578,147 @@ VALUES
 </body>
 </html>' ), 
 
+( 1, 'tpl_login_page', '<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>{lang:forms:login:page}</title>
+{after_title}
+{stylesheets}
+{meta_tags}
+<meta name="robots" content="noindex, nofollow">
+{login_page_head}
+</head>
+<body class="{body_classes} {login_page_body_classes}">{login_page_body}
+<main class="{body_main_classes} {login_page_main_classes}">{login_form_before}
+<form action="{action}" method="post" class="{form_classes} {login_form_classes}" id="login_form">
+	<input type="hidden" name="token" value="{token}">
+	<input type="hidden" name="nonce" value="{nonce}">
+	<p>
+		{login_name_label_before}<label for="loginuser" class="{label_classes}">{lang:forms:login:name}</label>{login_name_label_after}
+		{login_name_input_before}<input id="loginuser" type="text" class="{input_classes}" aria-describedby="loginuser-desc" name="username" maxlength="{name_max}" pattern="([^\s][\w\s]{{name_min},{name_max}})" required>{login_name_input_after}
+		{login_name_desc_before}<small id="loginuser-desc" class="{desc_classes}">{lang:forms:login:namedesc}</small>{login_name_desc_after}
+	</p>
+	<p>
+		{login_pass_label_before}<label for="loginpass" class="{label_classes}">{lang:forms:login:pass}</label>{login_pass_label_after}
+		{login_pass_input_before}<input id="loginpass" type="password" class="{input_classes}" aria-describedby="loginpass-desc" name="password" maxlength="4096" pattern="([^\s][\w\s]{{pass_min},4096})" required>{login_pass_input_after}
+		{login_pass_desc_before}<small id="loginpass-desc" class="{desc_classes}">{lang:forms:login:passdesc}</small>{login_pass_desc_after}
+	</p>
+	<p>{login_rem_label_before}<label class="ib">{login_rem_input_before}<input type="checkbox" name="rem" value="1">{login_rem_input_after} {lang:forms:login:rem}</label>{login_rem_label_after}</p>
+	<p><input type="submit" value="{lang:forms:login:submit}"></p>
+</form>{login_form_after}
+</main>
+</body>
+</html>' ), 
+
+( 1, 'tpl_register_page', '<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>{lang:forms:register:page}</title>
+{after_title}
+{stylesheets}
+{meta_tags}
+<meta name="robots" content="noindex, nofollow">
+{register_page_head}
+</head>
+<body class="{body_classes} {register_page_body_classes}">{register_page_body}
+<main class="{body_main_classes} {register_page_main_classes}">{register_form_before}
+<form action="{action}" method="post" class="{form_classes} {register_form_classes}" id="register_form">
+	<input type="hidden" name="token" value="{token}">
+	<input type="hidden" name="nonce" value="{nonce}">
+	<p>
+		{register_name_label_before}<label for="registername" class="{label_classes}">{lang:forms:register:name}</span></label>{register_name_label_after}
+		{register_name_input_before}<input id="registername" type="text" class="{input_classes}" aria-describedby="registername-desc" name="username" maxlength="{name_max}" pattern="([^\s][\w\s]{{name_min},{name_max}})" required>{register_name_input_after}
+		{register_name_desc_before}<small id="registername-desc" class="{desc_classes}">{lang:forms:register:namedesc}</small>{register_name_desc_before}
+	</p>
+	<p>
+		{register_pass_label_before}<label for="registerpass" class="{label_classes}">{lang:forms:register:pass}</span></label>{register_pass_label_after}
+		{register_pass_input_before}<input id="registerpass" type="password" class="{input_classes}" aria-describedby="registerpass-desc" name="password" maxlength="4096" pattern="([^\s][\w\s]{{pass_min},4096})" required>{register_pass_input_after}
+		{register_pass_desc_before}<small id="registerpass-desc" class="{desc_classes}">{lang:forms:register:passdesc}</small>{register_pass_desc_after}
+	</p>
+	<p>
+		{register_passr_label_before}<label for="passrepeat" class="{label_classes}">{lang:forms:register:repeat}</span></label>{register_passr_label_after}
+		{register_passr_input_before}<input id="passrepeat" type="text" class="{input_classes}" aria-describedby="passrepeat-desc" name="password2" maxlength="4096" pattern="([^\s][\w\s]{{pass_min},4096})" required>{register_passr_input_after}
+		{register_passr_desc_before}<small id="passrepeat-desc" class="{desc_classes}">{lang:forms:register:repeatdesc}</small>{register_passr_desc_after}
+	</p>
+	<p>
+		{register_terms_label_before}<label class="ib right">{register_terms_input_before}<input type="checkbox" name="terms" value="1" required>{register_terms_input_after} {lang:forms:register:terms}</label>{register_terms_label_after} 
+		{register_rem_label_before}<label class="ib right">{register_rem_input_before}<input type="checkbox" name="rem" value="1">{register_rem_input_after} {lang:forms:register:rem}</label>{register_rem_label_after} 
+		<input type="submit" value="{lang:forms:register:submit}"></p>
+</form>{register_form_after}
+</main>
+</body>
+</html>' ), 
+
+( 1, 'tpl_password_page', '<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>{lang:forms:password:page}</title>
+{after_title}
+{stylesheets}
+{meta_tags}
+<meta name="robots" content="noindex, nofollow">
+{password_page_head}
+</head>
+<body class="{body_classes} {password_page_body_classes}>{password_page_body}
+<main class="{body_main_classes} {password_page_main_classes}">{password_form_before}
+<form action="{action}" method="post" class="{form_classes} {password_form_classes}" id="password_form">
+	<input type="hidden" name="token" value="{token}">
+	<input type="hidden" name="nonce" value="{nonce}">
+	<p>
+		{oldpass_label_before}<label for="oldpass" class="{label_classes}">{lang:forms:password:old}</span></label>{oldpass_label_after} 
+		{oldpass_input_before}<input id="oldpass" type="password" class="{input_classes}" aria-describedby="oldpass-desc" name="password" maxlength="4096" pattern="([^\s][\w\s]{{pass_min},4096})" required>{oldpass_input_after}
+		{oldpass_desc_before}<small id="oldpass-desc" class="{desc_classes}">{lang:forms:password:olddesc}</small>{oldpass_desc_after}
+	</p>
+	<p>
+		{newpass_label_before}<label for="newpass">{lang:forms:password:new}</span></label>{newpass_label_after} 
+		{newpass_input_before}<input id="newpass" type="text" class="{input_classes}" aria-describedby="newpass-desc" name="password2" maxlength="4096" pattern="([^\s][\w\s]{{pass_min},4096})" required>{newpass_input_after}
+		{newpass_desc_before}<small id="newpass-desc" class="{desc_classes}">{lang:forms:password:newdesc}</small>{newpass_desc_after}
+	</p>
+	<p><input type="submit" value="{lang:forms:password:submit}"></p>
+</form>{password_form_after}
+</main>
+</body>
+</html>' ), 
+
+( 1, 'tpl_profile_page', '<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>{lang:forms:profile:page}</title>
+{after_title}
+{stylesheets}
+{meta_tags}
+<meta name="robots" content="noindex, nofollow">
+{profile_page_head}
+</head>
+<body class="{body_classes} {profile_page_body_classes}>{profile_page_body}
+<main class="{body_main_classes} {profile_page_main_classes}">{profile_form_before}
+<form action="{action}" method="post" class="{form_classes} {profile_form_classes}" id="profile_form">
+	<input type="hidden" name="token" value="{token}">
+	<input type="hidden" name="nonce" value="{nonce}">
+	<p>
+		{profile_name_label_before}<label for="loginuser" class="{label_classes}">{lang:forms:profile:name}</label>{profile_name_label_after} 
+		{profile_name_input_before}<input id="loginuser" type="text" value="{username}" class="{input_classes}" disabled>{profile_name_input_after}
+	</p>
+	<p>
+		{display_label_before}<label for="display" class="{label_classes}">{lang:forms:profile:display}</span></label>{display_label_after} 
+		{display_input_before}<input id="display" type="text" class="{input_classes}" aria-describedby="display-desc" name="display" maxlength="{name_max}" pattern="([^\s][A-z0-9À-ž\s]+){{name_min},{name_max}}" value="{value}">{display_input_after}
+		{display_desc_before}<small id="display-desc" class="{desc_classes}">{lang:forms:profile:displaydesc}</small>{display_desc_after}
+	</p>
+	<p>
+		{bio_label_before}<label for="bio" class="{label_classes}">{lang:forms:profile:bio}</span></label>{bio_label_after} 
+		{bio_input_before}<textarea id="bio" name="bio" rows="3" cols="60" class="{input_classes}" aria-describedby="bio-desc">{bio}</textarea>{bio_input_after} 
+		{bio_desc_before}<small id="bio-desc" class="{desc_classes}">{lang:forms:profile:biodesc}</small>{bio_desc_after}
+	</p>
+	<p><input type="submit" value="{lang:forms:profile:submit}"></p>
+</form>{profile_form_after}
+</main>
+</body>
+</html>' ), 
+
 ( 1, 'tpl_home_body', '<div class="{home_classes}">
 <article class="{home_wrap_classes}">
 {body}
