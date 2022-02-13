@@ -162,7 +162,13 @@ INSERT INTO translations (
 				"timezone" : "Default timezone",
 				"mail_from" : "Email sending address", 
 				"mail_whitelist" : "List of allowed recipients",
-				"frame_whitelist" : "Whitelist of embeddable URLs" 
+				"frame_whitelist" : "Whitelist of embeddable URLs",
+				"cache_ttl" : "Default cache duration",
+				"site_depth" : "Sub website base directory limit",
+				"folder_depth" : "Sub directory path depth",
+				"max_search_words" : "Maximum number of words in search phrases", 
+				"app_start" : "Content start date in UTC format",
+				"app_name" : "Main application name"
 			}
 		},
 		"user" : {
