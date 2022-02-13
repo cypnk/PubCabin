@@ -711,7 +711,7 @@ VALUES
 	</p>
 	<p>
 		{display_label_before}<label for="display" class="{label_classes}">{lang:forms:profile:display}</span></label>{display_label_after} 
-		{display_input_before}<input id="display" type="text" class="{input_classes}" aria-describedby="display-desc" name="display" maxlength="{name_max}" pattern="([^\s][A-z0-9À-ž\s]+){{name_min},{name_max}}" value="{value}">{display_input_after}
+		{display_input_before}<input id="display" type="text" class="{input_classes}" aria-describedby="display-desc" name="display" maxlength="{display_max}" pattern="([^\s][A-z0-9À-ž\s]+){{display_min},{display_max}}" value="{value}">{display_input_after}
 		{display_desc_before}<small id="display-desc" class="{desc_classes}">{lang:forms:profile:displaydesc}</small>{display_desc_after}
 	</p>
 	<p>
@@ -811,7 +811,7 @@ VALUES
 	</div>
 	</header>{before_post_body}
 	<div class="{post_body_wrap_classes}">
-		<div class="{post_body_content_classes">{body}</div>
+		<div class="{post_body_content_classes}">{body}</div>
 		<div class="{post_body_tag_classes}">{tags}</div>
 	</div>{after_post_body}
 	</div>{after_full_post}
@@ -954,7 +954,7 @@ class="{nav_nonext_s_classes}">Next</span></li>' ),
 	<li class="{nav_last2_classes}"><a href="{url2}" class="{nav_last2_a_classes}">{text2}</a></li>' ), 
 
 ( 1, 'tpl_page_list', '<div class="{list_wrap_classes}">
-	<h3 class="list_h_classes">{heading}</h3>
+	<h3 class="{list_h_classes}">{heading}</h3>
 	<nav class="{list_classes}"><ul>{links}</ul></nav>
 </div>' ), 
 
@@ -1032,7 +1032,7 @@ class="{gallery_wrap_classes}">{pictures}</div>{gallery_wrap_after}' ),
 		<address>{author}</address>
 	</header>
 	<section>{body}</section>
-</article>' )
+</article>' ),
 
 ( 1, 'tpl_moduser_comment', '<article class="{comment_classes}">
 	<header>
@@ -1068,19 +1068,19 @@ class="{gallery_wrap_classes}">{pictures}</div>{gallery_wrap_after}' ),
 	<input type="hidden" name="token" value="{token}">
 	<input type="hidden" name="nonce" value="{nonce}">
 	<p>
-		<label for="postname">{lang:forms:anonpost:name}</label>
-		<input id="postname" type="text" aria-describedby="postname-desc" name="author" maxlength="80" pattern="([^\s][\w\s]{3,80})">
-		<small id="postname-desc" class="desc">{lang:forms:anonpost:namedesc}</small>
+		<label for="postname" class="{label_classes}">{lang:forms:anonpost:name}</label>
+		<input id="postname" type="text" class="{input_classes}" aria-describedby="postname-desc" name="author" maxlength="{name_max}" pattern="([^\s][\w\s]{{name_min},{name_max}})">
+		<small id="postname-desc" class="{desc_classes}">{lang:forms:anonpost:namedesc}</small>
 	</p>
 	<p>
-		<label for="postname">{lang:forms:anonpost:title}</label>
-		<input id="postname" type="text" aria-describedby="postname-desc" name="title" maxlength="80" pattern="([^\s][\w\s]{3,100})">
-		<small id="postname-desc" class="desc">{lang:forms:anonpost:titledesc}</small>
+		<label for="postname" class="{label_classes}">{lang:forms:anonpost:title}</label>
+		<input id="postname" type="text" class="{input_classes}" aria-describedby="postname-desc" name="title" maxlength="80" pattern="([^\s][\w\s]{3,100})">
+		<small id="postname-desc" class="{desc_classes}">{lang:forms:anonpost:titledesc}</small>
 	</p>
 	<p>
-		<label for="message">{lang:forms:anonpost:msg}</label>
-		<textarea id="message" name="message" rows="3" cols="60" aria-describedby="message-desc" required>{message}</textarea>
-		<small id="message-desc" class="desc">{lang:forms:anonpost:msgdesc}</small>
+		<label for="message" class="{label_classes}">{lang:forms:anonpost:msg}</label>
+		<textarea id="message" name="message" rows="3" cols="60" class="{input_classes}" aria-describedby="message-desc" required>{message}</textarea>
+		<small id="message-desc" class="{desc_classes}">{lang:forms:anonpost:msgdesc}</small>
 	</p>
 	<p><label class="ib right"><input type="checkbox" name="terms" value="1" required> Agree to the <a href="{terms}" target="_blank">site terms</a></label> 
 		<input type="submit" value="{lang:forms:anonpost:submit}"></p>
@@ -1090,14 +1090,14 @@ class="{gallery_wrap_classes}">{pictures}</div>{gallery_wrap_after}' ),
 	<input type="hidden" name="token" value="{token}">
 	<input type="hidden" name="nonce" value="{nonce}">
 	<p>
-		<label for="postname">{lang:forms:userpost:title}</label>
-		<input id="postname" type="text" aria-describedby="postname-desc" name="title" maxlength="80" pattern="([^\s][\w\s]{3,100})">
-		<small id="postname-desc" class="desc">{lang:forms:userpost:titledesc}</small>
+		<label for="postname" class="{label_classes}">{lang:forms:userpost:title}</label>
+		<input id="postname" type="text" class="{input_classes}" aria-describedby="postname-desc" name="title" maxlength="80" pattern="([^\s][\w\s]{3,100})">
+		<small id="postname-desc" class="{desc_classes}">{lang:forms:userpost:titledesc}</small>
 	</p>
 	<p>
-		<label for="message">{lang:forms:userpost:msg}</label>
-		<textarea id="message" name="message" rows="3" cols="60" aria-describedby="message-desc" required>{message}</textarea>
-		<small id="message-desc" class="desc">{lang:forms:userpost:msgdesc}</small>
+		<label for="message" class="{label_classes}">{lang:forms:userpost:msg}</label>
+		<textarea id="message" name="message" rows="3" cols="60" class="{input_classes}" aria-describedby="message-desc" required>{message}</textarea>
+		<small id="message-desc" class="{desc_classes}">{lang:forms:userpost:msgdesc}</small>
 	</p>
 	<p><input type="submit" value="{lang:forms:userpost:submit}"></p>
 </form>' ), 
@@ -1107,14 +1107,14 @@ class="{gallery_wrap_classes}">{pictures}</div>{gallery_wrap_after}' ),
 	<input type="hidden" name="token" value="{token}">
 	<input type="hidden" name="nonce" value="{nonce}">
 	<p>
-		<label for="postname">{lang:forms:editpost:title}</label>
-		<input id="postname" type="text" aria-describedby="postname-desc" name="title" maxlength="80" pattern="([^\s][\w\s]{3,100})" value="{title}">
-		<small id="postname-desc" class="desc">{lang:forms:editpost:titledesc}</small>
+		<label for="postname" class="{label_classes}">{lang:forms:editpost:title}</label>
+		<input id="postname" type="text" class="{input_classes}" aria-describedby="postname-desc" name="title" maxlength="80" pattern="([^\s][\w\s]{3,100})" value="{title}">
+		<small id="postname-desc" class="{desc_classes}">{lang:forms:editpost:titledesc}</small>
 	</p>
 	<p>
-		<label for="message">{lang:forms:editpost:msg}</label>
-		<textarea id="message" name="message" rows="3" cols="60" aria-describedby="message-desc" required>{message}</textarea>
-		<small id="message-desc" class="desc">{lang:forms:editpost:msgdesc}</small>
+		<label for="message" class="{label_classes}">{lang:forms:editpost:msg}</label>
+		<textarea id="message" name="message" rows="3" cols="60" class="{input_classes}" aria-describedby="message-desc" required>{message}</textarea>
+		<small id="message-desc" class="{desc_classes}">{lang:forms:editpost:msgdesc}</small>
 	</p>
 	<p><input type="submit" value="{lang:forms:editpost:submit}"></p>
 </form>' ), 
@@ -1123,14 +1123,14 @@ class="{gallery_wrap_classes}">{pictures}</div>{gallery_wrap_after}' ),
 	<input type="hidden" name="token" value="{token}">
 	<input type="hidden" name="nonce" value="{nonce}">
 	<p>
-		<label for="message">{lang:forms:anonpost:msg}</label>
-		<textarea id="message" name="message" rows="3" cols="60" aria-describedby="message-desc" required>{message}</textarea>
-		<small id="message-desc" class="desc">{lang:forms:anonpost:msgdesc}</small>
+		<label for="message" class="{label_classes}">{lang:forms:anonpost:msg}</label>
+		<textarea id="message" name="message" rows="3" cols="60" class="{input_classes}" aria-describedby="message-desc" required>{message}</textarea>
+		<small id="message-desc" class="{desc_classes}">{lang:forms:anonpost:msgdesc}</small>
 	</p>
 	<p>
-		<label for="postname">{lang:forms:anonpost:name}</label>
-		<input id="postname" type="text" aria-describedby="postname-desc" name="author" maxlength="80" pattern="([^\s][\w\s]{3,80})">
-		<small id="postname-desc" class="desc">{lang:forms:anonpost:namedesc}</small>
+		<label for="postname" class="{label_classes}">{lang:forms:anonpost:name}</label>
+		<input id="postname" type="text" class="{input_classes}" aria-describedby="postname-desc" name="author" maxlength="80" pattern="([^\s][\w\s]{3,80})">
+		<small id="postname-desc" class="{desc_classes}">{lang:forms:anonpost:namedesc}</small>
 	</p>
 	<p><label class="ib right"><input type="checkbox" name="terms" value="1" required> Agree to the <a href="{terms}" target="_blank">site terms</a></label> 
 		<input type="submit" value="{lang:forms:anonpost:submit}"></p>
@@ -1141,9 +1141,9 @@ class="{gallery_wrap_classes}">{pictures}</div>{gallery_wrap_after}' ),
 	<input type="hidden" name="nonce" value="{nonce}">
 	<p>{lang:forms:userpost:name}</p>
 	<p>
-		<label for="message">{lang:forms:userpost:msg}</label>
-		<textarea id="message" name="message" rows="3" cols="60" aria-describedby="message-desc" required>{message}</textarea>
-		<small id="message-desc" class="desc">{lang:forms:userpost:msgdesc}</small>
+		<label for="message" class="{label_classes}">{lang:forms:userpost:msg}</label>
+		<textarea id="message" name="message" rows="3" cols="60" class="{input_classes}" aria-describedby="message-desc" required>{message}</textarea>
+		<small id="message-desc" class="{desc_classes}">{lang:forms:userpost:msgdesc}</small>
 	</p>
 	<p><input type="submit" value="{lang:forms:userpost:submit}"></p>
 </form>' ), 
@@ -1153,9 +1153,9 @@ class="{gallery_wrap_classes}">{pictures}</div>{gallery_wrap_after}' ),
 	<input type="hidden" name="token" value="{token}">
 	<input type="hidden" name="nonce" value="{nonce}">
 	<p>
-		<label for="message">{lang:forms:editpost:msg}</label>
-		<textarea id="message" name="message" rows="3" cols="60" aria-describedby="message-desc" required>{message}</textarea>
-		<small id="message-desc" class="desc">{lang:forms:editpost:msgdesc}</small>
+		<label for="message" class="{label_classes}">{lang:forms:editpost:msg}</label>
+		<textarea id="message" name="message" rows="3" cols="60" class="{input_classes}" aria-describedby="message-desc" required>{message}</textarea>
+		<small id="message-desc" class="{desc_classes}">{lang:forms:editpost:msgdesc}</small>
 	</p>
 	<p><input type="submit" value="{lang:forms:editpost:submit}"></p>
 </form>' ), 
@@ -1203,23 +1203,23 @@ class="{gallery_wrap_classes}">{pictures}</div>{gallery_wrap_after}' ),
 </form>' ), 
 
 ( 1, 'tpl_moddursel', '<p>
-	<label for="{prefix}-duration">{lang:sections:moderation:duration}</label>
-	<input id="{prefix}-duration" type="text" aria-describedby="{prefix}-duration-desc" maxlength="80" pattern="([^\s][\w\s]{3,80})">
-	<small id="{prefix}-duration-desc" class="desc">{lang:sections:moderation:durdesc}</small>
+	<label for="{prefix}-duration" class="{label_classes}">{lang:sections:moderation:duration}</label>
+	<input id="{prefix}-duration" type="text" class="{input_classes}" aria-describedby="{prefix}-duration-desc" maxlength="80" pattern="([^\s][\w\s]{3,80})">
+	<small id="{prefix}-duration-desc" class="{desc_classes}">{lang:sections:moderation:durdesc}</small>
 </p>' ), 
 
 ( 1, 'tpl_defaultmodip_form', '<form action="{action}" method="post" class="{form_classes}" id="modip_form">
 	<input type="hidden" name="token" value="{token}">
 	<input type="hidden" name="nonce" value="{nonce}">
 	<p>
-		<label for="ip">{lang:sections:moderation:filters:iplbl}</label>
-		<input id="ip" type="text" aria-describedby="ip-desc" pattern="([^\s][\w\s,\.\:/]{3,255})" required>
-		<small id="ip-desc" class="desc">{lang:sections:moderation:filters:ipdesc}</small>
+		<label for="ip" class="{label_classes}">{lang:sections:moderation:filters:iplbl}</label>
+		<input id="ip" type="text" class="{input_classes}" aria-describedby="ip-desc" pattern="([^\s][\w\s,\.\:/]{3,255})" required>
+		<small id="ip-desc" class="{desc_classes}">{lang:sections:moderation:filters:ipdesc}</small>
 	</p>
 	<p>
-		<label for="host">{lang:sections:moderation:filters:hostlbl}</label>
-		<input id="host" type="text" aria-describedby="host-desc" pattern="([^\s][\w\s,\.\:/\-]{3,255})" required>
-		<small id="host-desc" class="desc">{lang:sections:moderation:filters:hostdesc}</small>
+		<label for="host" class="{label_classes}">{lang:sections:moderation:filters:hostlbl}</label>
+		<input id="host" type="text" class="{input_classes}" aria-describedby="host-desc" pattern="([^\s][\w\s,\.\:/\-]{3,255})" required>
+		<small id="host-desc" class="{desc_classes}">{lang:sections:moderation:filters:hostdesc}</small>
 	</p>
 	
 	{duration_select}
@@ -1243,9 +1243,9 @@ class="{gallery_wrap_classes}">{pictures}</div>{gallery_wrap_after}' ),
 	<input type="hidden" name="token" value="{token}">
 	<input type="hidden" name="nonce" value="{nonce}">
 	<p>
-		<label for="word">{lang:sections:moderation:filters:wordlbl}</label>
-		<input id="word" type="text" aria-describedby="word-desc" maxlength="255" pattern="([^\s][\w\s,]{3,255})" required>
-		<small id="word-desc" class="desc">{lang:sections:moderation:filters:worddesc}</small>
+		<label for="word" class="{label_classes}">{lang:sections:moderation:filters:wordlbl}</label>
+		<input id="word" type="text" class="{input_classes}" aria-describedby="word-desc" maxlength="255" pattern="([^\s][\w\s,]{3,255})" required>
+		<small id="word-desc" class="{desc_classes}">{lang:sections:moderation:filters:worddesc}</small>
 	</p>
 	
 	{duration_select}
@@ -1269,9 +1269,9 @@ class="{gallery_wrap_classes}">{pictures}</div>{gallery_wrap_after}' ),
 	<input type="hidden" name="token" value="{token}">
 	<input type="hidden" name="nonce" value="{nonce}">
 	<p>
-		<label for="user">{lang:sections:moderation:filters:userlbl}</label>
-		<input id="user" type="text" aria-describedby="user-desc" maxlength="255" pattern="([^\s][\w\s,]{3,255})" required>
-		<small id="user-desc" class="desc">{lang:sections:moderation:filters:userdesc}</small>
+		<label for="user" class="{label_classes}">{lang:sections:moderation:filters:userlbl}</label>
+		<input id="user" type="text" class="{input_classes}" aria-describedby="user-desc" maxlength="255" pattern="([^\s][\w\s,]{3,255})" required>
+		<small id="user-desc" class="{desc_classes}">{lang:sections:moderation:filters:userdesc}</small>
 	</p>
 	
 	{duration_select}
@@ -1281,7 +1281,7 @@ class="{gallery_wrap_classes}">{pictures}</div>{gallery_wrap_after}' ),
 ( 1, 'tpl_moduser', '<div class="{section_classes}">
 	<input id="panel-usernames" type="checkbox" name="panels">
 	<label for="panel-usernames" role="tab">{lang:sections:moderation:filters:user}</label>
-	<div class="{section_content_classes">
+	<div class="{section_content_classes}">
 	
 	{mod_form}
 	{delselect_form}
@@ -1293,13 +1293,13 @@ class="{gallery_wrap_classes}">{pictures}</div>{gallery_wrap_after}' ),
 	<input type="hidden" name="token" value="{token}">
 	<input type="hidden" name="nonce" value="{nonce}">
 	<p>
-		<label for="url">{lang:sections:moderation:filters:urllbl}</label>
-		<input id="url" type="text" aria-describedby="url-desc" maxlength="255" pattern="([^\s][\w\s]{3,255})" required>
-		<small id="url-desc" class="desc">{lang:sections:moderation:filters:urldesc}</small>
+		<label for="url" class="{label_classes}">{lang:sections:moderation:filters:urllbl}</label>
+		<input id="url" type="text" class="{input_classes}" aria-describedby="url-desc" maxlength="255" pattern="([^\s][\w\s]{3,255})" required>
+		<small id="url-desc" class="{desc_classes}">{lang:sections:moderation:filters:urldesc}</small>
 	</p>
 	
-	<p><label for="url-action">{lang:sections:moderation:drop:action}</label>
-		<select id="url-action" name="action">
+	<p><label for="url-action" class="{label_classes}">{lang:sections:moderation:drop:action}</label>
+		<select id="url-action" name="action" class="{input_classes}">
 			<option value="">--</option>
 			<option value="noanon">{lang:sections:moderation:drop:noanon}</option>
 			<option value="close">{lang:sections:moderation:drop:close}</option>
