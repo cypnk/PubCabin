@@ -611,7 +611,7 @@ VALUES
 		{login_pass_desc_before}<small id="loginpass-desc" class="{desc_classes}">{lang:forms:login:passdesc}</small>{login_pass_desc_after}
 	</p>
 	<p>{login_rem_label_before}<label class="ib">{login_rem_input_before}<input type="checkbox" name="rem" value="1">{login_rem_input_after} {lang:forms:login:rem}</label>{login_rem_label_after}</p>
-	<p><input type="submit" value="{lang:forms:login:submit}"></p>
+	<p><input type="submit" class="{submit_classes}" value="{lang:forms:login:submit}"></p>
 </form>{login_form_after}
 </main>
 </body>
@@ -651,7 +651,7 @@ VALUES
 	<p>
 		{register_terms_label_before}<label class="ib right">{register_terms_input_before}<input type="checkbox" name="terms" value="1" required>{register_terms_input_after} {lang:forms:register:terms}</label>{register_terms_label_after} 
 		{register_rem_label_before}<label class="ib right">{register_rem_input_before}<input type="checkbox" name="rem" value="1">{register_rem_input_after} {lang:forms:register:rem}</label>{register_rem_label_after} 
-		<input type="submit" value="{lang:forms:register:submit}"></p>
+		<input type="submit" class="{submit_classes}" value="{lang:forms:register:submit}"></p>
 </form>{register_form_after}
 </main>
 </body>
@@ -683,7 +683,7 @@ VALUES
 		{newpass_input_before}<input id="newpass" type="text" class="{input_classes}" aria-describedby="newpass-desc" name="password2" maxlength="4096" pattern="([^\s][\w\s]{{pass_min},4096})" required>{newpass_input_after}
 		{newpass_desc_before}<small id="newpass-desc" class="{desc_classes}">{lang:forms:password:newdesc}</small>{newpass_desc_after}
 	</p>
-	<p><input type="submit" value="{lang:forms:password:submit}"></p>
+	<p><input type="submit" class="{submit_classes}" value="{lang:forms:password:submit}"></p>
 </form>{password_form_after}
 </main>
 </body>
@@ -719,7 +719,7 @@ VALUES
 		{bio_input_before}<textarea id="bio" name="bio" rows="3" cols="60" class="{input_classes}" aria-describedby="bio-desc">{bio}</textarea>{bio_input_after} 
 		{bio_desc_before}<small id="bio-desc" class="{desc_classes}">{lang:forms:profile:biodesc}</small>{bio_desc_after}
 	</p>
-	<p><input type="submit" value="{lang:forms:profile:submit}"></p>
+	<p><input type="submit" class="{submit_classes}" value="{lang:forms:profile:submit}"></p>
 </form>{profile_form_after}
 </main>
 </body>
@@ -1321,4 +1321,172 @@ class="{gallery_wrap_classes}">{pictures}</div>{gallery_wrap_after}' ),
 </div>' );-- --
 
 
+-- Default CSS classes and placeholders
+INSERT INTO style_definitions( style_id, content ) 
+VALUES 
+( 1, '{
+	"body_classes"			: "",
+	
+	"heading_classes"		: "",
+	"heading_wrap_classes"		: "content", 
+	"heading_h_classes"		: "",
+	"heading_a_classes"		: "",
+	"tagline_classes"		: "",
+	"items_wrap_classes"		: "content", 
+	"no_posts_wrap"			: "content",
+	
+	"main_nav_classes"		: "main",
+	"main_ul_classes"		: "", 
+	
+	"pagination_wrap_classes"	: "content", 
+	"list_wrap_classes"		: "content", 
+	
+	"home_classes"			: "content",
+	"home_wrap_classes"			: "",
+	"about_classes"			: "content",
+	"about_wrap_classes"		: "",
+	
+	"post_index_wrap_classes"	: "content",
+	"post_index_ul_wrap_classes"	: "index",
+	"post_index_header_classes"	: "",
+	"post_index_header_h_classes"	: "",
+	"post_index_item_classes"	: "",
+	
+	"post_classes"			: "",
+	"post_wrap_classes"		: "",
+	"post_heading_classes"		: "",
+	"post_heading_h_classes"	: "",
+	"post_heading_a_classes"	: "",
+	"post_heading_wrap_classes"	: "content",
+	"post_body_wrap_classes"	: "content",
+	"post_body_content_classes"	: "",
+	"post_body_tag_classes"		: "",
+	"post_pub_classes"		: "",
+	
+	"post_idx_classes"		: "",
+	"post_idx_wrap_classes"		: "",
+	"post_idx_heading_classes"	: "",
+	"post_idx_heading_h_classes"	: "",
+	"post_idx_heading_a_classes"	: "",
+	"post_idx_heading_wrap_classes"	: "content",
+	"post_idx_body_wrap_classes"	: "content",
+	"post_idx_body_content_classes"	: "",
+	"post_idx_body_tag_classes"	: "",
+	"post_idx_pub_classes"		: "",
+	
+	"footer_classes"		: "",
+	"footer_wrap_classes"		: "content", 
+	"footer_nav_classes"		: "",
+	"footer_ul_classes"		: "",
+	
+	"crumb_classes"			: "",
+	"crumb_wrap_classes"		: "",
+	"crumb_sub_classes"		: "",
+	"crumb_sub_wrap_classes"	: "",
+	
+	"crumb_item_classes"		: "",
+	"crumb_link_classes"		: "",
+	"crumb_current_classes"		: "",
+	"crumb_current_item"		: "",
+	"pagination_classes"		: "",
+	"pagination_ul_classes"		: "",
+	
+	"nav_link_classes"		: "",
+	"nav_link_a_classes"		: "",
+	
+	"list_classes"			: "related",
+	"list_h_classes"		: "",
+	
+	"tag_wrap_classes"		: "tags",
+	"tag_heading_classes"		: "",
+	"tag_index_wrap_classes"	: "tags",
+	"tag_index_heading_classes"	: "",
+	"tag_ul_classes"		: "tags",
+	"tag_item_classes"		: "",
+	"tag_item_a_classes"		: "",
+	"tag_index_item_classes"	: "",
+	"tag_index_item_a_classes"	: "",
+	
+	"sibling_wrap_classes"		: "content",
+	"sibling_nav_classes"		: "siblings",
+	"sibling_nav_ul_classes"	: "",
+	
+	"related_wrap_classes"		: "content",
+	"related_h_classes"		: "",
+	"related_nav_classes"		: "related",
+	"related_ul_classes"		: "related",
+	
+	"nextprev_wrap_classes"		: "content", 
+	"nextprev_nav_classes"		: "siblings",
+	"nextprev_ul_classes"		: "",
+	"nextprev_next_classes"		: "",
+	"nextprev_next_a_classes"	: "",
+	"nextprev_prev_classes"		: "",
+	"nextprev_prev_a_classes"	: "",
+	
+	"nav_home_link_classes"		: "",
+	"nav_home_link_a_classes"	: "",
+	
+	"nav_current_classes"		: "",
+	"nav_current_s_classes"		: "",
+	"nav_prev_classes"		: "",
+	"nav_prev_a_classes"		: "",
+	"nav_noprev_classes"		: "",
+	"nav_noprev_s_classes"		: "",
+	"nav_next_classes"		: "",
+	"nav_next_a_classes"		: "",
+	"nav_nonext_classes"		: "",
+	"nav_nonext_s_classes"		: "",
+	
+	"nav_first1_classes"		: "",
+	"nav_first1_a_classes"		: "",
+	"nav_first2_classes"		: "",
+	"nav_first2_a_classes"		: "",
+	"nav_first_s_classes"		: "",
+	
+	"nav_last_s_classes"		: "",
+	"nav_last1_classes"		: "",
+	"nav_last1_a_classes"		: "",
+	"nav_last2_classes"		: "",
+	"nav_last2_a_classes"		: "",
+	
+	"code_wrap_classes"		: "",
+	"code_classes"			: "",
+	
+	"section_classes"		: "",
+	"form_classes"			: "",
+	"fieldset_classes"		: "",
+	"search_form_classes"		: "",
+	"search_form_wrap_classes"	: "",
+	"search_fieldset_classes"	: "",
+	"field_wrap"			: "",
+	"button_wrap"			: "",
+	"label_classes"			: "",
+	"special_classes"		: "",
+	"input_classes"			: "",
+	"desc_classes"			: "",
+	"search_input_classes"		: "",
+	"search_button_classes"		: "",
+	
+	"login_form_classes"		: "",
+	"register_form_classes"		: "",
+	"password_form_classes"		: "",
+	"profile_form_classes"		: "",
+	
+	"login_page_body_classes"	: "",
+	"register_page_body_classes"	: "",
+	"password_page_body_classes"	: "",
+	"profile_page_body_classes"	: "",
+	
+	"login_page_main_classes"	: "",
+	"register_page_main_classes"	: "",
+	"password_page_main_classes"	: "",
+	"profile_page_main_classes"	: "",
+	
+	
+	"submit_classes"		: "",
+	"alt_classes"			: "",
+	"warn_classes"			: "",
+	"action_classes"		: ""
+}' );-- --
 
