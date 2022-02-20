@@ -327,20 +327,18 @@ class User extends \PubCabin\Entity {
 	 *  Authenticate loaded user with given password
 	 *  
 	 *  @param \PubCabin\Data	$data		Storage handler
+	 *  @param int			$user		User unique identifier
 	 *  @param string		$password	Raw entered password 
 	 *  @return int
 	 */
-	public function passwordAuth( 
+	public static function passwordAuth( 
 		\PubCabin\Data $data, 
-		string $password 
+		int	$id
+		string	$password 
 	) : int {
-		if ( empty( $this->id ) ) {
-			return false;
-		}
-		
 		$res	= 
 		$data->getSingle( 
-			$this->id, 
+			$id, 
 			"SELECT password FROM users WHERE id = :id", 
 			static::MAIN_DATA 
 		);
@@ -355,12 +353,13 @@ class User extends \PubCabin\Entity {
 	/**
 	 *  Login user credentials
 	 *  
-	 *  @param string	$username	Login name to search
-	 *  @param string	$password	User provided password
-	 *  @param int		$status		Authentication success etc...
+	 *  @param \PubCabin\Data	$data		Storage handler
+	 *  @param string		$username	Login name to search
+	 *  @param string		$password	User provided password
+	 *  @param int			$status		Authentication success etc...
 	 *  @return array
 	 */
-	public function authByCredentials(
+	public static function authByCredentials(
 		\PubCabin\Data	$data, 
 		string		$username,
 		string		$password,
@@ -383,7 +382,7 @@ class User extends \PubCabin\Entity {
 			if ( \PubCabin\Crypto::passNeedsRehash( 
 				$user['password'] 
 			) ) {
-				$this->savePassword( 
+				static::savePassword( 
 					$data, 
 					( int ) $user['id'], 
 					$password 
@@ -404,17 +403,15 @@ class User extends \PubCabin\Entity {
 	 *  
 	 * 
 	 *  @param \PubCabin\Data	$data	Storage handler
+	 *  @param int			$id	User unique identifier
 	 *  @param string		$param	Raw password as entered
 	 *  @return bool
 	 */
-	public function savePassword( 
-		\PubCabin\Data	$data, 
+	public static function savePassword( 
+		\PubCabin\Data	$data,
+		int		$id, 
 		string		$password 
 	) : bool {
-		if ( !isset( $this->id ) ) {
-			return false;	
-		}
-		
 		$sql	= 
 		"UPDATE users SET password = :password 
 			WHERE id = :id";
@@ -422,8 +419,8 @@ class User extends \PubCabin\Entity {
 		return 
 		$data->setUpdate( $sql, [ 
 			':password'	=> 
-				\PubCabin\Crypto::hashPassword( $password ), 
-			':id'		=> ( int ) $this->id 
+			\PubCabin\Crypto::hashPassword( $password ), 
+			':id'		=> $id
 		], static::MAIN_DATA );
 	}
 	
@@ -582,8 +579,9 @@ class User extends \PubCabin\Entity {
 		int		$cexp, 
 		bool		$reset		= false
 	) : array {
-		$sql	= "SELECT * FROM login_view
-			WHERE lookup = :lookup LIMIT 1;";	
+		$sql	= 
+		"SELECT * FROM login_view 
+			WHERE lookup = :lookup LIMIT 1;";
 		$db	= $data->getDb( static::MAIN_DATA );
 		$stm	= $db->prepare( $sql );
 		
@@ -599,8 +597,11 @@ class User extends \PubCabin\Entity {
 		
 		// One login found
 		$user	= $results[0];
-		$xpired = 
-		( time() - ( ( int ) $user['updated'] ) ) > $cexp;
+		$uptime	= \strtotime( $user['updated'] );
+		if ( false === $uptime ) {
+			$uptime = 0;
+		}
+		$expired = ( time() - $uptime ) > $cexp;
 		
 		// Check for cookie expiration
 		if ( $reset && $expired ) {
@@ -627,14 +628,18 @@ class User extends \PubCabin\Entity {
 	) : array {
 		$sql		= 
 		"SELECT * FROM users WHERE id = :id LIMIT 1;";
-		$results	= 
-		$data->getResults( 
-			$sql, [ ':id' => $id ], static::MAIN_DATA
+		
+		$db		= $data->getDb( static::MAIN_DATA );
+		$stm		= $db->prepare( $sql );
+		$result		= 
+		$data->getDataResult( 
+			$db,
+			[ ':id' => $id ], 
+			'class,\\PubCabin\\Core\\User', 
+			$stm
 		);
-		if ( empty( $results ) ) {
-			return [];
-		}
-		return $results[0];
+		
+		return empty( $result ) ? [] : $result;
 	}
 	
 	/**
@@ -649,16 +654,165 @@ class User extends \PubCabin\Entity {
 		string		$username 
 	) : array {
 		$sql		= 
-		"SELECT * FROM login_pass WHERE username = :user LIMIT 1;";
-		$results	= 
-		$data->getResults( 
-			$sql, [ ':user' => $username ], static::MAIN_DATA 
+		"SELECT * FROM login_view WHERE name = :user LIMIT 1;";
+		
+		$db		= $data->getDb( static::MAIN_DATA );
+		$stm		= $db->prepare( $sql );
+		$result		= 
+		$data->getDataResult( 
+			$db,
+			[ ':user' => $username ], 
+			'class,\\PubCabin\\Core\\User', 
+			$stm
 		);
 		
-		if ( empty( $results ) ) {
-			return [];
+		return empty( $result ) ? [] : $result;
+	}
+	
+	
+	/**
+	 *  Update the last activity IP of the given user
+	 *  Most of these actions use triggers in the database
+	 *  
+	 *  @param \PubCabin\Data	$data	Storage handler
+	 *  @param \PubCabin\Config	$config	Current configuration
+	 *  @param \PubCabin\Request	$req	Current vistor request
+	 *  @param int			$id	User unique identifier
+	 *  @param string		$mode	Activity type
+	 *  @return bool
+	 */
+	public static function updateUserActivity(
+		\PubCabin\Data		$data, 
+		\PubCabin\Config	$config, 
+		\PubCabin\Request	$req, 
+		int			$id,
+		?string			$mode = null
+	) : bool {
+		$now	= \PubCabin\Util::utc();
+		$mode 	??= '';
+		
+		switch ( $mode ) {
+			case 'active':
+				$sql	= 
+				"UPDATE auth_activity SET 
+					last_ip		= :ip, 
+					last_ua		= :ua  
+					WHERE user_id = :id;";
+				
+				$params = [
+					':ip'	=> $req->getIP(), 
+					':ua'	=> $req->getUA(),
+					':id'	=> $id
+				];
+				break;
+				
+			case 'login':
+				$sql	= 
+				"UPDATE auth_activity SET 
+					last_ip		= :ip, 
+					last_ua		= :ua, 
+					last_login	= :login 
+					WHERE user_id = :id;";
+				
+				$params = [
+					':ip'	=> $req->getIP(), 
+					':ua'	=> $req->getUA(),
+					':login'=> $now,
+					':id'	=> $id
+				];
+				break;
+				
+			case 'passchange':
+				// Change table itself instead of the view
+				$sql	= 
+				"UPDATE user_auth SET 
+					last_ip			= :ip, 
+					last_ua			= :ua, 
+					last_active		= :active,
+					last_pass_change	= :change 
+					WHERE user_id = :id;";
+				
+				$params = [
+					':ip'		=> $req->getIP(), 
+					':ua'		=> $req->getUA(),
+					':active'	=> $now,
+					':change'	=> $now,
+					':id'		=> $id
+				];
+				break;
+				
+			case 'failedlogin':
+				$sql	= 
+				"UPDATE auth_activity SET 
+					last_ip			= :ip, 
+					last_ua			= :ua, 
+					failed_last_attempt	= :fdate 
+					WHERE user_id = :id;";
+					
+				$params = [
+					':ip'		=> $req->getIP(), 
+					':ua'		=> $req->getUA(),
+					':change'	=> $now,
+					':id'		=> $id
+				];
+				break;
+				
+			case 'lock':
+				$sql	= 
+				"UPDATE auth_activity SET 
+					is_locked = 1 WHERE id = :id;";
+				$params	= [ ':id' => $id ];
+				break;
+				
+			case 'unlock':
+				$sql	= 
+				"UPDATE user_auth SET 
+					is_locked = 0 WHERE id = :id;";
+				$params	= [ ':id' => $id ];
+				break;
+				
+			case 'approve':
+				$sql	= 
+				"UPDATE user_auth SET 
+					is_approved = 1 WHERE id = :id;";
+				$params	= [ ':id' => $id ];
+				break;
+				
+			case 'unapprove':
+				$sql	= 
+				"UPDATE user_auth SET 
+					is_approved = 0 WHERE id = :id;";
+				$params	= [ ':id' => $id ];
+				break;
+				
+			default:
+				// First run? Create or replace auth basics
+				
+				// Auto approve new auth?
+				$ap = 
+				$config->setting( 
+					'auto_approve_reg', 
+					'bool' 
+				) ?? true;
+				
+				return 
+				$data->setInsert( 
+					"REPLACE INTO user_auth ( 
+						user_id, last_ip, last_ua, 
+						is_approved
+					) VALUES( :id, :ip, :ua, :ap );", 
+					[
+						':id'	=> $id, 
+						':ip'	=> $req->getIP(), 
+						':ua'	=> $req->getUA(),
+						':ap'	=> $ap ? 1 : 0
+					], 
+					static::MAIN_DATA
+				) ? true : false;
 		}
-		return $results[0];
+		
+		return 
+		$data->setUpdate( $sql, $params, static::MAIN_DATA );
 	}
 }
 
