@@ -128,9 +128,9 @@ INSERT INTO translations (
 		"anonpost"	: {
 			"page"		: "Create message",
 			"title"		: "Message title",
-			"titledesc"	: "Between 4 and 100 characters. Letters, numbers, and spaces supported.",
+			"titledesc"	: "Between {title_min} and {title_max} characters. Letters, numbers, and spaces supported.",
 			"name"		: "Name <span>(optional)<\/span>",
-			"namedesc"	: "Between 4 and 80 characters. Letters, numbers, and spaces supported. Name#secret format supported.",
+			"namedesc"	: "Between {name_min} and {name_max} characters. Letters, numbers, and spaces supported. Name#secret format supported.",
 			"msg"		: "Message <span>(required)<\/span>",
 			"msgdesc"	: "Simple HTML and a subset of <a href=\"{formatting}\">Markdown<\/a> supported.",
 			"submit"	: "Post"
@@ -138,7 +138,7 @@ INSERT INTO translations (
 		"userpost"	: {
 			"page"		: "Create message",
 			"title"		: "Message title",
-			"titledesc"	: "Between 4 and 100 characters. Letters, numbers, and spaces supported.",
+			"titledesc"	: "Between {title_min} and {title_max} characters. Letters, numbers, and spaces supported.",
 			"name"		: "Posting as <a href=\"{userlink}\">{username}<\/a>",
 			"msg"		: "Message <span>(required)<\/span>",
 			"msgdesc"	: "Simple HTML and a subset of <a href=\"{formatting}\">Markdown<\/a> supported.",
@@ -147,7 +147,7 @@ INSERT INTO translations (
 		"editpost"	: {
 			"page"		: "Edit message",
 			"title"		: "Message title",
-			"titledesc"	: "Between 4 and 100 characters. Letters, numbers, and spaces supported.",
+			"titledesc"	: "Between {title_min} and {title_max} characters. Letters, numbers, and spaces supported.",
 			"msg"		: "Editing Message <span>(required)<\/span>",
 			"msgdesc"	: "Simple HTML and a subset of <a href=\"{formatting}\">Markdown<\/a> supported.",
 			"submit"	: "Save changes"
@@ -165,10 +165,11 @@ INSERT INTO translations (
 				"frame_whitelist" : "Whitelist of embeddable URLs",
 				"cache_ttl" : "Default cache duration",
 				"site_depth" : "Sub website base directory limit",
-				"folder_depth" : "Sub directory path depth",
+				"folder_limit" : "Sub directory path depth",
 				"max_search_words" : "Maximum number of words in search phrases", 
 				"app_start" : "Content start date in UTC format",
-				"app_name" : "Main application name"
+				"app_name" : "Main application name",
+				"skip_local" : "Prevent local IPs from connecting (Warning: This may lock you out if hosting locally)"
 			}
 		},
 		"user" : {
@@ -287,9 +288,20 @@ VALUES ( 1, 'default_site_settings', '{
 	"app_name": "PubCabin",
 	"app_start": "2017-03-14T04:30:55Z",
 	"skip_local": 1,
+	"name_min": 1,
+	"name_max": 180,
+	"pass_min": 7,
+	"display_min": 3,
+	"display_max": 180,
+	"enable_register": 1,
+	"auto_approve_reg": 1,
+	"title_min": 3,
+	"title_max": 255,
 	"cache_ttl": 3200,
 	"site_depth": 25,
 	"max_search_words": 10,
+	"token_bytes": 8,
+	"nonce_hash": "tiger160,4",
 	"style_limit": 20,
 	"script_limit": 10,
 	"meta_limit": 15,
@@ -297,8 +309,6 @@ VALUES ( 1, 'default_site_settings', '{
 	"shared_assets": "\/",
 	"default_stylesheets": [],
 	"default_scripts": [],
-	"token_bytes": 8,
-	"nonce_hash": "tiger160,4",
 	"default_meta": {
 		"meta" : [
 			{ "name" : "generator", "content" : 
@@ -447,6 +457,7 @@ VALUES ( 1, 'default_site_settings', '{
 		":year"	: "(?<year>[2][0-9]{3})",
 		":month": "(?<month>[0-3][0-9]{1})",
 		":day"	: "(?<day>[0-9][0-9]{1})",
+		":user"	: "(?<user>[\\pL\\pN\\s_\\-]{1,80})",
 		":slug"	: "(?<slug>[\\pL\\-\\d]{1,100})",
 		":tree"	: "(?<tree>[\\pL\\/\\-\\d]{1,255})",
 		":file"	: "(?<file>[\\pL_\\-\\d\\.\\s]{1,120})",
@@ -462,7 +473,9 @@ VALUES ( 1, 'default_site_settings', '{
 	"cookie_path": "\/",
 	"cookie_restrict": 1,
 	"form_delay": 30,
-	"form_expire": 7200
+	"form_expire": 7200,
+	"login_delay": 5,
+	"login_attempts": 3
 }' );-- --
 
 
@@ -671,8 +684,10 @@ VALUES
 <body class="{body_classes} {password_page_body_classes}>{password_page_body}
 <main class="{body_main_classes} {password_page_main_classes}">{password_form_before}
 <form action="{action}" method="post" class="{form_classes} {password_form_classes}" id="password_form">
+	<input type="hidden" name="id" value="{id}">
 	<input type="hidden" name="token" value="{token}">
 	<input type="hidden" name="nonce" value="{nonce}">
+	<input type="hidden" name="meta" value="{meta}">
 	<p>
 		{oldpass_label_before}<label for="oldpass" class="{label_classes}">{lang:forms:password:old}</span></label>{oldpass_label_after} 
 		{oldpass_input_before}<input id="oldpass" type="password" class="{input_classes}" aria-describedby="oldpass-desc" name="password" maxlength="4096" pattern="([^\s][\w\s]{{pass_min},4096})" required>{oldpass_input_after}
@@ -703,15 +718,17 @@ VALUES
 <body class="{body_classes} {profile_page_body_classes}>{profile_page_body}
 <main class="{body_main_classes} {profile_page_main_classes}">{profile_form_before}
 <form action="{action}" method="post" class="{form_classes} {profile_form_classes}" id="profile_form">
+	<input type="hidden" name="id" value="{id}">
 	<input type="hidden" name="token" value="{token}">
 	<input type="hidden" name="nonce" value="{nonce}">
+	<input type="hidden" name="meta" value="{meta}">
 	<p>
 		{profile_name_label_before}<label for="loginuser" class="{label_classes}">{lang:forms:profile:name}</label>{profile_name_label_after} 
 		{profile_name_input_before}<input id="loginuser" type="text" value="{username}" class="{input_classes}" disabled>{profile_name_input_after}
 	</p>
 	<p>
 		{display_label_before}<label for="display" class="{label_classes}">{lang:forms:profile:display}</span></label>{display_label_after} 
-		{display_input_before}<input id="display" type="text" class="{input_classes}" aria-describedby="display-desc" name="display" maxlength="{display_max}" pattern="([^\s][A-z0-9À-ž\s]+){{display_min},{display_max}}" value="{value}">{display_input_after}
+		{display_input_before}<input id="display" type="text" class="{input_classes}" aria-describedby="display-desc" name="display" maxlength="{display_max}" pattern="([^\s][A-z0-9À-ž\s]+){{display_min},{display_max}}" value="{display}">{display_input_after}
 		{display_desc_before}<small id="display-desc" class="{desc_classes}">{lang:forms:profile:displaydesc}</small>{display_desc_after}
 	</p>
 	<p>
@@ -798,6 +815,13 @@ VALUES
 	</fieldset>
 </form>{after_search_form}' ), 
 
+( 1, 'tpl_post_item', '{before_post_item}<li 
+	class="{post_index_item_classes}">{before_post_item_full}<time 
+	class="{post_datetime_classes}" datetime="{date_utc}">{date_stamp}</time>
+	<a class="{post_index_item_link_classes}" href="{permalink}"
+	>{title}</a>{after_post_item_full}</li>{after_post_item}'
+),
+ 
 ( 1, 'tpl_post', '{before_post}
 <article class="{post_classes}">{before_full_post}
 	<div class="{post_wrap_classes}">{before_post_heading}
@@ -1068,19 +1092,19 @@ class="{gallery_wrap_classes}">{pictures}</div>{gallery_wrap_after}' ),
 	<input type="hidden" name="token" value="{token}">
 	<input type="hidden" name="nonce" value="{nonce}">
 	<p>
-		<label for="postname" class="{label_classes}">{lang:forms:anonpost:name}</label>
-		<input id="postname" type="text" class="{input_classes}" aria-describedby="postname-desc" name="author" maxlength="{name_max}" pattern="([^\s][\w\s]{{name_min},{name_max}})">
-		<small id="postname-desc" class="{desc_classes}">{lang:forms:anonpost:namedesc}</small>
+		{anonpost_name_label_before}<label for="authorname" class="{label_classes}">{lang:forms:anonpost:name}</label>{anonpost_name_label_after}
+		{anonpost_name_input_before}<input id="authorname" type="text" class="{input_classes}" aria-describedby="authorname-desc" name="author" maxlength="{name_max}" pattern="([^\s][\w\s]{{name_min},{name_max}})">{anonpost_name_input_before}
+		{anonpost_name_desc_before}<small id="authorname-desc" class="{desc_classes}">{lang:forms:anonpost:namedesc}</small>{anonpost_name_desc_before}
 	</p>
 	<p>
-		<label for="postname" class="{label_classes}">{lang:forms:anonpost:title}</label>
-		<input id="postname" type="text" class="{input_classes}" aria-describedby="postname-desc" name="title" maxlength="80" pattern="([^\s][\w\s]{3,100})">
-		<small id="postname-desc" class="{desc_classes}">{lang:forms:anonpost:titledesc}</small>
+		{anonpost_title_label_before}<label for="postname" class="{label_classes}">{lang:forms:anonpost:title}</label>{anonpost_title_label_after}
+		{anonpost_title_input_before}<input id="postname" type="text" class="{input_classes}" aria-describedby="postname-desc" name="title" maxlength="{title_max}" pattern="([^\s][\w\s]{{title_min},{title_max}})">{anonpost_title_input_after}
+		{anonpost_title_desc_before}<small id="postname-desc" class="{desc_classes}">{lang:forms:anonpost:titledesc}</small>{anonpost_title_desc_after}
 	</p>
 	<p>
-		<label for="message" class="{label_classes}">{lang:forms:anonpost:msg}</label>
-		<textarea id="message" name="message" rows="3" cols="60" class="{input_classes}" aria-describedby="message-desc" required>{message}</textarea>
-		<small id="message-desc" class="{desc_classes}">{lang:forms:anonpost:msgdesc}</small>
+		{anonpost_message_label_before}<label for="message" class="{label_classes}">{lang:forms:anonpost:msg}</label>{anonpost_message_label_after}
+		{anonpost_message_input_before}<textarea id="message" name="message" rows="3" cols="60" class="{input_classes}" aria-describedby="message-desc" required>{message}</textarea>{anonpost_message_input_before}
+		{anonpost_message_desc_before}<small id="message-desc" class="{desc_classes}">{lang:forms:anonpost:msgdesc}</small>{anonpost_message_desc_after}
 	</p>
 	<p><label class="ib right"><input type="checkbox" name="terms" value="1" required> Agree to the <a href="{terms}" target="_blank">site terms</a></label> 
 		<input type="submit" value="{lang:forms:anonpost:submit}"></p>
@@ -1090,14 +1114,14 @@ class="{gallery_wrap_classes}">{pictures}</div>{gallery_wrap_after}' ),
 	<input type="hidden" name="token" value="{token}">
 	<input type="hidden" name="nonce" value="{nonce}">
 	<p>
-		<label for="postname" class="{label_classes}">{lang:forms:userpost:title}</label>
-		<input id="postname" type="text" class="{input_classes}" aria-describedby="postname-desc" name="title" maxlength="80" pattern="([^\s][\w\s]{3,100})">
-		<small id="postname-desc" class="{desc_classes}">{lang:forms:userpost:titledesc}</small>
+		{userpost_title_label_before}<label for="postname" class="{label_classes}">{lang:forms:userpost:title}</label>{userpost_title_label_after}
+		{userpost_title_input_before}<input id="postname" type="text" class="{input_classes}" aria-describedby="postname-desc" name="title" maxlength="{title_max}" pattern="([^\s][\w\s]{{title_min},{title_max}})">{userpost_title_input_after}
+		{userpost_title_desc_before}<small id="postname-desc" class="{desc_classes}">{lang:forms:userpost:titledesc}</small>{userpost_title_desc_after}
 	</p>
 	<p>
-		<label for="message" class="{label_classes}">{lang:forms:userpost:msg}</label>
-		<textarea id="message" name="message" rows="3" cols="60" class="{input_classes}" aria-describedby="message-desc" required>{message}</textarea>
-		<small id="message-desc" class="{desc_classes}">{lang:forms:userpost:msgdesc}</small>
+		{userpost_message_label_before}<label for="message" class="{label_classes}">{lang:forms:userpost:msg}</label>{userpost_message_label_after}
+		{userpost_message_input_before}<textarea id="message" name="message" rows="3" cols="60" class="{input_classes}" aria-describedby="message-desc" required>{message}</textarea>{userpost_message_input_before}
+		{userpost_message_desc_before}<small id="message-desc" class="{desc_classes}">{lang:forms:userpost:msgdesc}</small>{userpost_message_desc_after}
 	</p>
 	<p><input type="submit" value="{lang:forms:userpost:submit}"></p>
 </form>' ), 
@@ -1107,14 +1131,14 @@ class="{gallery_wrap_classes}">{pictures}</div>{gallery_wrap_after}' ),
 	<input type="hidden" name="token" value="{token}">
 	<input type="hidden" name="nonce" value="{nonce}">
 	<p>
-		<label for="postname" class="{label_classes}">{lang:forms:editpost:title}</label>
-		<input id="postname" type="text" class="{input_classes}" aria-describedby="postname-desc" name="title" maxlength="80" pattern="([^\s][\w\s]{3,100})" value="{title}">
-		<small id="postname-desc" class="{desc_classes}">{lang:forms:editpost:titledesc}</small>
+		{editpost_title_label_before}<label for="postname" class="{label_classes}">{lang:forms:editpost:title}</label>{editpost_title_label_after}
+		{editpost_title_input_before}<input id="postname" type="text" class="{input_classes}" aria-describedby="postname-desc" name="title" maxlength="{title_max}" pattern="([^\s][\w\s]{{title_min},{title_max}})" value="{title}">
+		{editpost_title_desc_before}<small id="postname-desc" class="{desc_classes}">{lang:forms:editpost:titledesc}</small>{userpost_title_desc_after}
 	</p>
 	<p>
-		<label for="message" class="{label_classes}">{lang:forms:editpost:msg}</label>
-		<textarea id="message" name="message" rows="3" cols="60" class="{input_classes}" aria-describedby="message-desc" required>{message}</textarea>
-		<small id="message-desc" class="{desc_classes}">{lang:forms:editpost:msgdesc}</small>
+		{editpost_message_label_before}<label for="message" class="{label_classes}">{lang:forms:editpost:msg}</label>{editpost_message_label_after}
+		{editpost_message_input_before}<textarea id="message" name="message" rows="3" cols="60" class="{input_classes}" aria-describedby="message-desc" required>{message}</textarea>
+		{editpost_message_desc_before}<small id="message-desc" class="{desc_classes}">{lang:forms:editpost:msgdesc}</small>{editpost_message_desc_after}
 	</p>
 	<p><input type="submit" value="{lang:forms:editpost:submit}"></p>
 </form>' ), 
@@ -1123,14 +1147,14 @@ class="{gallery_wrap_classes}">{pictures}</div>{gallery_wrap_after}' ),
 	<input type="hidden" name="token" value="{token}">
 	<input type="hidden" name="nonce" value="{nonce}">
 	<p>
-		<label for="message" class="{label_classes}">{lang:forms:anonpost:msg}</label>
-		<textarea id="message" name="message" rows="3" cols="60" class="{input_classes}" aria-describedby="message-desc" required>{message}</textarea>
-		<small id="message-desc" class="{desc_classes}">{lang:forms:anonpost:msgdesc}</small>
+		{anoncomment_message_label_before}<label for="message" class="{label_classes}">{lang:forms:anonpost:msg}</label>{anoncomment_message_label_after}
+		{anoncomment_message_input_before}<textarea id="message" name="message" rows="3" cols="60" class="{input_classes}" aria-describedby="message-desc" required>{message}</textarea>{anoncomment_message_input_after}
+		{anoncomment_message_desc_before}<small id="message-desc" class="{desc_classes}">{lang:forms:anonpost:msgdesc}</small>{anoncomment_message_desc_after}
 	</p>
 	<p>
-		<label for="postname" class="{label_classes}">{lang:forms:anonpost:name}</label>
-		<input id="postname" type="text" class="{input_classes}" aria-describedby="postname-desc" name="author" maxlength="80" pattern="([^\s][\w\s]{3,80})">
-		<small id="postname-desc" class="{desc_classes}">{lang:forms:anonpost:namedesc}</small>
+		{anoncomment_name_label_before}<label for="postauthor" class="{label_classes}">{lang:forms:anonpost:name}</label>{anoncomment_name_label_after}
+		{anoncomment_name_input_before}<input id="postauthor" type="text" class="{input_classes}" aria-describedby="postauthor-desc" name="author" maxlength="{name_max}" pattern="([^\s][\w\s]{{name_min},{name_max}})">{anoncomment_name_input_after}
+		{anoncomment_name_desc_before}<small id="postauthor-desc" class="{desc_classes}">{lang:forms:anonpost:namedesc}</small>{anoncomment_name_desc_after}
 	</p>
 	<p><label class="ib right"><input type="checkbox" name="terms" value="1" required> Agree to the <a href="{terms}" target="_blank">site terms</a></label> 
 		<input type="submit" value="{lang:forms:anonpost:submit}"></p>
@@ -1141,9 +1165,9 @@ class="{gallery_wrap_classes}">{pictures}</div>{gallery_wrap_after}' ),
 	<input type="hidden" name="nonce" value="{nonce}">
 	<p>{lang:forms:userpost:name}</p>
 	<p>
-		<label for="message" class="{label_classes}">{lang:forms:userpost:msg}</label>
-		<textarea id="message" name="message" rows="3" cols="60" class="{input_classes}" aria-describedby="message-desc" required>{message}</textarea>
-		<small id="message-desc" class="{desc_classes}">{lang:forms:userpost:msgdesc}</small>
+		{usercomment_message_label_before}<label for="message" class="{label_classes}">{lang:forms:userpost:msg}</label>{usercomment_message_label_after}
+		{usercomment_message_input_before}<textarea id="message" name="message" rows="3" cols="60" class="{input_classes}" aria-describedby="message-desc" required>{message}</textarea>{usercomment_message_input_after}
+		{usercomment_message_desc_before}<small id="message-desc" class="{desc_classes}">{lang:forms:userpost:msgdesc}</small>{usercomment_message_desc_after}
 	</p>
 	<p><input type="submit" value="{lang:forms:userpost:submit}"></p>
 </form>' ), 
@@ -1153,9 +1177,9 @@ class="{gallery_wrap_classes}">{pictures}</div>{gallery_wrap_after}' ),
 	<input type="hidden" name="token" value="{token}">
 	<input type="hidden" name="nonce" value="{nonce}">
 	<p>
-		<label for="message" class="{label_classes}">{lang:forms:editpost:msg}</label>
-		<textarea id="message" name="message" rows="3" cols="60" class="{input_classes}" aria-describedby="message-desc" required>{message}</textarea>
-		<small id="message-desc" class="{desc_classes}">{lang:forms:editpost:msgdesc}</small>
+		{editcomment_message_label_before}<label for="message" class="{label_classes}">{lang:forms:editpost:msg}</label>{editcomment_message_label_after}
+		{editcomment_message_input_before}<textarea id="message" name="message" rows="3" cols="60" class="{input_classes}" aria-describedby="message-desc" required>{message}</textarea>{editcomment_message_input_after}
+		{editcomment_message_desc_before}<small id="message-desc" class="{desc_classes}">{lang:forms:editpost:msgdesc}</small>{editcomment_message_desc_after}
 	</p>
 	<p><input type="submit" value="{lang:forms:editpost:submit}"></p>
 </form>' ), 
