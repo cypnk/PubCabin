@@ -16,6 +16,12 @@ class Module extends \PubCabin\Modules\Module {
 	public const AUTH_STATUS_BANNED		= 3;
 	
 	/**
+	 *  Currently authenticated user data
+	 *  @var array
+	 */
+	protected $user;
+	
+	/**
 	 *  Cookie set range path
 	 *  @var string
 	 */
@@ -31,6 +37,10 @@ class Module extends \PubCabin\Modules\Module {
 		return [ 'Hooks', 'Sessions', 'Sites', 'Menues', 'Forms' ];
 	}
 	
+	protected function getSession {
+		return $this->getModule( 'Sessions' );
+	}
+	
 	/**
 	 *  Reset authenticated user data types for processing
 	 *  
@@ -38,11 +48,18 @@ class Module extends \PubCabin\Modules\Module {
 	 *  @return array
 	 */
 	protected static function formatAuthUser( array $user ) : array {
+		$user['is_approved']	??= false;
+		$user['is_locked']	??= false;
+		
 		return [
 			'id'		=> ( int ) ( $user['id'] ?? 0 ), 
 			'status'	=> ( int ) ( $user['status'] ?? 0 ), 
 			'name'		=> $user['name'] ?? '', 
-			'hash'		=> $user['hash'] ?? '', 
+			'hash'		=> $user['hash'] ?? '',
+			'is_approved'	=> 
+				$user['is_approved'] ? true : false,
+			'is_locked'	=> 
+				$user['is_locked'] ? true : false, 
 			'auth'		=> $user['auth'] ?? ''
 		];
 	}
@@ -58,7 +75,8 @@ class Module extends \PubCabin\Modules\Module {
 		}
 		
 		$config	= $this->getConfig();
-		$path	= $config->setting( 'cookiepath', 'string', '/' );
+		$path	= 
+		$config->setting( 'cookiepath', 'string' ) ?? '/';
 		
 		$this->cookie_path	= 
 		\PubCabin\Util::slashPath( 
@@ -80,7 +98,8 @@ class Module extends \PubCabin\Modules\Module {
 		}
 		
 		$config	= $this->getConfig();
-		$cexp	= $config->setting( 'cookie_exp', 'int' );
+		$cexp	= 
+		$config->setting( 'cookie_exp', 'int' ) ?? 604800;
 		
 		$this->cookie_exp	= 
 		\PubCabin\Util::intRange( $cexp, 3600, 2147483647 );
@@ -118,30 +137,12 @@ class Module extends \PubCabin\Modules\Module {
 		string		$password,
 		int		&$status
 	) : array {
-		$results	= $this->findUserByUsername( $username );
-		
-		// No user found?
-		if ( empty( $results ) ) {
-			$status = self::AUTH_STATUS_NOUSER;
-			return [];
-		}
-		$user	= $results[0];
-		
-		// Verify credentials
-		if ( \PubCabin\Core\User::verifyPassword( $password, $user->password ) ) {
-			
-			// Refresh password if needed
-			if ( \PubCabin\Core\User::passNeedsRehash( $user->password ) ) {
-				$this->savePassword( ( int ) $user->id, $password );
-			}
-			
-			$status = self::AUTH_STATUS_SUCCESS;
-			return $results;
-		}
-		
-		// Login failiure
-		$status = self::AUTH_STATUS_FAILED;
-		return [];
+		\PubCabin\Core\User::findUserByUsername(
+			$this->getData(),
+			$username,
+			$password,
+			$status
+		);
 	}
 	
 	/**
@@ -151,22 +152,11 @@ class Module extends \PubCabin\Modules\Module {
 	 *  @return array
 	 */
 	protected function findUserByUsername( string $username ) : array {
-		$sql		= 
-		"SELECT * FROM login_pass WHERE username = :user LIMIT 1;";
-		$db		= $this->memberDb();
-		$stm		= $db->prepare( $sql );
-		$results	= 
-		$this->getData()->getDataResult( 
-			$db,
-			[ ':user' => $username ], 
-			'class,\\PubCabin\\Core\\User', 
-			$stm
+		return 
+		\PubCabin\Core\User::findUserByUsername(
+			$this->getData(), 
+			$username
 		);
-		
-		if ( empty( $results ) ) {
-			return [];
-		}
-		return $results;
 	}
 	
 	/**
@@ -176,20 +166,11 @@ class Module extends \PubCabin\Modules\Module {
 	 *  @return array
 	 */
 	public function findUserById( int $id ) : array {
-		$sql		= "SELECT * FROM users WHERE id = :id LIMIT 1;";
-		$db		= $this->memberDb();
-		$stm		= $db->prepare( $sql );
-		$results	= 
-		$this->getData()->getDataResult( 
-			$db,
-			[ ':id' => $id ], 
-			'class,\\PubCabin\\Core\\User', 
-			$stm
+		return 
+		\PubCabin\Core\User::findUserById( 
+			$this->getData(), 
+			$id 
 		);
-		if ( empty( $results ) ) {
-			return [];
-		}
-		return $results;
 	}
 	
 	/**
@@ -199,27 +180,11 @@ class Module extends \PubCabin\Modules\Module {
 	 *  @return string
 	 */
 	public function resetLookup( int $id ) : string {
-		$db	= $this->memberDb();
-		$stm	= 
-		$db->prepare( 
-			"UPDATE logout_view SET lookup = '' 
-				WHERE user_id = :id;" 
+		return 
+		\PubCabin\Core\User::resetLookup(
+			$this->getData(), 
+			$id
 		);
-		
-		if ( $stm->execute( [ ':id' => $id ] ) ) {
-			// SQLite should have generated a new random lookup
-			$rst = 
-			$db->prepare( 
-				"SELECT lookup FROM logins WHERE 
-					user_id = :id;"
-			);
-			
-			if ( $rst->execute( [ ':id' => $id ] ) ) {
-				return $stm->fetchColumn();
-			}
-		}
-		
-		return '';
 	}
 	
 	/**
@@ -235,61 +200,163 @@ class Module extends \PubCabin\Modules\Module {
 		int		$cexp, 
 		bool		$reset		= false
 	) : array {
-		$sql	= 
-		"SELECT * FROM login_view WHERE lookup = :lookup LIMIT 1;";
-		
-		$db	= $this->memberDb();
-		$stm	= $db->prepare( $sql );
-		
-		// First find lookup
-		if ( $stm->execute( [ ':lookup' => $lookup ] ) ) {
-			$results = $stm->fetchAll();
-		}
-		
-		// No logins found
-		if ( empty( $results ) ) {
-			return [];
-		}
-		
-		// One login found
-		$user	= $results[0];
-		$xpired = 
-		( time() - ( ( int ) $user['updated'] ) ) > $cexp;
-		
-		// Check for cookie expiration
-		if ( $reset && $expired ) {
-			$user['lookup']	= 
-			$this->resetLookup( ( int ) $user['id'] );
-			
-		} elseif ( $expired ) {
-			return [];
-		}
-		
-		return $user;
+		return 
+		\PubCabin\Core\User::findCookie(
+			$this->getData(), 
+			$lookup,
+			$cexp,
+			$reset
+		);
 	}
 	
 	/**
-	 *  Set a new password for the user
+	 *  Apply user auth session and save the current browser info
 	 *  
-	 * 
-	 *  @param \PubCabin\Data	$data	Storage handler
-	 *  @param int			$id	User's unique identifier
-	 *  @param string		$param	Raw password as entered
+	 *  @param array	$user		User info stored in database
+	 *  @param bool		$cookie		Set auth cookie if true
+	 */
+	public function setAuth( array $user, bool $cookie ) {
+		$session = $this->getSession();
+		$session->sessionCheck();
+		
+		$auth			= 
+		\hash( 'tiger160,4', 
+			$this->getRequest()->getUA() . $user['hash'] 
+		);
+		
+		// Set user session data
+		$_SESSION['user']	= [
+			'id'		=> $user['id'],
+			'status'	=> $user['status'],
+			'name'		=> $user['name'],
+			'is_approved'	=> $user['is_approved'],
+			'is_locked'	=> $user['is_locked'],
+			'auth'		=> $auth
+		];
+		
+		if ( $cookie ) {
+			// Set cookie lookup code
+			$session->makeCookie( 'user', $user['lookup'] );
+		}
+	}
+	
+	/**
+	 *  End user session
+	 */
+	public function endAuth() {
+		$session = $this->getSession();
+		$session->sessionCheck( true );
+		
+		// Delete existing auth
+		$this->authUser( true );
+		
+		// Delete lookup cookie
+		$session->deleteCookie( 'user' );
+	}
+	
+	/**
+	 *  Check user authentication session
+	 *  
+	 *  @param bool		$delete		Forget existing auth if true
+	 *  @return array
+	 */
+	public function authUser( bool $delete = false ) : array {
+		$session = $this->getSession();
+		$session->sessionCheck();
+	
+		if ( $delete ) {
+			unset( $this->user );
+			return [];
+		}
+		
+		if ( isset( $this->user ) ) {
+			return $this->user;
+		}
+		if ( 
+			empty( $_SESSION['user'] ) || 
+			!\is_array(  $_SESSION['user'] ) 
+		) { 
+			// Session was empty? Check cookie lookup
+			$cookie	= $session->getCookie( 'user', '' );
+			if ( empty( $cookie ) ) {
+				return [];
+			}
+			// Sane defaults
+			if ( \PubCabin\Util::strsize( $cookie ) > 255 ) {
+				return [];
+			}
+			
+			$user	= 
+			$session->findCookie( 
+				\PubCabin\Util::pacify( $cookie ) 
+			);
+			
+			// No cookie found?
+			if ( empty( $user ) ) {
+				return [];
+			}
+			
+			// Reset data types
+			$user	= static::formatAuthUser( $user );
+			
+			// User found, apply authorization
+			$this->setAuth( $user, true );
+			
+			// Update last activity
+			$this->updateUserActivity( 
+				$user['id'], 'active' 
+			);
+			$this->user = $user;
+			return $_SESSION['user'];
+			
+		} else {
+			// Fetched results must be a 6-item array
+			$user	= $_SESSION['user'];
+			if ( \count( $user ) !== 6 ) { 
+				$_SESSION['user']	= '';
+				return []; 
+			}
+		}
+		
+		$user = static::formatAuthUser( $user );
+		
+		// Check if current browser changed since auth token creation
+		$auth			= 
+		\hash( 'tiger160,4', 
+			$this->getRequest()->getUA() . $user['hash'] 
+		);
+		
+		if ( 0 != \strcmp( ( string ) $user['auth'], $auth ) ) { 
+			return []; 
+		}
+		$this->updateUserActivity( $user['id'], 'active' );
+		
+		$this->user = $user;
+		return $this->user;
+	}
+	
+	/**
+	 *  Update the last activity of the current user
+	 *  
+	 *  @param int		$id	User unique identifier
+	 *  @param string	$mode	Activity type
 	 *  @return bool
 	 */
-	protected function savePassword( 
-		int		$id,
-		string		$password 
+	public function updateUserActivity(
+		string	$mode	= '' 
 	) : bool {
-		$sql	= 
-		"UPDATE users SET password = :password 
-			WHERE id = :id";
+		$id	= ( int ) ( $this->user['id'] ?? 0 );
+		if ( empty( $id ) ) {
+			return false;
+		}
 		
-		return 
-		$this->getData()->setUpdate( $sql, [ 
-			':password'	=> \PubCabin\Core\User::hashPassword( $password ), 
-			':id'		=> $id 
-		], static::dataName() );
+		\PubCabin\Core\User::updateUserActivity( 
+			$this->getData(),
+			$this->getConfig(),
+			$this->getRequest(),
+			$id,
+			$mode
+		);
 	}
 }
 
