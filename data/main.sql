@@ -74,7 +74,7 @@ CREATE INDEX idx_site_maint ON sites ( is_maintenance );-- --
 CREATE TABLE site_aliases (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	site_id INTEGER NOT NULL,
-	basename TEXT NOT NULL,
+	basename TEXT NOT NULL COLLATE NOCASE,
 	
 	CONSTRAINT fk_pages_site 
 		FOREIGN KEY ( site_id ) 
@@ -214,6 +214,9 @@ CREATE TABLE users (
 	uuid TEXT DEFAULT NULL COLLATE NOCASE,
 	username TEXT NOT NULL COLLATE NOCASE,
 	password TEXT NOT NULL,
+	
+	-- Normalized, lowercase, and stripped of spaces
+	user_clean TEXT NOT NULL COLLATE NOCASE,
 	display TEXT DEFAULT NULL COLLATE NOCASE,
 	bio TEXT DEFAULT NULL COLLATE NOCASE,
 	created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -227,7 +230,8 @@ CREATE TABLE users (
 		REFERENCES settings ( id )
 		ON DELETE SET NULL
 );-- --
-CREATE UNIQUE INDEX idx_username ON users( username );-- --
+CREATE UNIQUE INDEX idx_user_name ON users( username );-- --
+CREATE UNIQUE INDEX idx_user_clean ON users( user_clean );-- --
 CREATE UNIQUE INDEX idx_user_uuid ON users( uuid )
 	WHERE uuid IS NOT NULL;-- --
 CREATE INDEX idx_user_created ON users ( created );-- --
@@ -324,6 +328,8 @@ CREATE INDEX idx_user_active ON user_auth( last_active )
 	WHERE last_active IS NOT NULL;-- --
 CREATE INDEX idx_user_login ON user_auth( last_login )
 	WHERE last_login IS NOT NULL;-- --
+CREATE INDEX idx_user_auth_approved ON user_auth( is_approved );-- --
+CREATE INDEX idx_user_auth_locked ON user_auth( is_locked );-- --
 CREATE INDEX idx_user_failed_last ON user_auth( failed_last_attempt )
 	WHERE failed_last_attempt IS NOT NULL;-- --
 CREATE INDEX idx_user_auth_created ON user_auth( created );-- --
@@ -337,10 +343,11 @@ SELECT user_id,
 	provider_id,
 	is_approved,
 	is_locked,
-	last_ip
+	last_ip,
 	last_active,
 	last_login,
 	last_lockout,
+	last_pass_change,
 	failed_attempts,
 	failed_last_start,
 	failed_last_attempt
@@ -353,19 +360,20 @@ CREATE TRIGGER user_last_login INSTEAD OF
 	UPDATE OF last_login ON auth_activity
 BEGIN 
 	UPDATE user_auth SET 
-		last_ip		= NEW.last_ip,
-		last_login	= CURRENT_TIMESTAMP, 
-		last_active	= CURRENT_TIMESTAMP
-		WHERE id	= OLD.id;
+		last_ip			= NEW.last_ip,
+		last_login		= CURRENT_TIMESTAMP, 
+		last_active		= CURRENT_TIMESTAMP,
+		failed_attempts		= 0
+		WHERE id = OLD.id;
 END;-- --
 
 CREATE TRIGGER user_last_ip INSTEAD OF 
 	UPDATE OF last_ip ON auth_activity
 BEGIN 
 	UPDATE user_auth SET 
-		last_ip		= NEW.last_ip, 
-		last_active	= CURRENT_TIMESTAMP 
-		WHERE id	= OLD.id;
+		last_ip			= NEW.last_ip, 
+		last_active		= CURRENT_TIMESTAMP 
+		WHERE id = OLD.id;
 END;-- --
 
 CREATE TRIGGER user_last_active INSTEAD OF 
@@ -376,17 +384,23 @@ BEGIN
 END;-- --
 
 CREATE TRIGGER user_last_lockout INSTEAD OF 
-	UPDATE OF last_lockout ON auth_activity
+	UPDATE OF is_locked ON auth_activity
+	WHEN NEW.is_locked = 1
 BEGIN 
-	UPDATE user_auth SET last_lockout = CURRENT_TIMESTAMP 
+	UPDATE user_auth SET 
+		is_locked	= 1,
+		last_lockout	= CURRENT_TIMESTAMP 
 		WHERE id = OLD.id;
 END;-- --
 
 CREATE TRIGGER user_failed_last_attempt INSTEAD OF 
 	UPDATE OF failed_last_attempt ON auth_activity
 BEGIN 
-	UPDATE user_auth SET failed_last_attempt = CURRENT_TIMESTAMP, 
-		failed_attempts = ( failed_attempts + 1 ) 
+	UPDATE user_auth SET 
+		last_ip			= NEW.last_ip, 
+		last_active		= CURRENT_TIMESTAMP,
+		failed_last_attempt	= CURRENT_TIMESTAMP, 
+		failed_attempts		= ( failed_attempts + 1 ) 
 		WHERE id = OLD.id;
 	
 	-- Update current start window if it's been 24 hours since 
@@ -403,25 +417,23 @@ END;-- --
 -- Login view
 -- Usage:
 -- SELECT * FROM login_view WHERE lookup = :lookup;
-CREATE VIEW login_view AS 
-SELECT 
-	user_id AS id, 
-	uuid AS uuid, 
+-- SELECT * FROM login_view WHERE name = :username;
+CREATE VIEW login_view AS SELECT 
+	logins.user_id AS id, 
+	users.uuid AS uuid, 
 	logins.lookup AS lookup, 
 	logins.hash AS hash, 
-	users.created AS created, 
+	logins.updated AS updated, 
 	users.status AS status, 
-	users.username AS name
+	users.username AS name, 
+	users.password AS password, 
+	ua.is_approved AS is_approved, 
+	ua.is_locked AS is_locked, 
+	ua.expires AS expires
 	
 	FROM logins
-	JOIN users ON logins.user_id = users.id;-- --
-
--- Password login view
--- Usage:
--- SELECT * FROM login_pass WHERE username = :username;
-CREATE VIEW login_pass AS 
-SELECT id, uuid, username AS name, lookup, password, status 
-	FROM users;-- --
+	JOIN users ON logins.user_id = users.id
+	LEFT JOIN user_auth ua ON users.id = ua.user_id;-- --
 
 
 -- Login regenerate. Not intended for SELECT
@@ -501,9 +513,11 @@ CREATE TRIGGER pubkey_after_insert AFTER INSERT ON public_keys FOR EACH ROW
 WHEN NEW.expires IS NOT NULL
 BEGIN
 	-- Remove expired keys
-	DELETE FROM public_keys WHERE 
-		strftime( '%s', expires ) < 
-		strftime( '%s', updated );
+	DELETE FROM public_keys WHERE expires IS NOT NULL 
+		AND (
+			strftime( '%s', expires ) < 
+			strftime( '%s', 'now' ) 
+		);
 END;-- --
 
 -- Change update date
@@ -513,9 +527,11 @@ BEGIN
 	UPDATE public_keys SET updated = CURRENT_TIMESTAMP WHERE rowid = NEW.rowid;
 	
 	-- Remove any expired as well
-	DELETE FROM public_keys WHERE 
-		strftime( '%s', expires ) < 
-		strftime( '%s', updated );
+	DELETE FROM public_keys WHERE expires IS NOT NULL 
+		AND (
+			strftime( '%s', expires ) < 
+			strftime( '%s', 'now' ) 
+		);
 END;-- --
 
 -- Set key to expire in 1 year if not specified
@@ -528,9 +544,11 @@ BEGIN
 			'unixepoch' 
 		) WHERE rowid = NEW.rowid;
 	
-	DELETE FROM public_keys WHERE 
-		strftime( '%s', expires ) < 
-		strftime( '%s', updated );
+	DELETE FROM public_keys WHERE expires IS NOT NULL 
+		AND (
+			strftime( '%s', expires ) < 
+			strftime( '%s', 'now' ) 
+		);
 END;-- --
 
 CREATE TRIGGER pubkey_exp_after_update AFTER UPDATE ON public_keys FOR EACH ROW 
@@ -542,9 +560,11 @@ BEGIN
 			'unixepoch' 
 		) WHERE rowid = NEW.rowid;
 	
-	DELETE FROM public_keys WHERE 
-		strftime( '%s', expires ) < 
-		strftime( '%s', updated );
+	DELETE FROM public_keys WHERE expires IS NOT NULL
+		AND (
+			strftime( '%s', expires ) < 
+			strftime( '%s', 'now' ) 
+		);
 END;-- --
 
 
@@ -561,7 +581,7 @@ CREATE UNIQUE INDEX idx_role_label ON roles( label ASC );-- --
 CREATE TABLE permission_providers(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	label TEXT NOT NULL COLLATE NOCASE,
-	settings TEXT DEFAULT NULL COLLATE NOCASE
+	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE
 );-- --
 CREATE UNIQUE INDEX idx_perm_provider_label ON permission_providers( label ASC );-- --
 
@@ -795,7 +815,6 @@ CREATE UNIQUE INDEX idx_page_uuid ON pages ( uuid )
 	WHERE uuid IS NOT NULL;-- --
 CREATE INDEX idx_page_parent ON pages ( parent_id );-- --
 CREATE INDEX idx_page_site ON pages ( site_id );-- --
-CREATE INDEX idx_page_ptype ON pages ( ptype );-- --
 CREATE INDEX idx_page_home ON pages ( is_home );-- --
 CREATE INDEX idx_page_type ON pages ( ptype );-- --
 CREATE INDEX idx_page_sort ON pages ( sort_order );-- --
@@ -890,26 +909,6 @@ BEGIN
 	UPDATE path_search SET url = NEW.url WHERE docid = OLD.id;
 END;-- --
 
--- Page descendant path
-CREATE VIEW page_hierarchy AS WITH RECURSIVE ph ( 
-	id, uuid, site_id, ptype, parent_id, is_home, created, 
-		published, settings, settings_id, sort_order, status 
-) AS (
-	SELECT id, uuid, site_id, ptype, parent_id, is_home, 
-		created, published, settings, settings_id, 
-		sort_order, status
-			
-		FROM pages
-		
-	UNION ALL
-		SELECT p.id, p.uuid, p.site_id, p.ptype, p.parent_id, p.is_home, 
-		p.created, p.published, p.settings, p.settings_id, 
-		p.sort_order, p.status
-		
-		FROM pages p 
-		INNER JOIN ph ON p.parent_id = ph.id
-) SELECT * FROM ph;-- --
-
 -- URL Routing and page handling
 CREATE TABLE route_markers(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -953,7 +952,7 @@ CREATE TABLE global_path_settings(
 	settings_id INTEGER DEFAULT NULL,
 	
 	-- Serialized JSON
-	settings TEXT NOT NULL DEFAULT '{}',
+	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
 	
 	CONSTRAINT fk_global_path
 		FOREIGN KEY ( path_id ) 
@@ -978,7 +977,7 @@ CREATE TABLE role_path_settings(
 	settings_id INTEGER DEFAULT NULL,
 	
 	-- Serialized JSON
-	settings TEXT NOT NULL DEFAULT '{}',
+	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
 	
 	CONSTRAINT fk_role_path_role
 		FOREIGN KEY ( role_id ) 
@@ -1008,7 +1007,7 @@ CREATE TABLE user_path_settings(
 	settings_id INTEGER DEFAULT NULL,
 	
 	-- Serialized JSON
-	settings TEXT NOT NULL DEFAULT '{}',
+	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
 	
 	CONSTRAINT fk_user_path
 		FOREIGN KEY ( path_id ) 
@@ -1141,9 +1140,9 @@ END;-- --
 CREATE TABLE text_sources (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 	text_id INTEGER NOT NULL,
-	url TEXT NOT NULL,
-	new_auth TEXT NOT NULL,
-	edit_auth TEXT NOT NULL, 
+	url TEXT NOT NULL COLLATE NOCASE,
+	new_auth TEXT NOT NULL COLLATE NOCASE,
+	edit_auth TEXT NOT NULL COLLATE NOCASE, 
 	ttl INTEGER NOT NULL DEFAULT 0, 
 	created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1218,7 +1217,7 @@ CREATE UNIQUE INDEX idx_page_text_users ON
 CREATE TABLE text_block_users(
 	block_id INTEGER NOT NULL, 
 	user_id INTEGER NOT NULL, 
-	ttype TEXT NOT NULL DEFAULT 'editor',
+	ttype TEXT NOT NULL DEFAULT 'editor' COLLATE NOCASE,
 	
 	CONSTRAINT fk_text_block_text 
 		FOREIGN KEY ( block_id ) 
@@ -1482,7 +1481,7 @@ CREATE TABLE term_texts (
 	
 	-- Same character set as terms.taxonomy for slug, title, body
 	slug TEXT NOT NULL COLLATE NOCASE,
-	title TEXT COLLATE NOCASE,
+	title TEXT DEFAULT NULL COLLATE NOCASE,
 	body TEXT NOT NULL COLLATE NOCASE,
 	
 	CONSTRAINT fk_term_texts_term 
@@ -1617,8 +1616,10 @@ BEGIN
 	INSERT INTO comment_search( docid, body ) 
 		VALUES ( NEW.id, NEW.bare );
 	
-	UPDATE pages SET comment_count = ( comment_count + 1 ), 
-		uuid = ( SELECT id FROM uuid ) 
+	UPDATE comments SET uuid = ( SELECT id FROM uuid )
+		WHERE id = NEW.id;
+	
+	UPDATE pages SET comment_count = ( comment_count + 1 ) 
 		WHERE id = NEW.page_id;
 END;-- --
 
@@ -2252,7 +2253,7 @@ CREATE VIEW comment_place_view AS SELECT
 -- Special actions
 CREATE TABLE events (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-	label TEXT NOT NULL
+	label TEXT NOT NULL COLLATE NOCASE
 );-- --
 CREATE UNIQUE INDEX idx_event_label ON events ( label );-- --
 
@@ -2630,8 +2631,8 @@ CREATE VIEW module_load_view AS SELECT
 
 CREATE TABLE redirects (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-	old_src TEXT NOT NULL,
-	new_src TEXT NOT NULL,
+	old_src TEXT NOT NULL COLLATE NOCASE,
+	new_src TEXT NOT NULL COLLATE NOCASE,
 	lang_id INTEGER NOT NULL,
 		
 	CONSTRAINT fk_redirect_lang
@@ -2957,7 +2958,55 @@ CREATE VIEW comment_meta_view AS SELECT
 	LEFT JOIN metadata m ON c.meta_id = m.id
 	LEFT JOIN comment_meta r ON c.id = r.metacontent_id;-- --
 
+-- Standalone polling
+CREATE TABLE polls(
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	user_id INTEGER NOT NULL,
+	created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	expires DATETIME DEFAULT NULL,
+	
+	CONSTRAINT fk_poll_user
+		FOREIGN KEY ( user_id ) 
+		REFERENCES users ( id ) 
+		ON DELETE SET NULL
+);-- --
+CREATE INDEX idx_poll_user ON polls ( user_id );-- --
+CREATE INDEX idx_poll_created ON polls ( created );-- --
+CREATE INDEX idx_poll_expires ON polls ( expires )
+	WHERE expires IS NOT NULL;-- --
 
+-- Set poll to auto-expire in 7 days if not set
+CREATE TRIGGER poll_after_insert AFTER INSERT ON polls FOR EACH ROW 
+WHEN NEW.expires IS NULL
+BEGIN
+	UPDATE polls SET 
+		expires = datetime( 
+			( strftime( '%s','now' ) + 604800 ), 
+			'unixepoch' 
+		) WHERE rowid = NEW.rowid;
+END;-- --
+
+-- Option selections
+CREATE TABLE poll_options(
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	poll_id INTEGER NOT NULL,
+	term TEXT NOT NULL COLLATE NOCASE,
+	lang_id INTEGER NOT NULL,
+	sort_order INTEGER NOT NULL DEFAULT 0,
+	
+	CONSTRAINT fk_option_poll
+		FOREIGN KEY ( poll_id ) 
+		REFERENCES polls ( id ) 
+		ON DELETE CASCADE,
+		
+	CONSTRAINT fk_option_lang 
+		FOREIGN KEY ( lang_id ) 
+		REFERENCES languages ( id ) 
+		ON DELETE CASCADE
+);-- --
+CREATE INDEX idx_option_poll ON poll_options ( poll_id );-- --
+CREATE INDEX idx_option_lang ON poll_options ( lang_id );-- --
+CREATE INDEX idx_option_sort ON poll_options ( sort_order ASC );-- --
 
 -- Content voting and feedback
 CREATE TABLE content_votes (
@@ -3028,6 +3077,24 @@ CREATE TABLE page_votes (
 		ON DELETE CASCADE
 );-- --
 CREATE INDEX idx_page_vote ON page_votes ( vote_id, page_id );-- --
+
+CREATE TABLE poll_votes (
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+	option_id INTEGER NOT NULL, 
+	vote_id INTEGER DEFAULT NULL, 
+		
+	CONSTRAINT fk_vote_option 
+		FOREIGN KEY ( option_id ) 
+		REFERENCES poll_options ( id ) 
+		ON DELETE CASCADE, 
+		
+	CONSTRAINT fk_vote_page_vote 
+		FOREIGN KEY ( vote_id ) 
+		REFERENCES content_votes ( id ) 
+		ON DELETE SET NULL
+);-- --
+CREATE UNIQUE INDEX idx_poll_vote ON poll_votes ( vote_id, option_id )
+	WHERE vote_id IS NOT NULL;-- --
 
 CREATE VIEW page_vote_view AS SELECT 
 	c.id AS id, 
@@ -3273,6 +3340,41 @@ CREATE VIEW form_field_view AS SELECT
 	LEFT JOIN settings g ON ff.settings_id = g.id;-- --
 
 
+-- Search result history
+CREATE TABLE search_cache(
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	label TEXT NOT NULL COLLATE NOCASE,
+	term TEXT NOT NULL COLLATE NOCASE,
+	created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	expires DATETIME DEFAULT NULL,
+	
+	-- serialized JSON
+	results TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE
+);-- --
+CREATE UNIQUE INDEX idx_search_term ON search_cache( label, term );-- --
+CREATE INDEX idx_search_expires ON search_cache( expires )
+	WHERE expires IS NOT NULL;-- --
+
+-- Set default search expiration to 1 hour
+CREATE TRIGGER search_exp_after_insert AFTER INSERT ON search_cache FOR EACH ROW 
+WHEN NEW.expires IS NULL
+BEGIN
+	UPDATE search_cache SET updated = CURRENT_TIMESTAMP, 
+		expires = datetime( 
+			( strftime( '%s','now' ) + 3600 ), 
+			'unixepoch' 
+		) WHERE rowid = NEW.rowid;
+END;-- --
+
+CREATE TRIGGER search_after_insert AFTER INSERT ON search_cache FOR EACH ROW 
+BEGIN
+	-- Remove expired searches
+	DELETE FROM search_cache WHERE expires IS NOT NULL 
+		AND (
+			strftime( '%s', expires ) < 
+			strftime( '%s', 'now' ) 
+		);
+END;-- --
 
 
 -- Content installation moved to main_install.sql
