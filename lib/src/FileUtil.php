@@ -282,6 +282,47 @@ final class FileUtil {
 			false : true;
 	}
 	
+	/** 
+	 *  Return uploaded $_FILES array into a more sane format
+	 * 
+	 *  @return array
+	 */
+	public static function parseUploads() : array {
+		$files = [];
+		
+		foreach ( $_FILES as $name => $file ) {
+			if ( \is_array($file['name']) ) {
+				foreach ( $file['name'] as $n => $f ) {
+					$files[$name][$n] = [];
+					
+					foreach ( $file as $k => $v ) {
+						$files[$name][$n][$k] = 
+							$file[$k][$n];
+					}
+				}
+				continue;
+			}
+			
+        		$files[$name][] = $file;
+		}
+		return $files;
+	}
+	
+	/**
+	 *  Filter upload file name into a safe format
+	 *  
+	 *  @param string	$name		Original raw filename
+	 *  @return string
+	 */
+	public static function filterUpName( ?string $name ) : string {
+		if ( empty( $name ) ) {
+			return '_';
+		}
+		
+		$name	= \preg_replace('/[^\pL_\-\d\.\s]', ' ' );
+		return \preg_replace( '/\s+/', '-', \trim( $name ) );
+	}
+	
 	/**
 	 *  Rename file to prevent overwriting existing ones by 
 	 *  appending _i where 'i' is incremented by 1 until no 
@@ -305,6 +346,36 @@ final class FileUtil {
 		}
 		
 		return $file;
+	}
+	
+	/**
+	 * Move uploaded files to the same directory as the post
+	 */
+	public static function saveUploads( 
+		string	$path, 
+		string	$root 
+	) {
+		$files	= static::parseUploads();
+		$store	= 
+		Util::slashPath( $root, true ) . 
+		Util::slashPath( $path, true );
+		
+		foreach ( $files as $name ) {
+			foreach( $name as $file ) {
+				// If errors were found, skip
+				if ( $file['error'] != \UPLOAD_ERR_OK ) {
+					continue;
+				}
+				
+				$tn	= $file['tmp_name'];
+				$n	= 
+				static::filterUpName( $file['name'] );
+				
+				// Check for duplicates and rename 
+				$up	= static::dupRename( $store . $n );
+				\move_uploaded_file( $tn, $up );
+			}
+		}
 	}
 	
 	/**
