@@ -29,6 +29,15 @@ class Config {
 		'app_name'		=> 'PubCabin',
 		'app_start'		=> '2017-03-14T04:30:55Z',
 		'skip_local'		=> 1,
+		"name_min"		=> 1,
+		"name_max"		=> 180,
+		"pass_min"		=> 7,
+		"display_min"		=> 3,
+		"display_max"		=> 180,
+		"enable_register"	=> 1,
+		"auto_approve_reg"	=> 1,
+		"title_min"		=> 3,
+		"title_max"		=> 255,
 		'cache'			=> '{cache}',
 		'cache_ttl'		=> 3200,
 		'uploads'		=> '{files}',
@@ -36,7 +45,7 @@ class Config {
 		'mod_file_path'		=> '{modstore}',
 		'error'			=> '{error}',
 		'notice'		=> '{store}notice.log',
-		'allow_post'		=> 1,
+		"allow_upload"		=> 0,
 		
 		'default_basepath'	=> <<<JSON
 {
@@ -68,7 +77,7 @@ JSON
 		'script_limit'		=> 10,
 		'meta_limit'		=> 15,
 		'folder_limit'		=> 15,
-		'shared_assets'		=> '\/',
+		'shared_assets'		=> '/',
 		'frame_whitelist'	=> '',
 		'default_stylesheets'	=> '',
 		'default_scripts'	=> '',
@@ -222,6 +231,7 @@ JSON
 	":year"	: "(?<year>[2][0-9]{3})",
 	":month": "(?<month>[0-3][0-9]{1})",
 	":day"	: "(?<day>[0-9][0-9]{1})",
+	":user"	: "(?<user>[\\pL\\pN\\s_\\-]{1,80})",
 	":slug"	: "(?<slug>[\\pL\\-\\d]{1,100})",
 	":tree"	: "(?<tree>[\\pL\\/\\-\\d]{1,255})",
 	":file"	: "(?<file>[\\pL_\\-\\d\\.\\s]{1,120})",
@@ -236,10 +246,12 @@ JSON
 		'session_limit_medium'	=> 3,
 		'session_limit_heavy'	=> 1,
 		'cookie_exp'		=> 86400,
-		'cookie_path'		=> '\/',
+		'cookie_path'		=> '/',
 		'cookie_restrict'	=> 1,
 		'form_delay'		=> 30,
-		'form_expire'		=> 7200
+		'form_expire'		=> 7200,
+		"login_delay"		=> 5,
+		"login_attempts"	=> 3
 	];
 	
 	/**
