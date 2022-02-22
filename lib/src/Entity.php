@@ -264,7 +264,7 @@ abstract class Entity {
 			\str_starts_with( $t, '{' ) && 
 			\str_ends_with( $t, '}' )
 		) {
-			return Util::decode( ( string ) $value );
+			return Util::decode( ( string ) $t );
 		}
 		
 		return [];
