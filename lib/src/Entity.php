@@ -158,9 +158,8 @@ abstract class Entity {
 			// Inherited settings
 			case 'settings':
 				$this->_settings = 
-				\is_array( $value ) ? 
-					$value : 
-					Util::decode( ( string ) $value );
+				static::formatSettings( $value );
+				
 				break;
 			
 			// Overriden from inherited settings
@@ -172,9 +171,7 @@ abstract class Entity {
 				$this->_settings = 
 				\array_merge( 
 					$this->_settings, 
-					\is_array( $value ) ? 
-						$value : 
-						Util::decode( ( string ) $value )
+					static::formatSettings( $value )
 				);
 				break;
 			
@@ -238,6 +235,39 @@ abstract class Entity {
 			$obj->{$k} = $cols[$k];
 		}
 		return $obj;
+	}
+	
+	/**
+	 *  Helper to detect and parse a 'settings' data type
+	 *  
+	 *  @param string	$name		Setting name
+	 *  @return array
+	 */
+	public static function formatSettings( $value ) : array {
+		// Nothing to format?
+		if ( \is_array( $value ) ) {
+			return $value;
+		}
+		
+		// Can be decoded?
+		if ( 
+			!\is_string( $value )	|| 
+			\is_numeric( $value )
+		) {
+			return [];
+		}
+		$t	= \trim( $value );
+		if ( empty( $t ) ) {
+			return [];
+		}
+		if ( 
+			\str_starts_with( $t, '{' ) && 
+			\str_ends_with( $t, '}' )
+		) {
+			return Util::decode( ( string ) $value );
+		}
+		
+		return [];
 	}
 }
 
