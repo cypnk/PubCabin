@@ -774,11 +774,20 @@ CREATE VIEW area_view AS SELECT
 	LEFT JOIN settings ag ON a.settings_id = ag.id
 	LEFT JOIN settings rg ON ar.settings_id = rg.id;-- --
 
+-- Page type rendering and behavior
+CREATE TABLE page_types (
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+	label TEXT NOT NULL COLLATE NOCASE,
+	render TEXT NOT NULL DEFAULT '' COLLATE NOCASE,
+	behavior TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE
+);-- --
+CREATE UNIQUE INDEX idx_page_type_label ON page_types ( label );-- --
+
 CREATE TABLE pages (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	uuid TEXT DEFAULT NULL,
 	site_id INTEGER NOT NULL,
-	ptype TEXT NOT NULL COLLATE NOCASE,
+	type_id INTEGER NOT NULL,
 	
 	-- Template override
 	render TEXT NOT NULL DEFAULT '' COLLATE NOCASE,
@@ -800,6 +809,11 @@ CREATE TABLE pages (
 		FOREIGN KEY ( site_id ) 
 		REFERENCES sites ( id )
 		ON DELETE RESTRICT,
+	
+	CONSTRAINT fk_pages_type 
+		FOREIGN KEY ( type_id ) 
+		REFERENCES page_types ( id ) 
+		ON DELETE RESTRICT,
 		
 	CONSTRAINT fk_pages_parent 
 		FOREIGN KEY ( parent_id ) 
@@ -816,7 +830,7 @@ CREATE UNIQUE INDEX idx_page_uuid ON pages ( uuid )
 CREATE INDEX idx_page_parent ON pages ( parent_id );-- --
 CREATE INDEX idx_page_site ON pages ( site_id );-- --
 CREATE INDEX idx_page_home ON pages ( is_home );-- --
-CREATE INDEX idx_page_type ON pages ( ptype );-- --
+CREATE INDEX idx_page_type ON pages ( type_id );-- --
 CREATE INDEX idx_page_sort ON pages ( sort_order );-- --
 CREATE INDEX idx_page_created ON pages ( created );-- --
 CREATE INDEX idx_page_updated ON pages ( updated );-- --
@@ -825,14 +839,6 @@ CREATE INDEX idx_page_published ON pages ( published )
 	WHERE published IS NOT NULL;-- --
 CREATE INDEX idx_page_settings ON pages ( settings_id )
 	WHERE settings_id IS NOT NULL;-- --
-
--- Page type templates
-CREATE TABLE ptype_render (
-	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
-	label TEXT NOT NULL COLLATE NOCASE,
-	render TEXT NOT NULL DEFAULT '' COLLATE NOCASE
-);-- --
-CREATE INDEX idx_ptype_label ON ptype_render ( label );-- --
 
 -- Unset previous default hompage
 CREATE TRIGGER page_default_insert BEFORE INSERT ON 
@@ -1274,7 +1280,10 @@ CREATE VIEW page_area_view AS SELECT
 	p.site_id AS site_id,
 	p.is_home AS is_home,
 	p.render AS render,
-	p.ptype AS ptype,
+	p.type_id AS type_id, 
+	y.label AS type_label,
+	y.behavior AS type_behavior,
+	y.render AS type_render,
 	p.allow_children AS allow_children,
 	p.allow_comments AS allow_comments,
 	p.sort_order AS sort_order,
@@ -1350,6 +1359,7 @@ CREATE VIEW page_area_view AS SELECT
 	LEFT JOIN page_texts t ON p.id = t.page_id
 	LEFT JOIN page_paths pp ON t.path_id = pp.id
 	LEFT JOIN page_area pa ON pa.page_id = p.id
+	LEFT JOIN page_type y ON p.type_id = y.id
 	LEFT JOIN areas a ON pa.area_id = a.id
 	LEFT JOIN sites s ON p.site_id = s.id
 	LEFT JOIN settings g ON p.settings_id = g.id;-- --
@@ -1718,7 +1728,10 @@ CREATE VIEW reading_view AS SELECT
 	p.site_id AS site_id,
 	p.is_home AS is_home,
 	p.render AS render,
-	p.ptype AS ptype,
+	p.type_id AS type_id,
+	y.label AS type_label,
+	y.render AS type_render,
+	y.behavior AS type_behavior,
 	p.created AS created,
 	p.updated AS updated,
 	p.published AS published,
@@ -1743,6 +1756,7 @@ CREATE VIEW reading_view AS SELECT
 	LEFT JOIN page_terms pt ON terms.id = pt.term_id
 	LEFT JOIN term_texts texts ON texts.term_id = terms.id
 	LEFT JOIN pages p ON pt.page_id = p.id
+	LEFT JOIN page_types y ON p.type_id = y.id
 	LEFT JOIN languages l ON l.id = texts.lang_id;-- --
 
 
