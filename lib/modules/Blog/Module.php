@@ -16,6 +16,244 @@ class Module extends \PubCabin\Modules\Module {
 	// Ending date for post archive
 	const YEAR_END		= 2099;
 	
+	/**
+	 *  List of events attached to the blog module
+	 *  @var array
+	 */
+	protected static $event_list = [
+		// Primary views
+		'blogArchiveView',
+		'blogArchiveIndex',
+		'blogFeedView',
+		'blogViewPost',
+		
+		'blogMainView',
+		'blogSearchView',
+		'blogExcerptView',
+		'blogRelatedView',
+		'blogNextPrevView',
+		
+		// Events
+		'blogSettings',
+		'blogCreating',
+		'blogEditing',
+		'blogDeleting',
+		'blogSave',
+		
+		'blogPostCreating',
+		'blogPostEditing',
+		'blogPostDeleting',
+		'blogPostDraftSaving',
+		'blogPostDraftSave',
+		'blogPostDraftSaved',
+		
+		// Processing
+		'blogPostPublishing',
+		'blogPostPublish',
+		'blogPostPublished',
+		
+		'blogPostCreated',
+		'blogPostEdited',
+		'blogPostSave',
+		'blogPostDeleted',
+		
+		'blogCommentCreating',
+		'blogCommentEditing',
+		'blogCommentDeleting',
+		'blogCommentSave',
+		'blogCommentCreated',
+		'blogCommentEdited',
+		'blogCommentDeleted',
+		
+		// When retrieving data
+		
+		'blogPostLoaded',
+		'blogPostUserLoaded',
+		
+		'blogPostRelatedBefore',
+		'blogPostRelatedAfter',
+		'blogPostRelated',
+		
+		'blogPostPreviousBefore',
+		'blogPostPrevious',
+		'blogPostPreviousAfter',
+		
+		'blogPostNextBefore',
+		'blogPostNext',
+		'blogPostNextAfter',
+		
+		// When editing data
+		'blogPostFormRenderBefore',
+		'blogPostFormRenderAfter',
+		
+		'blogPostFormTitleRenderBefore',
+		'blogPostFormTitleRenderAfter',
+		
+		'blogPostFormPubRenderBefore',
+		'blogPostFormPubRenderAfter',
+		
+		'blogPostFormBodyRenderBefore',
+		'blogPostFormBodyRenderAfter',
+		
+		'blogPostFormExcerptRenderBefore',
+		'blogPostFormExcerptRenderAfter',
+		
+		// When rendering data
+		'blogPostTitleParsed',
+		'blogPostBodyParsed',
+		'blogPostExcerptParsed',
+		
+		'blogCommentTitleParsed',
+		'blogCommentBodyParsed',
+		'blogCommentAuthorParsed',
+		'blogCommentEmailParsed',
+		
+		// Special components
+		'blogCreatingPageHeadBegin',
+		'blogCreatingPageHeadEnd',
+		'blogCreatingPageBodyBegin',
+		'blogCreatingPageBodyEnd',
+		
+		'blogEditingPageHeadBegin',
+		'blogEditingPageHeadEnd',
+		'blogEditingPageBodyBegin',
+		'blogEditingPageBodyEnd',
+		
+		'blogDeletingPageHeadBegin',
+		'blogDeletingPageHeadEnd',
+		'blogDeletingPageBodyBegin',
+		'blogDeletingPageBodyEnd',
+		
+		'blogPostCreatingPageHeadBegin',
+		'blogPostCreatingPageHeadEnd',
+		'blogPostCreatingPageBodyBegin',
+		'blogPostCreatingPageBodyEnd',
+		
+		'blogPostEditingPageHeadBegin',
+		'blogPostEditingPageHeadEnd',
+		'blogPostEditingPageBodyBegin',
+		'blogPostEditingPageBodyEnd',
+		
+		'blogPostDeletingPageHeadBegin',
+		'blogPostDeletingPageHeadEnd',
+		'blogPostDeletingPageBodyBegin',
+		'blogPostDeletingPageBodyEnd',
+		
+		
+		'blogCommentCreatingPageHeadBegin',
+		'blogCommentCreatingPageHeadEnd',
+		'blogCommentCreatingPageBodyBegin',
+		'blogCommentCreatingPageBodyEnd',
+		
+		'blogCommentEditingPageHeadBegin',
+		'blogCommentEditingPageHeadEnd',
+		'blogCommentEditingPageBodyBegin',
+		'blogCommentEditingPageBodyEnd',
+		
+		'blogCommentDeletingPageHeadBegin',
+		'blogCommentDeletingPageHeadEnd',
+		'blogCommentDeletingPageBodyBegin',
+		'blogCommentDeletingPageBodyEnd',
+		
+		
+		// Rendering blog post
+		'blogFeaturedPostBefore',
+		'blogFeaturedPostAfter',
+		
+		'blogRelatedPostsBefore',
+		'blogRelatedPostsAfter',
+		
+		'blogPostRenderBefore',
+		'blogPostRenderAfter',
+		
+		'blogBeforeFeaturedImage',
+		'blogAfterFeaturedImage',
+		
+		'blogPostStatusRenderBefore',
+		'blogPostStatusRenderAfter',
+		
+		'blogPostTitleRenderBefore',
+		'blogPostTitleRenderAfter',
+		
+		'blogPostPubRenderBefore',
+		'blogPostPubRenderAfter',
+		
+		'blogPostBodyRenderBefore',
+		'blogPostBodyRenderAfter',
+		
+		'blogPostExcerptRenderBefore',
+		'blogPostExcerptRenderAfter',
+		
+		// Author information
+		'blogPostAuthorRenderBefore',
+		'blogPostAuthorRenderAfter',
+		
+		'blogPostAuthorStatusBefore',
+		'blogPostAuthorStatusAfter',
+		
+		'blogPostBodyRenderBefore',
+		'blogPostBodyRenderAfter',
+		
+		// Feedback?
+		'blogPostCommentsEnabled',
+		'blogPostCommentsDisabled',
+		
+		'blogCommentsRenderBefore',
+		'blogCommentsRenderAfter',
+		
+		// Feedback form
+		'blogCommentFormBefore',
+		'blogCommentFormAfter',
+		
+		'blogCommentBodyBefore',
+		'blogCommentFormAfter',
+		
+		// Commenter's name (if given or a user)
+		'blogCommentAuthorRenderBefore',
+		'blogCommentAuthorRenderAfter',
+		
+		// Commenter is a registered user
+		'blogCommentAuthorIsUser',
+		
+		// Registered username
+		'blogCommentUsernameBefore',
+		'blogCommentUsernameAfter',
+		
+		// Commenter's email (if given)
+		'blogCommentEmailRenderBefore',
+		'blogCommentEmailRenderAfter',
+		
+		// Commenter's IP address
+		'blogCommentIpRenderBefore',
+		'blogCommentIpRenderAfter',
+		
+		// Moderation dropdown
+		'blogCommentModRenderBefore',
+		'blogCommentModRenderAfter',
+		'blogCommentModItemRenderBefore',
+		'blogCommentModItemRenderAfter',
+		
+		// Comment published
+		'blogCommentPubRenderBefore',
+		'blogCommentPubRenderAfter',
+		
+		// Rendered status
+		'blogCommentStatusBefore',
+		'blogCommentStatusAfter',
+		
+		// Admin views
+		'adminComponentPageBegin',
+		'adminComponentPage',
+		'adminComponentPageEnd',
+		
+		'adminComponentLinks',
+		'adminBreadcrumbLinks'
+	];
+	
+	public function eventList() : array {
+		return static::$event_list;	
+	}
+	
 	public function dependencies() : array {
 		return [ 
 			'Styles', 
