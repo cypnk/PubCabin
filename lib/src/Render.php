@@ -491,6 +491,218 @@ class Render {
 		// Finally set classes again
 		return \strtr( $tpl, $this->rsettings( 'classes' ) );
 	}
+	
+	/**
+	 *  Format template with classes, assets, and language parameters
+	 *  
+	 *  @param string	$tpl	Rendering template
+	 *  @param array	$input	Placeholder replacements
+	 *  @param bool		$full	Complete render including regions if true
+	 *  @return string
+	 */
+	public function render(
+		string	$tpl,
+		array	$input	= [],
+		bool	$full		= false 
+	) : string {
+		static $cache	= [];
+		static $regions	= [];
+		$key		= hash( 'sha1', ( string ) $full . $tpl );
+		
+		// Check cache
+		if ( !isset( $cache[$key] ) ) {
+			// Full render?
+			$tpl		= $full ? 
+			$this->parseLang( 
+				$this->renderRegions( $tpl ) 
+			) : 
+			$this->parseLang( $tpl );
+		
+			// Apply component classes
+			$cache[$key]	= 
+			\strtr( $tpl, $this->rsettings( 'classes' ) );
+			
+			// Find render regions
+			$regions[$key]	= 
+			$this->findTplRegions( $cache[$key] );
+		}
+		
+		$out		= [];
+		
+		// Set content in regions or place empty string
+		foreach( $regions[$key] as $k => $v ) {
+			// Set render content or clear it
+			$out['{' . $v .'}'] =  $input[$v] ?? '';
+		}
+		
+		// Parse appended
+		$tpl		= 
+		$this->parseLang( \strtr( $cache[$key], $out ) );
+		
+		// Finally set classes again
+		return \strtr( $tpl, $this->rsettings( 'classes' ) );
+	}
+	
+	/**
+	 *  Pagination link template generator helper
+	 *  
+	 *  @param int	$c			Loop counter
+	 *  @param int	$page			Current page index
+	 *  @param string	$prefix		Page path prefix E.G. 'page'
+	 *  @return string
+	 */
+	protected function pageLink( 
+		int	$c, 
+		int	$page, 
+		string	$prefix 
+	) {
+		if ( $c == $page ) {
+			return
+			$this->render( 
+				$this->template( 'tpl_page_current_link' ), 
+				[ 'url'	=> $prefix . $c, 'text'	=> $c ]
+			); 
+		}
+		
+		return
+		$this->render( 
+			$this->template( 'tpl_page_link' ), 
+			[ 'url'	=> $prefix . $c, 'text' => $c ]
+		);
+	}
+	
+	/**
+	 *  Pagination navigation template generator
+	 *  
+	 *  @param int		$total		Total number of pages
+	 *  @param int		$page		Current page index
+	 *  @param int		$limit		Maximum number of pages to show
+	 *  @param string	$prefix		Page path prefix E.G. 'page'
+	 *  @return string
+	 */
+	public function paginate(
+		int	$total,
+		int	$page, 
+		int	$limit,
+		string	$prefix	= 'page'
+	) : string {
+		$last	= \ceil( $total / $limit );
+		if ( $last < 1 ) {
+			return '';
+		}
+		$out	= '';
+		$buf	= 7;
+		$pad	= 2;
+		$adj	= 1;
+		$prev	= $page - 1;
+		$next	= $page + 1;
+		$lm	= $last - 1;
+		$pm	= $pad - 1;
+		$pp	= $pad + 1;
+		$c	= 0;
+		
+		if ( $page > 1 ) {
+			$out .= 
+			$this->render( 
+				$this->template( 'tpl_page_prev_link' ) , 
+				[ 'url' => $prefix . $prev ] 
+			);
+		} else {
+			$out .= 
+			$this->render( $this->template( 'tpl_page_noprev' ) );
+		}
+		
+		if ( $last >= ( $buf + ( $adj * $pad ) ) ) {
+			if ( $page < 1 + ( $adj * $pp ) ) {
+				for ( $c = 1; $c < ( $pad * 2 ) + ( $adj * $pad ); $c++ ) {
+					$out .= 
+					$this->pageLink( $c, $page, $prefix );
+				}
+				
+				$out .=
+				$this->render( 
+					$this->template( 'tpl_page_last2' ), 
+					[ 
+						'url1'	=> $prefix . $lm, 
+						'url2'	=> $prefix . $last,
+						'text1'	=> $lm,
+						'text2'	=> $last
+					]
+				); 
+			} elseif ( 
+				$last - ( $adj * $pad ) > $page && 
+				$page > ( $adj * $pm ) 
+			) {
+				$out .=
+				$this->render( 
+					$this->template( 'tpl_page_first2' ), 
+					[ 
+						'url1'	=> $prefix . 1, 
+						'url2'	=> $prefix . 2,
+						'text1'	=> 1,
+						'text2'	=> 2
+					]
+				);
+				
+				for ( $c = $page - $adj; $c <= $page + $adj; $c++ ) {
+					$out .= 
+					$this->pageLink( $c, $page, $prefix );
+				}
+				
+				$out .=
+				$this->render( 
+					$this->template( 'tpl_page_last2' ), 
+					[ 
+						'url1'	=> $prefix . $lm, 
+						'url2'	=> $prefix . $last,
+						'text1'	=> $lm,
+						'text2'	=> $last
+					]
+				); 
+			} else {
+				$out .=
+				$this->render( 
+					$this->template( 'tpl_page_first2' ), 
+					[ 
+						'url1'	=> $prefix . 1, 
+						'url2'	=> $prefix . 2,
+						'text1'	=> 1,
+						'text2'	=> 2
+					]
+				);
+				
+				for ( 
+					$c = $last - ( $pm + ( $adj * $pp ) ); 
+					$c <= $last; $c++ 
+				) {
+					$out .= 
+					$this->pageLink( $c, $page, $prefix );
+				}
+			}
+		} else {
+			for ( $c = 1; $c <= $last; $c++ ) {
+				$out .= 
+				$this->pageLink( $c, $page, $prefix );
+			}
+		}
+		
+		if ( $page < $c - 1 ) {
+			$out .=
+			$this->render( 
+				$this->template( 'tpl_page_next_link' ), 
+				[ 'url'	=> $prefix . $next ]
+			);
+		} else {
+			$out .= 
+			$this->render( $this->template( 'tpl_page_nonext' ) );
+		}
+		
+		return 
+		$this->render( 
+			$this->templates( 'tpl_pagination' ), 
+			[ 'links' => $out ] 
+		);
+	}
 }
 
 
