@@ -954,6 +954,9 @@ VALUES
 <span class="{crumb_current_item}" title="{url}">{label}</span>{crumb_current_after}
 </li>' ), 
 
+( 1, 'tpl_page_link','<li class="{nav_classes}"><a 
+href="{url}" class="{nav_a_classes}">{text}</a></li>' ), 
+
 ( 1, 'tpl_page_current_link', '<li class="{nav_current_classes}"><span 
 class="{nav_current_s_classes}" title="{url}">{text}</span></li>' ), 
 
