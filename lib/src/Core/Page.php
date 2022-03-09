@@ -45,16 +45,28 @@ class Page extends \PubCabin\Entity {
 	public $is_home;
 	
 	/**
-	 *  Page specific type E.G. blogpost, forum, shop etc...
-	 *  @var string
-	 */
-	public $ptype;
-	
-	/**
 	 *  Display render override HTML
 	 *  @var string
 	 */
 	public $render;
+	
+	/**
+	 *  Page type and behavior identifier
+	 *  @var \PubCabin\Core\PageType
+	 */
+	protected $_ptype;
+	
+	/**
+	 *  Page type label description
+	 *  @var string
+	 */
+	public $type_label;
+	
+	/**
+	 *  Modified behavior from settings
+	 *  @var array
+	 */
+	protected $_type_behavior;
 	
 	/**
 	 *  Creator ID
@@ -149,6 +161,43 @@ class Page extends \PubCabin\Entity {
 	 */
 	public $slug;
 	
+	/**
+	 *  Set or override current page type
+	 *  
+	 *  @param string	$name	Type parameter identifier
+	 *  @param mixed	$value	Override value
+	 */
+	protected function setPageType( string $name, $value ) {
+		// Override current type
+		if ( 
+			!\is_string( $value )	|| 
+			!\is_array( $value )	|| 
+			!\is_int( $value ) 
+		) {
+			if ( $value instanceof \PubCabin\Core\PageType ) {
+				$this->_ptype = $value;
+				return;
+			}
+			
+		// Else init type
+		} elseif ( !isset( $this->_ptype ) ) {
+			$this->_ptype = new PageType();
+		}
+		
+		switch ( $name ) {
+			case 'type_id':
+				$this->_ptype->id = ( int ) $value;
+				break;
+				
+			case 'type_render':
+				$this->_ptype->render = $value;
+				break;
+				
+			case 'type_behavior':
+				$this->_ptype->behavior = $value;
+				break;
+		}
+	}
 	
 	public function __set( $name, $value ) {
 		switch ( $name ) {
@@ -161,6 +210,14 @@ class Page extends \PubCabin\Entity {
 						( string ) $value 
 					);
 				break;
+				
+			// Override type
+			case 'page_type':
+			case 'type_id':
+			case 'type_render':
+			case 'type_behavior':
+				$this->overrideType( $name, $value );
+				break;
 			
 			// Fallback
 			default:
@@ -172,6 +229,9 @@ class Page extends \PubCabin\Entity {
 		switch ( $name ) {
 			case 'taxonomy':
 				return $this->_taxonomy;
+			
+			case 'page_type':
+				return $this->_ptype;
 			
 			default:
 				return parent::__get( $name );
