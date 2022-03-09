@@ -170,8 +170,9 @@ class Page extends \PubCabin\Entity {
 	protected function setPageType( string $name, $value ) {
 		// Override current type
 		if ( 
-			!\is_string( $value )	|| 
-			!\is_array( $value )	|| 
+			0 == \strcasecmp( $name, 'page_type' )	&& 
+			!\is_string( $value )			&& 
+			!\is_array( $value )			&& 
 			!\is_int( $value ) 
 		) {
 			if ( $value instanceof \PubCabin\Core\PageType ) {
@@ -216,7 +217,7 @@ class Page extends \PubCabin\Entity {
 			case 'type_id':
 			case 'type_render':
 			case 'type_behavior':
-				$this->overrideType( $name, $value );
+				$this->setPageType $name, $value );
 				break;
 			
 			// Fallback
