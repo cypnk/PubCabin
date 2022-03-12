@@ -289,10 +289,12 @@ CREATE TABLE user_auth(
 	
 	-- Activity
 	last_ip TEXT DEFAULT NULL COLLATE NOCASE,
+	last_ua TEXT DEFAULT NULL COLLATE NOCASE,
 	last_active DATETIME DEFAULT NULL,
 	last_login DATETIME DEFAULT NULL,
 	last_pass_change DATETIME DEFAULT NULL,
 	last_lockout DATETIME DEFAULT NULL,
+	last_session_id TEXT DEFAULT NULL,
 	
 	-- Auth status,
 	is_approved INTEGER NOT NULL DEFAULT 0,
@@ -324,10 +326,14 @@ CREATE INDEX idx_user_pin ON user_auth( mobile_pin )
 	WHERE mobile_pin IS NOT NULL;-- --
 CREATE INDEX idx_user_ip ON user_auth( last_ip )
 	WHERE last_ip IS NOT NULL;-- --
+CREATE INDEX idx_user_ua ON user_auth( last_ua )
+	WHERE last_ua IS NOT NULL;-- --
 CREATE INDEX idx_user_active ON user_auth( last_active )
 	WHERE last_active IS NOT NULL;-- --
 CREATE INDEX idx_user_login ON user_auth( last_login )
 	WHERE last_login IS NOT NULL;-- --
+CREATE INDEX idx_user_session ON user_auth( last_session_id )
+	WHERE last_session_id IS NOT NULL;-- --
 CREATE INDEX idx_user_auth_approved ON user_auth( is_approved );-- --
 CREATE INDEX idx_user_auth_locked ON user_auth( is_locked );-- --
 CREATE INDEX idx_user_failed_last ON user_auth( failed_last_attempt )
@@ -344,9 +350,11 @@ SELECT user_id,
 	is_approved,
 	is_locked,
 	last_ip,
+	last_ua,
 	last_active,
 	last_login,
 	last_lockout,
+	last_session_id,
 	last_pass_change,
 	failed_attempts,
 	failed_last_start,
@@ -361,6 +369,8 @@ CREATE TRIGGER user_last_login INSTEAD OF
 BEGIN 
 	UPDATE user_auth SET 
 		last_ip			= NEW.last_ip,
+		last_ua			= NEW.last_ua,
+		last_session_id		= NEW.last_session_id,
 		last_login		= CURRENT_TIMESTAMP, 
 		last_active		= CURRENT_TIMESTAMP,
 		failed_attempts		= 0
@@ -372,6 +382,8 @@ CREATE TRIGGER user_last_ip INSTEAD OF
 BEGIN 
 	UPDATE user_auth SET 
 		last_ip			= NEW.last_ip, 
+		last_ua			= NEW.last_ua,
+		last_session_id		= NEW.last_session_id,
 		last_active		= CURRENT_TIMESTAMP 
 		WHERE id = OLD.id;
 END;-- --
@@ -398,6 +410,8 @@ CREATE TRIGGER user_failed_last_attempt INSTEAD OF
 BEGIN 
 	UPDATE user_auth SET 
 		last_ip			= NEW.last_ip, 
+		last_ua			= NEW.last_ua,
+		last_session_id		= NEW.last_session_id,
 		last_active		= CURRENT_TIMESTAMP,
 		failed_last_attempt	= CURRENT_TIMESTAMP, 
 		failed_attempts		= ( failed_attempts + 1 ) 
