@@ -696,12 +696,14 @@ class User extends \PubCabin\Entity {
 				$sql	= 
 				"UPDATE auth_activity SET 
 					last_ip		= :ip, 
-					last_ua		= :ua  
+					last_ua		= :ua, 
+					last_session_id = :sess
 					WHERE user_id = :id;";
 				
 				$params = [
 					':ip'	=> $req->getIP(), 
 					':ua'	=> $req->getUA(),
+					':sess'	=> \session_id(), 
 					':id'	=> $id
 				];
 				break;
@@ -711,13 +713,15 @@ class User extends \PubCabin\Entity {
 				"UPDATE auth_activity SET 
 					last_ip		= :ip, 
 					last_ua		= :ua, 
-					last_login	= :login 
+					last_login	= :login, 
+					last_session_id = :sess
 					WHERE user_id = :id;";
 				
 				$params = [
 					':ip'	=> $req->getIP(), 
 					':ua'	=> $req->getUA(),
 					':login'=> $now,
+					':sess'	=> \session_id(), 
 					':id'	=> $id
 				];
 				break;
@@ -729,7 +733,8 @@ class User extends \PubCabin\Entity {
 					last_ip			= :ip, 
 					last_ua			= :ua, 
 					last_active		= :active,
-					last_pass_change	= :change 
+					last_pass_change	= :change, 
+					last_session_id		= :sess 
 					WHERE user_id = :id;";
 				
 				$params = [
@@ -737,6 +742,7 @@ class User extends \PubCabin\Entity {
 					':ua'		=> $req->getUA(),
 					':active'	=> $now,
 					':change'	=> $now,
+					':sess'		=> \session_id(),
 					':id'		=> $id
 				];
 				break;
@@ -746,13 +752,15 @@ class User extends \PubCabin\Entity {
 				"UPDATE auth_activity SET 
 					last_ip			= :ip, 
 					last_ua			= :ua, 
-					failed_last_attempt	= :fdate 
+					last_session_id		= :sess, 
+					failed_last_attempt	= :fdate
 					WHERE user_id = :id;";
 					
 				$params = [
 					':ip'		=> $req->getIP(), 
 					':ua'		=> $req->getUA(),
-					':change'	=> $now,
+					':sess'		=> \session_id(),
+					':fdate'	=> $now,
 					':id'		=> $id
 				];
 				break;
@@ -799,12 +807,13 @@ class User extends \PubCabin\Entity {
 				$data->setInsert( 
 					"REPLACE INTO user_auth ( 
 						user_id, last_ip, last_ua, 
-						is_approved
-					) VALUES( :id, :ip, :ua, :ap );", 
+						last_session_id, is_approved
+					) VALUES( :id, :ip, :ua, :sess, :ap );", 
 					[
 						':id'	=> $id, 
 						':ip'	=> $req->getIP(), 
 						':ua'	=> $req->getUA(),
+						':sess'	=> \session_id(),
 						':ap'	=> $ap ? 1 : 0
 					], 
 					static::MAIN_DATA
