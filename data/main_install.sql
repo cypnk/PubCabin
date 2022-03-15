@@ -261,6 +261,16 @@ INSERT INTO translations (
 			"select"	: "Select",
 			"IP"		: "IP {ip}"
 		}
+	},
+	"ptypes": {
+		"page"		: "Page",
+	  	"pagedesc"	: "Full page content such as Home, About or other main section",
+	  	"blog"		: "Blog",
+	  	"blogdesc"	: "A date-archived journal",
+	  	"forum"		: "Forum",
+	  	"forumdesc"	: "Shared subject for community discussion topics",
+	  	"forumtopic"	: "Forum Topic",
+	  	"forumtopicdesc": "Indexed discussion thread relevant to the forum subject"
 	}
 }' );-- --
 
@@ -476,6 +486,97 @@ VALUES ( 1, 'default_site_settings', '{
 	"form_expire": 7200,
 	"login_delay": 5,
 	"login_attempts": 3
+}' );-- --
+
+
+-- Default page types
+INSERT INTO page_types (
+	id, label, render, behavior
+) VALUES 
+( 1, 'page', '', '{
+	"parents":	["*", "page"],
+	"children":	["page"],
+ 	"label":	"{lang:ptypes:page}",
+ 	"description":	"{lang:ptypes:pagedesc}",
+ 	"allow_children": 1,
+ 	"allow_comments": 1,
+ 	"privileges"	: {
+		"create_roles"	: [],
+		"edit_roles"	: [],
+		"delete_roles"	: [],
+		"upload_roles"	: [],
+		"mod_roles"	: [],
+		"comment_roles"	: []
+	},
+	"settings"	: {}
+}' ),
+( 1, 'blog', '', '{
+	"parents":	["*", "page"],
+	"children":	["post"],
+ 	"label:		"{lang:ptypes:blog}",
+ 	"description":	"{lang:ptypes:blogdesc}",
+ 	"allow_children": 0,
+ 	"allow_comments": 0,
+ 	"privileges"	: {
+		"create_roles"	: [],
+		"edit_roles"	: [],
+		"delete_roles"	: [],
+		"upload_roles"	: [],
+		"mod_roles"	: [],
+		"comment_roles"	: []
+	},
+	"settings"	: {}
+}' ),
+( 1, 'post', '', '{
+	"parents":	["blog"],
+	"children":	[],
+ 	"label":	"{lang:ptypes:post}",
+ 	"description":	"{lang:ptypes:postdesc}",
+ 	"allow_children": 1,
+ 	"allow_comments": 1,
+ 	"privileges"	: {
+		"create_roles"	: [],
+		"edit_roles"	: [],
+		"delete_roles"	: [],
+		"upload_roles"	: [],
+		"mod_roles"	: [],
+		"comment_roles"	: []
+	},
+	"settings"	: {}
+}' ),
+( 1, 'forum', '', '{
+	"parents":	["*"],
+	"children":	["forum", "forumtopic"],
+ 	"label":	"{lang:ptypes:forum}",
+ 	"description":	"{lang:ptypes:forumdesc}",
+ 	"allow_children": 1,
+ 	"allow_comments": 0,
+ 	"privileges"	: {
+		"create_roles"	: [],
+		"edit_roles"	: [],
+		"delete_roles"	: [],
+		"upload_roles"	: [],
+		"mod_roles"	: [],
+		"comment_roles"	: []
+	},
+	"settings"	: {}
+}' ),
+( 1, 'forumtopic', '', '{
+	"parents":	["forum"],
+	"children":	[],
+ 	"label":	"{lang:ptypes:forumtopic}",
+ 	"description":	"{lang:ptypes:forumtopicdesc}",
+ 	"allow_children": 0,
+ 	"allow_comments": 1,
+ 	"privileges"	: {
+		"create_roles"	: [],
+		"edit_roles"	: [],
+		"delete_roles"	: [],
+		"upload_roles"	: [],
+		"mod_roles"	: [],
+		"comment_roles"	: []
+	},
+	"settings"	: {}
 }' );-- --
 
 
