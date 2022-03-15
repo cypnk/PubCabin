@@ -271,6 +271,20 @@ INSERT INTO translations (
 	  	"forumdesc"	: "Shared subject for community discussion topics",
 	  	"forumtopic"	: "Forum Topic",
 	  	"forumtopicdesc": "Indexed discussion thread relevant to the forum subject"
+	},
+	"roles" : {
+		"admin": {
+			"label"	: "Admin",
+			"desc"	: "Global administrator"
+		},
+		"siteadmin": {
+			"label"	: "Site Admin",
+			"desc"	: "Website administrator"
+		},
+		"sitemod": {
+			"label"	: "Site Moderator",
+			"desc"	: "Website user content moderator"
+		}
 	}
 }' );-- --
 
@@ -448,15 +462,18 @@ VALUES ( 1, 'default_site_settings', '{
 		"optgroup"	: [ "id", "label", "style", "class", "data-feature" ]
 	}, 
 	"ext_whitelist" : {
-		"text"		: "css, js, txt, html",
-		"images"	: "ico, jpg, jpeg, gif, bmp, png, tif, tiff, svg", 
+		"text"		: "css, js, txt, html, vtt",
+		"images"	: "ico, jpg, jpeg, gif, bmp, png, tif, tiff, svg, webp", 
 		"fonts"		: "ttf, otf, woff, woff2",
 		"audio"		: "ogg, oga, mpa, mp3, m4a, wav, wma, flac",
-		"video"		: "avi, mp4, mkv, mov, ogg, ogv"
+		"video"		: "avi, mp4, mkv, mov, ogg, ogv",
+		"documents"	: "doc, docx, ppt, pptx, pdf, epub",
+		"archives"	: "zip, rar, gz, tar"
 	}, 
 	"route_mark" : {
 		"*"	: "(?<all>.+)",
 		":id"	: "(?<id>[1-9][0-9]*)",
+		":ids"	: "(?<ids>[1-9][0-9,]*)",
 		":page"	: "(?<page>[1-9][0-9]*)",
 		":label": "(?<label>[\\pL\\pN\\s_\\-]{1,30})",
 		":nonce": "(?<nonce>[a-z0-9]{10,30})",
@@ -510,7 +527,7 @@ INSERT INTO page_types (
 	},
 	"settings"	: {}
 }' ),
-( 1, 'blog', '', '{
+( 2, 'blog', '', '{
 	"parents":	["*", "page"],
 	"children":	["post"],
  	"label:		"{lang:ptypes:blog}",
@@ -527,7 +544,7 @@ INSERT INTO page_types (
 	},
 	"settings"	: {}
 }' ),
-( 1, 'post', '', '{
+( 3, 'post', '', '{
 	"parents":	["blog"],
 	"children":	[],
  	"label":	"{lang:ptypes:post}",
@@ -544,7 +561,7 @@ INSERT INTO page_types (
 	},
 	"settings"	: {}
 }' ),
-( 1, 'forum', '', '{
+( 4, 'forum', '', '{
 	"parents":	["*"],
 	"children":	["forum", "forumtopic"],
  	"label":	"{lang:ptypes:forum}",
@@ -561,7 +578,7 @@ INSERT INTO page_types (
 	},
 	"settings"	: {}
 }' ),
-( 1, 'forumtopic', '', '{
+( 5, 'forumtopic', '', '{
 	"parents":	["forum"],
 	"children":	[],
  	"label":	"{lang:ptypes:forumtopic}",
@@ -578,6 +595,14 @@ INSERT INTO page_types (
 	},
 	"settings"	: {}
 }' );-- --
+
+
+-- Default roles
+INSERT INTO roles( id, label, description )
+VALUES 
+( 1, '{lang:roles:admin:label}', '{lang:roles:admin:desc}' ), 
+( 2, '{lang:roles:siteadmin:label}', '{lang:roles:siteadmin:desc}' ), 
+( 3, '{lang:roles:sitemod:label}', '{lang:roles:sitemod:desc}' );-- --
 
 
 -- Homepage URL
@@ -597,8 +622,8 @@ INSERT INTO areas ( id, label, site_id )
 VALUES ( 1, 'main', 1 );-- --
 
 -- Default content
-INSERT INTO pages( id, site_id, ptype, is_home ) 
-VALUES( 1, 1, 'html', 1 );-- --
+INSERT INTO pages( id, site_id, type_id, is_home ) 
+VALUES( 1, 1, 1, 1 );-- --
 
 -- Page area
 INSERT INTO page_area( page_id, area_id ) 
