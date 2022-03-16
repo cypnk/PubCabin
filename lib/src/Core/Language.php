@@ -99,14 +99,16 @@ class Language extends \PubCabin\Entity {
 		\PubCabin\Data	$data,
 		array		$lang 
 	) {
-		$db	= $data->getDb( static::MAIN_DATA );
+		static $default = 
+		"SELECT * FROM locale_view WHERE 
+			is_lang_default = 1 AND 
+			is_locale_default = 1 LIMIT 1;";
+		
+		$db		= $data->getDb( static::MAIN_DATA );
 		
 		// Default language and default locale
 		if ( 0 === \strcmp( $lang['lang'], 'default' ) ) {
-			$sql	= 
-			"SELECT * FROM locale_view WHERE 
-				is_lang_default = 1 AND 
-				is_locale_default = 1 LIMIT 1;";
+			$sql	= $default;
 				
 			$params	= [];
 		
@@ -132,7 +134,14 @@ class Language extends \PubCabin\Entity {
 		}
 		
 		$stm	= $db->prepare( $sql );
-		return $db->getDataResult( $db, $params, 'item', $stm );
+		$res	= $db->getDataResult( $db, $params, 'item', $stm );
+		// Fallback to default
+		if ( empty( $res ) ) {
+			$stm	= $db->prepare( $default );
+			$res	= $db->getDataResult( $db, [], 'item', $stm );
+		}
+		
+		return $res;
 	}
 	
 	public static function find( 
