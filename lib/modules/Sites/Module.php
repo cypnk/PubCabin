@@ -89,20 +89,12 @@ class Module extends \PubCabin\Modules\Module {
 		$req	= $this->getRequest();
 		
 		// Set placeholder replacements
-		// TODO Get these from config
-		\PubCabin\Core\Language::setPlaceholders( [
-			'{name_min}'	=> 2,
-			'{name_max}'	=> 80,
-			'{pass_min}'	=> 8,
-			'{display_min}'	=> 2,
-			'{display_max}'	=> 100,
-			
-			'{formatting}'	=> '/formatting',
-			'{terms}'	=> '/terms'
-		] );
+		\PubCabin\Core\Language::setPlaceholders( 
+			$this->getConfig()->getConfig() 
+		);
 		
 		$this->language = 
-		\PubCabin\Core\Language( 
+		\PubCabin\Core\Language::find( 
 			$this->getData(), $req->getLang()
 		);
 		
