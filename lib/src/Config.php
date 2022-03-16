@@ -65,10 +65,12 @@ JSON
 		'ext_whitelist'		=> <<<JSON
 {
 	"text"		: "css, js, txt, html, vtt",
-	"images"	: "ico, jpg, jpeg, gif, bmp, png, tif, tiff, svg", 
+	"images"	: "ico, jpg, jpeg, gif, bmp, png, tif, tiff, svg, webp", 
 	"fonts"		: "ttf, otf, woff, woff2",
 	"audio"		: "ogg, oga, mpa, mp3, m4a, wav, wma, flac",
-	"video"		: "avi, mp4, mkv, mov, ogg, ogv"
+	"video"		: "avi, mp4, mkv, mov, ogg, ogv",
+	"documents"	: "doc, docx, ppt, pptx, pdf, epub",
+	"archives"	: "zip, rar, gz, tar"
 }
 JSON
 ,
@@ -221,6 +223,7 @@ JSON
 {
 	"*"	: "(?<all>.+)",
 	":id"	: "(?<id>[1-9][0-9]*)",
+	":ids"	: "(?<ids>[1-9][0-9,]*)",
 	":page"	: "(?<page>[1-9][0-9]*)",
 	":label": "(?<label>[\\pL\\pN\\s_\\-]{1,30})",
 	":nonce": "(?<nonce>[a-z0-9]{10,30})",
