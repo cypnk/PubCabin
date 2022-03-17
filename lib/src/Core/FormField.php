@@ -120,22 +120,45 @@ class FormField extends \PubCabin\Entity {
 		return parent::__get( $name );
 	}
 	
-	// TODO
 	public function save( \PubCabin\Data $data ) : bool {
-		if ( isset( $this->id ) ) {
-			return $this->edit();
-		} else {
-			return $this->create();
+		$params	= [
+			':name'		=> $this->name,
+			':form'		=> $this->form_id,
+			':filter'	=> $this->filter,
+			':style'	=> $this->style_id,
+			':template'	=> $this->template_id,
+			':crt'		=> $this->create_template,
+			':edt'		=> $this->edt_template,
+			':vwt'		=> $this->view_template,
+			':settings'	=> 
+				\PubCabin\Util::encode( $this->settings )
+		]
+		
+		if ( empty( $this->id ) ) {
+			$sql = 
+			"INSERT INTO form_fields( name, form_id, filter, 
+				style_id, template_id, create_template, 
+				edit_template, view_template, settings )
+			VALUES ( :name, :form, :filter, :style, :template, 
+			:crt, :edt, :vwt, :settings );";
+			
+			$this->id = 
+			$data->setInsert( $sql, $params, static::MAIN_DATA );
+			
+			return empty( $this->id ) ? false : true;
 		}
+		
+		$sql = 
+		"UPDATE form_fields SET field_name = :name, 
+			form_id = :form, filter = :filter, 
+			style_id = :style, template_id = :template, 
+			create_template = :crt, edit_template = :edt, 
+			view_template = :vwt, settings = :settings 
+			WHERE id = :id;";
+		
+		$params[':id'] => $this->id;
+		return 
+		$data->setUpdate( $sql, $params, static::MAIN_DATA );
 	}
 	
-	// TODO
-	protected function edit( \PubCabin\Data $data ) : bool {
-		return false;
-	}
-	
-	// TODO
-	protected function create( \PubCabin\Data $data ) : bool {
-		return false;
-	}
 }
