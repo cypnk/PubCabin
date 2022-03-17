@@ -29,9 +29,10 @@ INSERT INTO languages (
 ( 23, 'si', 'සිංහල', 'Sinhalese', 0 ),
 ( 24, 'ta', 'தமிழ்', 'Tamil', 0 ),
 ( 25, 'th', 'ภาษาไทย', 'Thai', 0 ),
-( 26, 'ur', 'اُردُو‬', 'Urdu', 0 ),
-( 27, 'vi', 'Tiếng Việt', 'Vietnamese', 0 ),
-( 28, 'zh', '中文', 'Chinese', 0 );-- --
+( 26, 'uk', 'украї́нська мо́ва', 'Ukranian', 0 ),
+( 27, 'ur', 'اُردُو‬', 'Urdu', 0 ),
+( 28, 'vi', 'Tiếng Việt', 'Vietnamese', 0 ),
+( 29, 'zh', '中文', 'Chinese', 0 );-- --
 
 -- Translations are JSON which need placeholder replacements before parsing
 INSERT INTO translations (
