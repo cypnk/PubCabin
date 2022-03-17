@@ -33,6 +33,12 @@ class Form extends \PubCabin\Entity {
 	public $files		= [];
 	
 	/**
+	 *  Capture event list
+	 *  @var array
+	 */
+	public $events		= [];
+	
+	/**
 	 *  Anti-XSS request forgery token
 	 *  @var string
 	 */
@@ -110,10 +116,9 @@ class Form extends \PubCabin\Entity {
 	}
 	
 	// TODO
-	public function save() {
-		
+	public function save( \PubCabin\Data $data ) : bool {
+		return false;
 	}
-	
 }
 
 
