@@ -20,6 +20,12 @@ class Data {
 	protected $_err		= [];
 	
 	/**
+	 *  PDO Statement storage
+	 *  @var array
+	 */
+	protected $_stmcache	= [];
+	
+	/**
 	 *  Configuration store
 	 *  @var \PubCabin\Config
 	 */
@@ -38,6 +44,12 @@ class Data {
 	 *  Handle cleanup
 	 */
 	public function __destruct() {
+		\array_map( 
+			function( $v ) { return null; }, 
+			$this->_stmcache 
+		);
+		$this->_stmcache = null;
+		
 		$this->getDb( '', 'closeall' );
 		
 		// Log any pending errors
@@ -267,7 +279,23 @@ class Data {
 				return $ok ? true : false;
 		}
 	}
+	
+	/**
+	 *  Get or create cached PDO Statements
+	 *  
+	 *  @param PDO		$db	Database connection
+	 *  @param string	$sql	Query string or statement
+	 *  @return PDOStatement
+	 */
+	public function statement( \PDO $db, string $sql ) : \PDOStatement {
+		if ( isset( $this->_stmcache[$sql] ) ) {
+			return $this->_stmcache[$sql];
+		}
 		
+		$this->_stmcache[$sql] = $db->prepare( $sql );
+		return $this->_stmcache[$sql];
+	}
+	
 	/**
 	 *  Shared data execution routine
 	 *  
@@ -287,7 +315,7 @@ class Data {
 		$res	= null;
 	
 		try {
-			$stm	= $db->prepare( $sql );
+			$stm	= $this->statement( $db, $sql );
 			$res	= $this->getDataResult( $db, $params, $rtype, $stm );
 			
 		} catch( \PDOException $e ) {
@@ -326,7 +354,7 @@ class Data {
 				return false;
 			}
 			
-			$stm	= $db->prepare( $sql );
+			$stm	= $this->statement( $db, $sql );
 			foreach ( $params as $p ) {
 				$res[]	= 
 				$this->getDataResult( 
