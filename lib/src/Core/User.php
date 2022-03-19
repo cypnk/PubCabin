@@ -475,21 +475,25 @@ class User extends \PubCabin\Entity {
 	) : string {
 		$db	= $data->getDb( static::MAIN_DATA );
 		$stm	= 
-		$db->prepare( 
+		$data->statement( $db, 
 			"UPDATE logout_view SET lookup = '' 
 				WHERE user_id = :id;" 
 		);
 		
 		if ( $stm->execute( [ ':id' => $id ] ) ) {
+			$stm->closeCursor();
+			
 			// SQLite should have generated a new random lookup
 			$rst = 
-			$db->prepare( 
+			$data->prepare( $db, 
 				"SELECT lookup FROM logins WHERE 
 					user_id = :id;"
 			);
 			
 			if ( $rst->execute( [ ':id' => $id ] ) ) {
-				return $stm->fetchColumn();
+				$col = $rst->fetchColumn();
+				$rst->closeCursor();
+				return $col;
 			}
 		}
 		
@@ -583,11 +587,12 @@ class User extends \PubCabin\Entity {
 		"SELECT * FROM login_view 
 			WHERE lookup = :lookup LIMIT 1;";
 		$db	= $data->getDb( static::MAIN_DATA );
-		$stm	= $db->prepare( $sql );
+		$stm	= $data->statement( $db, $sql );
 		
 		// First find lookup
 		if ( $stm->execute( [ ':lookup' => $lookup ] ) ) {
 			$results = $stm->fetchAll();
+			$stm->closeCursor();
 		}
 		
 		// No logins found
@@ -630,7 +635,7 @@ class User extends \PubCabin\Entity {
 		"SELECT * FROM users WHERE id = :id LIMIT 1;";
 		
 		$db		= $data->getDb( static::MAIN_DATA );
-		$stm		= $db->prepare( $sql );
+		$stm		= $data->statement( $db, $sql );
 		$result		= 
 		$data->getDataResult( 
 			$db,
@@ -638,7 +643,7 @@ class User extends \PubCabin\Entity {
 			'class,\\PubCabin\\Core\\User', 
 			$stm
 		);
-		
+		$stm->closeCursor();
 		return empty( $result ) ? [] : $result;
 	}
 	
@@ -657,7 +662,7 @@ class User extends \PubCabin\Entity {
 		"SELECT * FROM login_view WHERE name = :user LIMIT 1;";
 		
 		$db		= $data->getDb( static::MAIN_DATA );
-		$stm		= $db->prepare( $sql );
+		$stm		= $data->statement( $db, $sql );
 		$result		= 
 		$data->getDataResult( 
 			$db,
@@ -665,7 +670,7 @@ class User extends \PubCabin\Entity {
 			'class,\\PubCabin\\Core\\User', 
 			$stm
 		);
-		
+		$stm->closeCursor();
 		return empty( $result ) ? [] : $result;
 	}
 	
