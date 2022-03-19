@@ -134,7 +134,7 @@ JSON;
 		$ins	= $data->getInParam( $paths, $params );
 		$db	= $data->getDb( static::MAIN_DATA );
 		$stm	= 
-		$db->prepare( 
+		$data->statement( $db, 
 			"SELECT * FROM sites_enabled WHERE 
 				( base_alias = :balias OR 
 					basename = :bname ) 
@@ -142,13 +142,15 @@ JSON;
 				ORDER BY basepath DESC;"
 		);
 		
-		return 
+		$result	=
 		$data->getDataResult( 
 			$db, 
 			$params, 
 			'class, \\PubCabin\Core\\Site', 
 			$stm 
 		);
+		$stm->closeCursor();
+		return $result;
 	}
 	
 	/**
