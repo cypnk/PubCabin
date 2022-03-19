@@ -317,6 +317,7 @@ class Data {
 		try {
 			$stm	= $this->statement( $db, $sql );
 			$res	= $this->getDataResult( $db, $params, $rtype, $stm );
+			$stm->closeCursor();
 			
 		} catch( \PDOException $e ) {
 			
@@ -361,6 +362,7 @@ class Data {
 					$db, $params, $rtype, $stm 
 				);
 			}
+			$stm->closeCursor();
 			$db->commit();
 			
 		} catch( \PDOException $e ) {
