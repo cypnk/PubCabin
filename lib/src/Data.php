@@ -148,15 +148,15 @@ class Data {
 		
 		// First time? SQLite database will be created
 		$first_run	= !\file_exists( $dsn );
-		
-		$opts	= [
-			\PDO::ATTR_TIMEOUT		=> 
-				$this->config->setting( 
+		$timeout	= $this->config->setting( 
 					'data_timeout', 'int' 
-				),
+				);
+		$opts	= [
+			\PDO::ATTR_TIMEOUT		=> $timeout,
 			\PDO::ATTR_DEFAULT_FETCH_MODE	=> \PDO::FETCH_ASSOC,
 			\PDO::ATTR_PERSISTENT		=> false,
 			\PDO::ATTR_EMULATE_PREPARES	=> false,
+			\PDO::ATTR_AUTOCOMMIT		=> false,
 			\PDO::ATTR_ERRMODE		=> 
 				\PDO::ERRMODE_EXCEPTION
 		];
@@ -328,7 +328,6 @@ class Data {
 				$e->getMessage() ?? '';
 		}
 		
-		$stm	= null;
 		return $res;
 	}
 	
@@ -373,7 +372,6 @@ class Data {
 				__FUNCTION__ . ' ' . 
 				$e->getMessage() ?? '';
 		}
-		$stm = null;
 		return \is_array( $res ) ? $res : [];
 	}
 	
