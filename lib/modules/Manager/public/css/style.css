@@ -90,7 +90,7 @@ nav ul li {
 	display: inline-block;
 }
 
-nav ul li a {
+nav ul li a, nav ul li a:hover {
 	color: inherit;
 	font-weight: 600;
 	text-decoration: none;
