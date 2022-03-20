@@ -21,7 +21,8 @@
 	--txtoutline: #000;
 	--txtplace: #636470;
 	--txtbg: #fefefe;
-	--txtborder: #fefefe;
+	--txthborder: #fefefe;
+	--txtborder: #696e79;
 	--btbg:#353533;
 	--btborder:#353533;
 	--bttxt:#e3dbce;
@@ -29,6 +30,6 @@
 	--btactbg: #222;
 	--btactborder: #222;
 	
-	/*665d66 #696e79 #e3dbce 636470 */
+	/*665d66 #e3dbce 636470 */
 }
 
