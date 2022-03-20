@@ -1,0 +1,30 @@
+
+:root {
+	--bg: #fff;
+	--hbg: #474948;
+	--hcolor: #e3dbce;
+	--navbg: #353533;
+	--heborder: #323230;
+	--navsbg: #e3dbce;
+	--navsactive: #f7f3e7;
+	--navsactivetxt: #222;
+	--navstext: #534a3e;
+	--navslink: #4c4d47;
+	--navshvlink: #555;
+	--navshvlinkbg: #e6e3d6;
+	--hlink: #3b4046;
+	--hborder: #b3af97;
+	--txt: #353533;
+	--txtplace: #636470;
+	--txtbg: #fefefe;
+	--txtborder:#e3dbce;
+	--btbg:#353533;
+	--btborder:#353533;
+	--bttxt:#e3dbce;
+	--btacttxt: #fff;
+	--btactbg: #222;
+	--btactborder: #222;
+	
+	/*#3b4046 #696e79 636470 #665d66*/
+}
+
