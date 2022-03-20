@@ -1,6 +1,9 @@
 
 :root {
 	--bg: #fff;
+	--link: #3b4046;
+	--linkhover: #636470;
+	--linkactive: #000;
 	--hbg: #474948;
 	--hcolor: #e3dbce;
 	--navbg: #353533;
@@ -15,9 +18,10 @@
 	--hlink: #3b4046;
 	--hborder: #b3af97;
 	--txt: #353533;
+	--txtoutline: #000;
 	--txtplace: #636470;
 	--txtbg: #fefefe;
-	--txtborder:#e3dbce;
+	--txtborder: #fefefe;
 	--btbg:#353533;
 	--btborder:#353533;
 	--bttxt:#e3dbce;
@@ -25,6 +29,6 @@
 	--btactbg: #222;
 	--btactborder: #222;
 	
-	/*#3b4046 #696e79 636470 #665d66*/
+	/*665d66 #696e79 #e3dbce 636470 */
 }
 
