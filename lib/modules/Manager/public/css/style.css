@@ -1,17 +1,5 @@
 @import url("colors.css");
-
-*, *:before, *:after {
-	font: inherit;
-	color: inherit;
-	border: 0;
-	box-sizing: border-box;
-	line-height: inherit;
-	font-display: optional;
-	margin: 0;
-	padding: 0;
-	outline: none;
-	vertical-align: bottom;
-}
+@import url("normalize.css");
 
 body, article, header, footer, nav, main, section, aside, figure, figcaption, canvas {
 	display: block;
@@ -19,7 +7,6 @@ body, article, header, footer, nav, main, section, aside, figure, figcaption, ca
 
 html {
 	font: 400 0.81rem Helvetica, Arial, "Nimbus Sans L", "FreeSans", sans-serif;
-	line-height: 1.6;
 	height: 100%;
 }
 
@@ -38,21 +25,32 @@ h1, h2, h3, h4, h5, h6 {
 	display: block;
 }
 
+h1, h2, h3 {
+	font-weight: 400;
+}
+
 header h1, header h2 {
 	line-height: 1.1;
 }
 
-h1 {
-	font-size: 2.2rem;
-}
-
 h2 {
-	font-size: 2rem;
 	padding: .7rem 0;
 }
 
 * + p {
 	margin-top: 1rem;
+}
+
+a {
+	color: var(--link);
+}
+
+a:hover {
+	color: var(--linkhover);
+}
+
+a:active {
+	color: var(--linkactive);
 }
 
 .content {
@@ -93,6 +91,7 @@ nav ul li {
 }
 
 nav ul li a {
+	color: inherit;
 	font-weight: 600;
 	text-decoration: none;
 }
@@ -180,8 +179,12 @@ nav.crumbs ul li a {
 	opacity: 1;
 }
 
-input, textarea, select {
-	display: inline-block;
+form p input {
+	display: table-cell;
+}
+
+label + input, label + textarea, label + select {
+	display: block;
 }
 
 input[type="text"], input[type="search"], textarea, select, 
@@ -190,19 +193,33 @@ input[type="text"], input[type="search"], textarea, select,
 }
 
 input[type="text"], input[type="search"], textarea, select {
+	padding: .5rem .5rem .4rem .5rem;
 	background: var(--txtbg);
 	color: var(--txt);
 	border: 1px solid var(--txtborder);
+}
+
+header input[type="text"], header input[type="search"], header textarea, 
+	header select {
 	padding: .4rem 1rem;
+	border: 0;
+}
+
+input[type="text"]:focus, input[type="search"]:focus, textarea:focus, 
+	select:focus {
+	outline: 1px dotted var(--txtoutline);
 }
 
 input[type="submit"], input[type="button"] {
-	padding: .4rem 2rem;
 	cursor: pointer;
+	padding: .5rem 1rem .4rem 1rem;
 	color: var(--bttxt);
 	border: 1px solid var(--btborder);
 	background: var(--btbg);
-	font-weight: 600;
+}
+
+header input[type="submit"], header input[type="button"] {
+	padding: .5rem 1rem;
 }
 
 input[type="submit"]:active, input[type="button"]:active {
