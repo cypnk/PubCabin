@@ -293,11 +293,23 @@ input:read-only, textarea:read-only {
 	cursor: not-allowed;
 }
 
+input ~ .desc::before, textarea ~ .desc::before {
+	height: 0;
+	content: '';
+	display: block;
+	max-width: 25rem;
+	height: 0;
+	font-weight: 600;
+	overflow: hidden;
+	transition: all 0.7s ease;
+}
+
 input:invalid:not(:placeholder-shown) ~ .desc::before, 
 	textarea:invalid:not(:placeholder-shown) ~ .desc::before {
-	content: attr(data-validation);
 	color: var(--txtinvcolor);
-	display: block;
+	content: attr(data-validation);
+	height: 1.4rem;
+	overflow: visible;
 }
 
 input:valid:not([type="submit"]):focus, 
