@@ -23,13 +23,18 @@
 	--txtbg: #fefefe;
 	--txthborder: #fefefe;
 	--txtborder: #696e79;
+	--txtinvborder: #fe3300;
+	--txtinvcolor: #fe3300;
+	--txtinvborderfocus: #f00;
 	--btbg:#353533;
 	--btborder:#353533;
 	--bttxt:#e3dbce;
 	--btacttxt: #fff;
 	--btactbg: #222;
 	--btactborder: #222;
+	--selectbg: #e3dbce;
+	--selectcolor: #000;
 	
-	/*665d66 #e3dbce 636470 */
+	/*665d66 636470 */
 }
 
