@@ -54,8 +54,17 @@
 <div class="content">
 	<p>This is a <a href="/link">link</a></p>
 	<form>
-		<p><label for="textarea">A textarea</label> 
-		<textarea id="textarea" rows="4" cols="65"></textarea></p>
+		<p><label for="textarea">A textarea <span class="special">optional</span></label> 
+		<textarea id="textarea" rows="4" cols="65"></textarea>
+		<small class="desc">A long description of this textarea</small></p>
+	<p><label for="req">Required text</label> <input type="text" id="req" 
+		placeholder="Required input" required></p>
+	<p><label for="req2">Required 3 digit number</label> 
+		<input type="text" id="req2" pattern="[0-9]{3}" 
+		placeholder="Required input" required>
+		<small class="desc"
+		data-validation="A 3 digit number is required">A long description of a required field</small>
+	</p>
 	<p><input type="text" placeholder="Text input"> <input type="button" value="Button"></p>
 	</form>
 	
