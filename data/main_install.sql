@@ -69,8 +69,10 @@ INSERT INTO translations (
 			"page"		: "Login",
 			"name"		: "Name <span>(required)<\/span>",
 			"namedesc"	: "Between {name_min} and {name_max} characters. Letters, numbers, and spaces supported.",
+			"namevalid"	: "Valid username is required", 
 			"pass"		: "Password <span>(required)<\/span>",
 			"passdesc"	: "Minimum {pass_min} characters.",
+			"passvalid"	: "Valid password is required", 
 			"rem"		: "Remember me",
 			"submit"	: "Login"
 		},
@@ -78,10 +80,13 @@ INSERT INTO translations (
 			"page"		: "Register",
 			"name"		: "Name <span>(required)<\/span>",
 			"namedesc"	: "Between {name_min} and {name_max} characters. Letters, numbers, and spaces supported.",
+			"namevalid"	: "Valid username is required", 
 			"pass"		: "Password <span>(required)<\/span>",
 			"passdesc"	: "Minimum {pass_min} characters.",
+			"passvalid"	: "Valid password is required", 
 			"repeat"	: "Repeat password <span>(required)<\/span>",
 			"repeatdesc"	: "Must match password entered above",
+			"passrptvalid"	: "Passwords must match", 
 			"rem"		: "Remember me",
 			"terms"		: "Agree to the <a href=\"{terms}\" target=\"_blank\">site terms</a>",
 			"submit"	: "Register"
@@ -90,8 +95,10 @@ INSERT INTO translations (
 			"page"		: "Change password",
 			"old"		: "Old Password <span>(required)<\/span>",
 			"olddesc"	: "Must match current password.",
+			"oldvalid"	: "Valid password is required", 
 			"new"		: "New password <span>(required)<\/span>",
 			"newdesc"	: "Minimum {pass_min} characters. Must be different from old password.",
+			"newvalid"	: "Valid password is required", 
 			"submit"	: "Change"
 		},
 		"profile"	: {
@@ -779,12 +786,12 @@ VALUES
 	<p>
 		{login_name_label_before}<label for="loginuser" class="{label_classes}">{lang:forms:login:name}</label>{login_name_label_after}
 		{login_name_input_before}<input id="loginuser" type="text" class="{input_classes}" aria-describedby="loginuser-desc" name="username" maxlength="{name_max}" pattern="([^\s][\w\s]{{name_min},{name_max}})" required>{login_name_input_after}
-		{login_name_desc_before}<small id="loginuser-desc" class="{desc_classes}">{lang:forms:login:namedesc}</small>{login_name_desc_after}
+		{login_name_desc_before}<small id="loginuser-desc" data-validation="{lang:forms:login:namevalid}" class="{desc_classes}">{lang:forms:login:namedesc}</small>{login_name_desc_after}
 	</p>
 	<p>
 		{login_pass_label_before}<label for="loginpass" class="{label_classes}">{lang:forms:login:pass}</label>{login_pass_label_after}
 		{login_pass_input_before}<input id="loginpass" type="password" class="{input_classes}" aria-describedby="loginpass-desc" name="password" maxlength="4096" pattern="([^\s][\w\s]{{pass_min},4096})" required>{login_pass_input_after}
-		{login_pass_desc_before}<small id="loginpass-desc" class="{desc_classes}">{lang:forms:login:passdesc}</small>{login_pass_desc_after}
+		{login_pass_desc_before}<small id="loginpass-desc" data-validation="{lang:forms:login:passvalid}" class="{desc_classes}">{lang:forms:login:passdesc}</small>{login_pass_desc_after}
 	</p>
 	<p>{login_rem_label_before}<label class="ib">{login_rem_input_before}<input type="checkbox" name="rem" value="1">{login_rem_input_after} {lang:forms:login:rem}</label>{login_rem_label_after}</p>
 	<p><input type="submit" class="{submit_classes}" value="{lang:forms:login:submit}"></p>
@@ -812,17 +819,17 @@ VALUES
 	<p>
 		{register_name_label_before}<label for="registername" class="{label_classes}">{lang:forms:register:name}</span></label>{register_name_label_after}
 		{register_name_input_before}<input id="registername" type="text" class="{input_classes}" aria-describedby="registername-desc" name="username" maxlength="{name_max}" pattern="([^\s][\w\s]{{name_min},{name_max}})" required>{register_name_input_after}
-		{register_name_desc_before}<small id="registername-desc" class="{desc_classes}">{lang:forms:register:namedesc}</small>{register_name_desc_before}
+		{register_name_desc_before}<small id="registername-desc" data-validation="{lang:forms:register:namevalid}" class="{desc_classes}">{lang:forms:register:namedesc}</small>{register_name_desc_before}
 	</p>
 	<p>
 		{register_pass_label_before}<label for="registerpass" class="{label_classes}">{lang:forms:register:pass}</span></label>{register_pass_label_after}
 		{register_pass_input_before}<input id="registerpass" type="password" class="{input_classes}" aria-describedby="registerpass-desc" name="password" maxlength="4096" pattern="([^\s][\w\s]{{pass_min},4096})" required>{register_pass_input_after}
-		{register_pass_desc_before}<small id="registerpass-desc" class="{desc_classes}">{lang:forms:register:passdesc}</small>{register_pass_desc_after}
+		{register_pass_desc_before}<small id="registerpass-desc" data-validation="{lang:forms:register:passvalid}" class="{desc_classes}">{lang:forms:register:passdesc}</small>{register_pass_desc_after}
 	</p>
 	<p>
 		{register_passr_label_before}<label for="passrepeat" class="{label_classes}">{lang:forms:register:repeat}</span></label>{register_passr_label_after}
 		{register_passr_input_before}<input id="passrepeat" type="text" class="{input_classes}" aria-describedby="passrepeat-desc" name="password2" maxlength="4096" pattern="([^\s][\w\s]{{pass_min},4096})" required>{register_passr_input_after}
-		{register_passr_desc_before}<small id="passrepeat-desc" class="{desc_classes}">{lang:forms:register:repeatdesc}</small>{register_passr_desc_after}
+		{register_passr_desc_before}<small id="passrepeat-desc" data-validation="{lang:forms:register:passrptvalid}" class="{desc_classes}">{lang:forms:register:repeatdesc}</small>{register_passr_desc_after}
 	</p>
 	<p>
 		{register_terms_label_before}<label class="ib right">{register_terms_input_before}<input type="checkbox" name="terms" value="1" required>{register_terms_input_after} {lang:forms:register:terms}</label>{register_terms_label_after} 
@@ -854,12 +861,12 @@ VALUES
 	<p>
 		{oldpass_label_before}<label for="oldpass" class="{label_classes}">{lang:forms:password:old}</span></label>{oldpass_label_after} 
 		{oldpass_input_before}<input id="oldpass" type="password" class="{input_classes}" aria-describedby="oldpass-desc" name="password" maxlength="4096" pattern="([^\s][\w\s]{{pass_min},4096})" required>{oldpass_input_after}
-		{oldpass_desc_before}<small id="oldpass-desc" class="{desc_classes}">{lang:forms:password:olddesc}</small>{oldpass_desc_after}
+		{oldpass_desc_before}<small id="oldpass-desc" data-validation="{lang:forms:password:oldvalid}" class="{desc_classes}">{lang:forms:password:olddesc}</small>{oldpass_desc_after}
 	</p>
 	<p>
 		{newpass_label_before}<label for="newpass">{lang:forms:password:new}</span></label>{newpass_label_after} 
 		{newpass_input_before}<input id="newpass" type="text" class="{input_classes}" aria-describedby="newpass-desc" name="password2" maxlength="4096" pattern="([^\s][\w\s]{{pass_min},4096})" required>{newpass_input_after}
-		{newpass_desc_before}<small id="newpass-desc" class="{desc_classes}">{lang:forms:password:newdesc}</small>{newpass_desc_after}
+		{newpass_desc_before}<small id="newpass-desc" data-validation="{lang:forms:password:newvalid}" class="{desc_classes}">{lang:forms:password:newdesc}</small>{newpass_desc_after}
 	</p>
 	<p><input type="submit" class="{submit_classes}" value="{lang:forms:password:submit}"></p>
 </form>{password_form_after}
@@ -1660,9 +1667,9 @@ VALUES
 	"field_wrap"			: "",
 	"button_wrap"			: "",
 	"label_classes"			: "",
-	"special_classes"		: "",
+	"special_classes"		: "special",
 	"input_classes"			: "",
-	"desc_classes"			: "",
+	"desc_classes"			: "desc",
 	"search_input_classes"		: "",
 	"search_button_classes"		: "",
 	
