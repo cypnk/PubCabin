@@ -1,3 +1,4 @@
+@charset "UTF-8";
 @import url("colors.css");
 @import url("normalize.css");
 
@@ -65,7 +66,7 @@ nav .content {
 header section {
 	background: var(--navsactive);
 	color: var(--navstext);
-	box-shadow: 0 0.1rem 0.1rem 0.2rem rgba( 0, 0, 0, 0.1);
+	box-shadow: 0 0.1rem 0.3rem 0.1rem rgba( 0, 0, 0, 0.1);
 }
 
 header form {
@@ -124,6 +125,7 @@ nav.sub {
 	background: var(--navsbg);
 	color: var(--navstext);
 	border-top: 1px solid var(--heborder);
+	box-shadow: inset 0 0.3rem 0.5rem 0 rgba( 0, 0, 0, 0.1);
 }
 
 nav.sub ul {
@@ -179,12 +181,42 @@ nav.crumbs ul li a {
 	opacity: 1;
 }
 
+::selection { 
+	color: var(--selectcolor); 
+	background-color: var(--selectbg);
+}
+
+
 form p input {
 	display: table-cell;
 }
 
-label + input, label + textarea, label + select {
+label {
+	font-weight: 600;
+}
+
+form p label + input, form p label + textarea, form p label + select {
 	display: block;
+}
+
+label .special {
+	font-style: italic;
+	font-weight: 400;
+}
+
+label .special:before {
+	content: '( ';
+}
+
+label .special:after {
+	content: ' )';
+}
+
+input + .desc, textarea + .desc, select + .desc, label + .desc {
+	margin-top: .4rem;
+	display: block;
+	font-size: 100%;
+	font-weight: 500;
 }
 
 input[type="text"], input[type="search"], textarea, select, 
@@ -234,4 +266,50 @@ select {
 }
 
 
+input:placeholder-shown + label, textarea:placeholder-shown + label {
+	opacity: 0;
+	transform: translateY(1rem);
+}
 
+.field input[type="text"], .field input[type="password"], 
+.field input[type="email"], .field input[type="range"], 
+.field input[type="number"], .field textarea {
+	display: block;
+	width: 100%;
+}
+
+textarea[data-feature="autoheight"] {
+	height: 2.7rem;
+	min-height: 2.7rem;
+	resize: vertical;
+	transition: all 0.7s ease;
+}
+
+textarea[data-feature="autoheight"]:focus {
+	min-height: 10rem;
+}
+
+input:read-only, textarea:read-only {
+	cursor: not-allowed;
+}
+
+input:invalid:not(:placeholder-shown) ~ .desc::before, 
+	textarea:invalid:not(:placeholder-shown) ~ .desc::before {
+	content: attr(data-validation);
+	color: var(--txtinvcolor);
+	display: block;
+}
+
+input:valid:not([type="submit"]):focus, 
+	textarea:valid:not([type="submit"]):focus {
+	border-color: var(--txtborder);
+}
+
+input:invalid:not(:placeholder-shown), 
+	textarea:invalid:not(:placeholder-shown) {
+	border-color: var(--txtinvborder);
+}
+
+input:invalid:focus, textarea:invalid:focus {
+	border-color: var(--txtinvborderfocus);
+}
