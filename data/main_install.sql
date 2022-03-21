@@ -724,6 +724,42 @@ VALUES
 </body>
 </html>' ), 
 
+( 1, 'tpl_manage_page', '<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{manage_page_title}</title>
+<link rel="stylesheet" href="{manage}style.css">
+</head>
+<body>
+<header>
+{main_nav}
+<div class="{manage_header_wrap_classes">
+	{search_form}
+	<h1>{manage_page_heading}</h1>
+</div>
+{sub_nav}
+<section class="{manage_crumbs_wrap_classes}">
+	{breadcrumbs}
+</section>
+</div>
+</header>
+
+<main class="{manage_main_classes}">
+<div class="{manage_main_wrap_classes}">
+	{manage_page_body}
+</div>
+</main>
+
+<footer class="{manage_footer_classes}">
+<div class="{manage_footer_wrap_classes}">
+	{manage_page_footer}
+</div>
+</footer>
+</body>
+</html>' ), 
+
 ( 1, 'tpl_login_page', '<!DOCTYPE html>
 <html>
 <head>
@@ -1064,14 +1100,14 @@ VALUES
 ( 1, 'tpl_data_pfx', 'data-{term}="{value}"' ), 
 
 ( 1, 'tpl_breadcrumbs', '{crumbs_before}
-<nav class="{crumb_classes}">
+<nav class="{crumb_classes}"><div class="{crumb_container_classes}">{crumbs_ul_before}
 <ul class="{crumb_wrap_classes}">{crumbs_links_before}{links}{crumbs_links_before}</ul>
-</nav>{crumbs_after}' ), 
+{crumbs_ul_after}</div></nav>{crumbs_after}' ), 
 
 ( 1, 'tpl_sub_breadcrumbs', '{crumbs_sub_before}<nav class="{crumb_sub_classes}">
-{crumbs_sub_ul_before}
+<div class="{crumbs_sub_container_classes}">{crumbs_sub_ul_before}
 <ul class="{crumb_sub_wrap_classes}">{links}</ul>{crumbs_sub_ul_after}
-</nav>{crumbs_sub_after}' ), 
+</div></nav>{crumbs_sub_after}' ), 
 
 ( 1, 'tpl_crumb_link', '<li class="{crumb_item_classes}">{crumb_link_before}
 <a href="{url}" class="{crumb_link_classes}">{label}</a>{crumb_link_after}
@@ -1535,8 +1571,10 @@ VALUES
 	
 	"crumb_classes"			: "",
 	"crumb_wrap_classes"		: "",
-	"crumb_sub_classes"		: "",
+ 	"crumb_container_classes"	: "content",
+	"crumb_sub_classes"		: "sub",
 	"crumb_sub_wrap_classes"	: "",
+ 	"crumbs_sub_container_classes"	: "content",
 	
 	"crumb_item_classes"		: "",
 	"crumb_link_classes"		: "",
@@ -1545,6 +1583,12 @@ VALUES
 	"pagination_classes"		: "",
 	"pagination_ul_classes"		: "",
 	
+ 	"manage_header_wrap_classes"	: "",
+	"manage_crumbs_wrap_classes"	: "",
+	"manage_main_classes"		: "",
+	"manage_main_wrap_classes"	: "",
+	"manage_footer_classes"		: "",
+ 	
 	"nav_link_classes"		: "",
 	"nav_link_a_classes"		: "",
 	
@@ -1611,7 +1655,7 @@ VALUES
 	"form_classes"			: "",
 	"fieldset_classes"		: "",
 	"search_form_classes"		: "",
-	"search_form_wrap_classes"	: "",
+	"search_form_wrap_classes"	: "content",
 	"search_fieldset_classes"	: "",
 	"field_wrap"			: "",
 	"button_wrap"			: "",
