@@ -243,8 +243,12 @@ HTML
 <input type="hidden" name="cap_a" value="{cap_a}">
 <img src="{captcha}" alt="{lang:forms:captcha:alt}" 
 	class="{captcha_classes}">
-HTML;
-	
+HTML
+,
+		// Validation message template
+		'tpl_validation_attr'		=> ' data-validation="{msg}" ',
+		'tpl_autocomplete'		=> ' autocomplete="{msg}" ';
+		
 	
 	public function __construct( 
 		\PubCabin\Modules\Forms\Module $_module 
@@ -321,24 +325,37 @@ HTML;
 	 *  @params array	$params		Input placeholders
 	 */
 	protected function buildField( array $params ) {
-		// Find extras if present
-		$extras = empty( $params['extras'] ) ? 
-				'' : $params['extras'];
+		// Set extras to blank if not set
+		$params['{extra}']	??= '';
+		$params['{desc_extra}']	??= '';
 		
+		// Find validation message, if present, and append to extras
+		if ( isset( $params['validation'] ) ) {
+			$params['{extra}'] .= 
+			\strtr( 
+				static::$templates['tpl_validation_attr'], 
+				[ '{msg}' => $params['validation'] ]
+			);
+		}
+		
+		// Autocomplete available? Append to extras
 		$acompl	= 
 		\PubCabin\Util::lowercase( $params['autocomplete'] ?? '' );
 		
 		// Prepend autocomplete to existing extras if present
 		if ( \in_array( $acompl, static::$autocomplete ) ) {
-			$params['extras'] = 
-				"autocomplete=\"{$acompl}\"" . $extras;
+			$params['{desc_extra}'] .= 
+			\strtr(
+				static::$templates['tpl_autocomplete'],
+				[ '{msg}' => $acompl ]
+			);
 		}
 		
 		// No description?
-		if ( !isset( $params['description'] ) ) {
+		if ( !isset( $params['{desc}'] ) ) {
 			
 			// No label either?
-			if ( !isset( $params['label'] ) ) {
+			if ( !isset( $params['{label}'] ) ) {
 				
 				// Template with no label or description
 				return 
