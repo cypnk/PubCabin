@@ -112,6 +112,12 @@ abstract class Entity {
 	protected $_total;
 	
 	/**
+	 *  Current request data
+	 *  @var \PubCabin\Request
+	 */
+	protected static $_req;
+	
+	/**
 	 *  Store changes by creating a new item or updating if ID is set
 	 *  
 	 *  @param \PubCabin\Data	$data	Storage class
@@ -213,6 +219,13 @@ abstract class Entity {
 		return null;
 	}
 	
+	public static function setRequest( \PubCabin\Request $req ) {
+		static::$_req = $req;
+	}
+	
+	protected static function getRequest( \PubCabin\Request $req ) {
+		return static::$_req ?? null;
+	}
 	
 	public function setSettings( array $new_settings ) {
 		$this->_settings = 
