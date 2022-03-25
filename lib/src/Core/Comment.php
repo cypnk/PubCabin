@@ -56,6 +56,11 @@ class Comment extends \PubCabin\Entity {
 	 */
 	public $author_ip;
 	
+	/**
+	 *  Anonymous author signature
+	 *  @var string
+	 */
+	public $author_sign;
 	
 	
 	/**
@@ -116,6 +121,33 @@ class Comment extends \PubCabin\Entity {
 	 */
 	public $author_id;
 	
+	/**
+	 *  Update/Insert SQL parameters
+	 *  @var array
+	 */
+	private static $csql = [
+		'inauth'	=> 
+		"INSERT INTO comments ( body, bare, author_ip, 
+			is_approved, user_id, page_id, lang_id )
+		VALUES( :body, :bare, :aip, :isap, :uid, :pid, :lid );",
+		'insanon'	=>
+		"INSERT INTO comments ( body, bare, author_ip, 
+			is_approved, author_name, author_sign, 
+			author_url, author_email, page_id, lang_id )
+		VALUES( :body, :bare, :aip, :isap, :pid, :lid, 
+			:aname, :asign, :aurl, :aemail );",
+		'upauth'	=> 
+		"UPDATE comments SET body = :body, bare = :bare,
+			author_ip = :aip, is_approved = :isap
+			WHERE id = :id;",
+		'upanon'	=> 
+		"UPDATE comments SET body = :body, bare = :bare,
+			author_ip = :aip, is_approved = :isap, 
+			author_name = :aname, author_sign = :asign, 
+			author_url = :aurl, author_email = :aemail
+			WHERE id = :id;"
+	];
+		
 	
 	public function __set( $name, $value ) {
 		
@@ -143,15 +175,56 @@ class Comment extends \PubCabin\Entity {
 		}
 	}
 	
-	// TODO
+	/**
+	 *  Anon author parameter helper 
+	 *  
+	 *  @param array	$params		SQL Parameters
+	 */
+	protected function authorIdentity( array &$params ) {
+		$params[':aname']	= $this->author_name ?? null;
+		$params[':asign']	= $this->author_sign ?? null;
+		$params[':aurl']	= $this->author_url ?? null;
+		$params[':aemail']	= $this->author_email ?? null;
+	}
+	
 	public function save( \PubCabin\Data $data ) : bool {
-		if ( isset( $this->id ) ) {
-			
+		$params = [
+			':body'	=> $this->body,
+			':bare'	=> \PubCabin\Util::bland( $this->body ),
+			':aip'	=> 
+				$this->author_ip ?? 
+				static::getRequest()->getIP(),
+			':isap'	=> $this->is_approved
+		];
+		
+		if ( isset( $this->user_id ) ) {
+			$params[':uid'] = $this->user_id;
 		} else {
-			
+			$this->authorIdentity( $params );
 		}
 		
-		return true;
+		$db	= $data->getDb( static::MAIN_DATA );
+		if ( isset( $this->id ) ) {
+			$this->id = 
+			$data->setInsert( 
+				isset( $this->user_id ) ? 
+					static::$csql['insauth'] : 
+					static::$csql['insanon'], 
+				$params, 
+				static::MAIN_DATA 
+			);
+			return empty( $this->id ) ? false : true;
+		}
+		
+		$params[':id'] => $this->id;
+		return 
+		$data->setUpdate( 
+			isset( $this->user_id ) ? 
+				static::$csql['upauth'] : 
+				static::$csql['upanon'], 
+			$params, 
+			static::MAIN_DATA 
+		);
 	}
 }
 
