@@ -1601,6 +1601,7 @@ CREATE TABLE comments (
 	author_url TEXT DEFAULT NULL COLLATE NOCASE,
 	author_ip TEXT DEFAULT NULL COLLATE NOCASE,
 	body TEXT NOT NULL COLLATE NOCASE,
+	bare TEXT NOT NULL COLLATE NOCASE,
 	page_id INTEGER NOT NULL,
 	lang_id INTEGER NOT NULL,
 	is_approved INTEGER NOT NULL DEFAULT 0,
@@ -1698,6 +1699,7 @@ CREATE VIEW comment_view AS SELECT
 	
 	-- Authorship
 	COALESCE( u.display, u.username, c.author_name, '.' ) AS author_name,
+	COALESCE( author_sign, '' ) AS author_sign,
 	COALESCE( e.email, c.author_email, '@' ) AS author_email,
 	COALESCE( e.last_ip, c.author_ip, '::' ) AS author_ip,
 	COALESCE( e.last_active, '0' ) AS author_last_active,
