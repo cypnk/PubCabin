@@ -67,6 +67,7 @@ abstract class Module {
 	
 	public function __construct() {
 		$this->loadModules();
+		\PubCabin\Entity::setRequest( $this->getRequest() );
 	}
 	
 	/**
