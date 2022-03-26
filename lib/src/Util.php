@@ -596,16 +596,20 @@ class Util {
 	 *  Label name ( ASCII only )
 	 *  
 	 *  @param string	$text	Raw label entered into field
+	 *  @param int		$int	Max label length
 	 *  @return string
 	 */
-	public static function labelName( string $text ) : string {
+	public static function labelName( 
+		string	$text, 
+		int	$len	= 50 
+	) : string {
 		$text	= static::unifySpaces( $text, '_' );
 		
 		return 
 		static::smartTrim( \preg_replace( 
 			'/^[a-zA-Z0-9_\-\.]/i', '', 
 			static::normal( $text ) 
-		), 50 );
+		), $len );
 	}
 	
 	/**
