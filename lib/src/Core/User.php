@@ -697,7 +697,10 @@ class User extends \PubCabin\Entity {
 			[ 
 				':user'		=> $username, 
 				':clean'	=> 
-				\PubCabin\Util::bland( $username )
+				\PubCabin\Util::labelName( 
+					$username, 
+					\PubCabin\Util:strsize( $username )
+				)
 			], 
 			'column',
 			$stm
