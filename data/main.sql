@@ -1103,7 +1103,7 @@ CREATE VIEW path_user_view AS SELECT
 CREATE TABLE page_texts (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 	page_id INTEGER NOT NULL,
-	lang_id INTEGER NOT NULL,
+	lang_id INTEGER DEFAULT NULL,
 	path_id INTEGER NOT NULL,
 	slug TEXT DEFAULT NULL COLLATE NOCASE,
 	title TEXT NOT NULL COLLATE NOCASE,
@@ -1122,7 +1122,7 @@ CREATE TABLE page_texts (
 	CONSTRAINT fk_page_texts_lang 
 		FOREIGN KEY ( lang_id ) 
 		REFERENCES languages ( id ) 
-		ON DELETE RESTRICT,
+		ON DELETE SET NULL,
 		
 	CONSTRAINT fk_page_texts_path
 		FOREIGN KEY ( path_id ) 
@@ -1132,7 +1132,8 @@ CREATE TABLE page_texts (
 
 -- Each language represented once per page text
 CREATE UNIQUE INDEX idx_page_text ON 
-	page_texts ( page_id, lang_id );-- --
+	page_texts ( page_id, lang_id ) 
+	WHERE lang_id IS NOT NULL;-- --
 
 -- Page with this slug can only occur once per path
 CREATE UNIQUE INDEX idx_page_slug ON page_texts ( page_id, path_id, slug )
@@ -1501,7 +1502,7 @@ CREATE INDEX idx_term_sort ON terms ( sort_order );-- --
 CREATE TABLE term_texts (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 	term_id INTEGER NOT NULL,
-	lang_id INTEGER NOT NULL,
+	lang_id INTEGER DEFAULT NULL,
 	
 	-- Same character set as terms.taxonomy for slug, title, body
 	slug TEXT NOT NULL COLLATE NOCASE,
@@ -1516,13 +1517,14 @@ CREATE TABLE term_texts (
 	CONSTRAINT fk_term_texts_lang 
 		FOREIGN KEY ( lang_id ) 
 		REFERENCES languages ( id ) 
-		ON DELETE CASCADE
+		ON DELETE SET NULL
 );-- --
 
 -- Unique slug per taxonomy term
 CREATE UNIQUE INDEX idx_term_text_slug ON 
 	term_texts ( term_id, slug );-- --
-CREATE INDEX idx_term_text_lang ON term_texts ( lang_id );-- --
+CREATE INDEX idx_term_text_lang ON term_texts ( lang_id )
+	WHERE lang_id IS NOT NULL;-- --
 
 -- Generate a random term text slug if empty
 CREATE TRIGGER term_texts_insert_slug AFTER INSERT ON 
@@ -1603,7 +1605,7 @@ CREATE TABLE comments (
 	body TEXT NOT NULL COLLATE NOCASE,
 	bare TEXT NOT NULL COLLATE NOCASE,
 	page_id INTEGER NOT NULL,
-	lang_id INTEGER NOT NULL,
+	lang_id INTEGER DEFAULT NULL,
 	is_approved INTEGER NOT NULL DEFAULT 0,
 	created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1617,12 +1619,15 @@ CREATE TABLE comments (
 	CONSTRAINT fk_comments_lang 
 		FOREIGN KEY ( lang_id ) 
 		REFERENCES languages ( id ) 
-		ON DELETE CASCADE
+		ON DELETE SET NULL
 );-- --
 CREATE UNIQUE INDEX idx_comment_uuid ON comments( uuid )
 	WHERE uuid IS NOT NULL;-- --
 CREATE INDEX idx_comment_user_id ON comments( user_id ) 
 	WHERE user_id IS NOT NULL;-- --
+CREATE INDEX idx_comment_page ON comments( page_id );-- --
+CREATE INDEX idx_comment_lang ON comments( lang_id ) 
+	WHERE lang_id IS NOT NULL;-- --
 CREATE INDEX idx_comment_author_name ON comments( author_name ) 
 	WHERE author_name IS NOT NULL;-- --
 CREATE INDEX idx_comment_author_email ON comments( author_email ) 
@@ -1809,7 +1814,7 @@ CREATE VIRTUAL TABLE attachment_search
 CREATE TABLE attachment_texts (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 	attachment_id INTEGER NOT NULL,
-	lang_id INTEGER NOT NULL,
+	lang_id INTEGER DEFAULT NULL,
 	body TEXT NOT NULL COLLATE NOCASE,
 	bare TEXT NOT NULL COLLATE NOCASE,
 	
@@ -1821,10 +1826,11 @@ CREATE TABLE attachment_texts (
 	CONSTRAINT fk_attachment_texts_lang 
 		FOREIGN KEY ( lang_id ) 
 		REFERENCES languages ( id ) 
-		ON DELETE CASCADE
+		ON DELETE SET NULL
 );-- --
 CREATE UNIQUE INDEX idx_attachment_lang ON 
-	attachment_texts ( attachment_id, lang_id );-- --
+	attachment_texts ( attachment_id, lang_id )
+	WHERE lang_id IS NOT NULL;-- --
 
 -- Page attachments
 CREATE TABLE page_attachments (
@@ -2105,7 +2111,7 @@ CREATE INDEX idx_menu_url ON menues( url );-- --
 CREATE TABLE menu_texts (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 	menu_id INTEGER NOT NULL,
-	lang_id INTEGER NOT NULL,
+	lang_id INTEGER DEFAULT NULL,
 	body TEXT NOT NULL COLLATE NOCASE,
 	bare TEXT NOT NULL COLLATE NOCASE,
 	
@@ -2117,10 +2123,11 @@ CREATE TABLE menu_texts (
 	CONSTRAINT fk_menu_texts_lang 
 		FOREIGN KEY ( lang_id ) 
 		REFERENCES languages ( id ) 
-		ON DELETE CASCADE
+		ON DELETE SET NULL
 );-- --
 CREATE UNIQUE INDEX idx_menu_lang ON 
-	menu_texts ( menu_id, lang_id );-- --
+	menu_texts ( menu_id, lang_id )
+	WHERE lang_id IS NOT NULL;-- --
 
 
 
@@ -2145,7 +2152,7 @@ CREATE TABLE place_labels(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	label TEXT NOT NULL DEFAULT '' COLLATE NOCASE,
 	place_id INTEGER NOT NULL,
-	lang_id INTEGER NOT NULL,
+	lang_id INTEGER DEFAULT NULL,
 	
 	CONSTRAINT fk_place_label
 		FOREIGN KEY ( place_id ) 
@@ -2155,8 +2162,10 @@ CREATE TABLE place_labels(
 	CONSTRAINT fk_place_label_lang 
 		FOREIGN KEY ( lang_id ) 
 		REFERENCES languages ( id ) 
-		ON DELETE CASCADE
+		ON DELETE SET NULL
 );-- --
+CREATE INDEX idx_place_lang ON place_labels( lang_id )
+	WHERE lang_id IS NOT NULL;-- --
 
 -- Place searching
 CREATE VIRTUAL TABLE place_search 
@@ -2663,15 +2672,17 @@ CREATE TABLE redirects (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	old_src TEXT NOT NULL COLLATE NOCASE,
 	new_src TEXT NOT NULL COLLATE NOCASE,
-	lang_id INTEGER NOT NULL,
+	lang_id INTEGER DEFAULT NULL,
 		
 	CONSTRAINT fk_redirect_lang
 		FOREIGN KEY ( lang_id ) 
 		REFERENCES languages ( id ) 
-		ON DELETE CASCADE
+		ON DELETE SET NULL
 );-- --
 CREATE UNIQUE INDEX idx_redirect ON redirects( old_src, new_src );-- --
 CREATE UNIQUE INDEX idx_redirect_reverse ON redirects( new_src, old_src );-- --
+CREATE UNIQUE INDEX idx_redirect_lang ON redirects( lang_id )
+	WHERE lang_id IS NOT NULL;-- --
 
 -- Redirect specific action events
 CREATE TABLE redirect_events (
@@ -2731,7 +2742,7 @@ CREATE TABLE metadata (
 	label TEXT NOT NULL DEFAULT '' COLLATE NOCASE,
 	summary TEXT NOT NULL DEFAULT '' COLLATE NOCASE,
 	sort_order INTEGER NOT NULL DEFAULT 0,
-	lang_id INTEGER NOT NULL,
+	lang_id INTEGER DEFAULT NULL,
 	
 	-- E.G. int, bool, text, html etc...
 	format TEXT NOT NULL DEFAULT 'text' COLLATE NOCASE,
@@ -2742,12 +2753,14 @@ CREATE TABLE metadata (
 	CONSTRAINT fk_meta_lang 
 		FOREIGN KEY ( lang_id ) 
 		REFERENCES languages ( id ) 
-		ON DELETE CASCADE
+		ON DELETE SET NULL
 );-- --
-CREATE UNIQUE INDEX idx_meta_label ON metadata( lang_id, label );-- --
+CREATE UNIQUE INDEX idx_meta_label ON metadata( lang_id, label )
+	WHERE lang_id IS NOT NULL;-- --
 CREATE INDEX idx_meta_sort ON metadata( sort_order );-- --
 CREATE INDEX idx_meta_format ON metadata( format );-- --
-CREATE INDEX idx_meta_lang ON metadata( lang_id );-- --
+CREATE INDEX idx_meta_lang ON metadata( lang_id )
+	WHERE lang_id IS NOT NULL;-- --
 CREATE INDEX idx_meta_fulltext ON metadata( is_fulltext );-- --
 
 -- Metadata content
@@ -3021,7 +3034,7 @@ CREATE TABLE poll_options(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	poll_id INTEGER NOT NULL,
 	term TEXT NOT NULL COLLATE NOCASE,
-	lang_id INTEGER NOT NULL,
+	lang_id INTEGER DEFAULT NULL,
 	sort_order INTEGER NOT NULL DEFAULT 0,
 	
 	CONSTRAINT fk_option_poll
@@ -3032,10 +3045,11 @@ CREATE TABLE poll_options(
 	CONSTRAINT fk_option_lang 
 		FOREIGN KEY ( lang_id ) 
 		REFERENCES languages ( id ) 
-		ON DELETE CASCADE
+		ON DELETE SET NULL
 );-- --
 CREATE INDEX idx_option_poll ON poll_options ( poll_id );-- --
-CREATE INDEX idx_option_lang ON poll_options ( lang_id );-- --
+CREATE INDEX idx_option_lang ON poll_options ( lang_id )
+	WHERE lang_id IS NOT NULL;-- --
 CREATE INDEX idx_option_sort ON poll_options ( sort_order ASC );-- --
 
 -- Content voting and feedback
@@ -3049,7 +3063,7 @@ CREATE TABLE content_votes (
 	
 	-- Additional comment or feedback E.G. report or reason
 	note TEXT DEFAULT NULL COLLATE NOCASE,
-	lang_id INTEGER NOT NULL,
+	lang_id INTEGER DEFAULT NULL,
 	created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	
 	CONSTRAINT fk_vote_user 
@@ -3060,12 +3074,14 @@ CREATE TABLE content_votes (
 	CONSTRAINT fk_vote_lang 
 		FOREIGN KEY ( lang_id ) 
 		REFERENCES languages ( id ) 
-		ON DELETE CASCADE
+		ON DELETE SET NULL
 );-- --
 CREATE INDEX idx_vote_user ON content_votes ( user_id )
 	WHERE user_id IS NOT NULL;-- --
 CREATE INDEX idx_vote_type ON content_votes ( vote_type );-- --
 CREATE INDEX idx_vote_score ON content_votes ( score );-- --
+CREATE INDEX idx_vote_lang ON content_votes ( lang_id )
+	WHERE lang_id IS NOT NULL;-- --
 CREATE INDEX idx_vote_created ON content_votes ( created );-- --
 
 CREATE VIRTUAL TABLE vote_search 
@@ -3309,7 +3325,7 @@ CREATE INDEX idx_form_field_settings ON form_fields( settings_id )
 CREATE TABLE field_language(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 	field_id INTEGER NOT NULL,
-	lang_id INTEGER NOT NULL,
+	lang_id INTEGER DEFAULT NULL,
 	title TEXT NOT NULL COLLATE NOCASE, 
 	label TEXT NOT NULL COLLATE NOCASE, 
 	special TEXT NOT NULL DEFAULT '' COLLATE NOCASE, 
@@ -3323,10 +3339,11 @@ CREATE TABLE field_language(
 	CONSTRAINT fk_field_lang
 		FOREIGN KEY ( lang_id ) 
 		REFERENCES languages ( id ) 
-		ON DELETE CASCADE 
+		ON DELETE SET NULL
 );-- --
 CREATE INDEX idx_form_lang_field ON field_language( field_id );-- --
-CREATE INDEX idx_form_lang ON field_language( lang_id );-- --
+CREATE INDEX idx_form_lang ON field_language( lang_id )
+	WHERE lang_id IS NOT NULL;-- --
 
 -- Form views
 CREATE VIEW form_view AS SELECT 
