@@ -126,7 +126,7 @@ class Comment extends \PubCabin\Entity {
 	 *  @var array
 	 */
 	private static $csql = [
-		'inauth'	=> 
+		'insauth'	=> 
 		"INSERT INTO comments ( body, bare, author_ip, 
 			is_approved, user_id, page_id, lang_id )
 		VALUES( :body, :bare, :aip, :isap, :uid, :pid, :lid );",
