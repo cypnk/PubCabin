@@ -632,7 +632,7 @@ class User extends \PubCabin\Entity {
 		int		$id 
 	) : array {
 		$sql		= 
-		"SELECT * FROM users WHERE id = :id LIMIT 1;";
+		'SELECT * FROM users WHERE id = :id LIMIT 1;';
 		
 		$db		= $data->getDb( static::MAIN_DATA );
 		$stm		= $data->statement( $db, $sql );
@@ -659,7 +659,7 @@ class User extends \PubCabin\Entity {
 		string		$username 
 	) : array {
 		$sql		= 
-		"SELECT * FROM login_view WHERE name = :user LIMIT 1;";
+		'SELECT * FROM login_view WHERE name = :user LIMIT 1;';
 		
 		$db		= $data->getDb( static::MAIN_DATA );
 		$stm		= $data->statement( $db, $sql );
@@ -674,6 +674,37 @@ class User extends \PubCabin\Entity {
 		return empty( $result ) ? [] : $result;
 	}
 	
+	/**
+	 *  Check if username or it's clean equivalent exists
+	 *  
+	 *  @param \PubCabin\Data	$data		Storage handler
+	 *  @param string		$username	User's login name
+	 *  @return bool
+	 */
+	public static function usernameExists(  
+		\PubCabin\Data	$data, 
+		string		$username 
+	) : bool {
+		$sql		= 
+		"SELECT COUNT( id ) FROM users WHERE 
+			username = :user OR user_clean = :clean;";
+		
+		$db		= $data->getDb( static::MAIN_DATA );
+		$stm		= $data->statement( $db, $sql );
+		$result		= 
+		$data->getDataResult( 
+			$db,
+			[ 
+				':user'		=> $username, 
+				':clean'	=> 
+				\PubCabin\Util::bland( $username )
+			], 
+			'column',
+			$stm
+		);
+		$stm->closeCursor();
+		return empty( $result ) ? false : true;
+	}
 	
 	/**
 	 *  Update the last activity IP of the given user
