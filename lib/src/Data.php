@@ -351,7 +351,7 @@ class Data {
 		
 		try {
 			if ( !$db->beginTransaction() ) {
-				return false;
+				return [];
 			}
 			
 			$stm	= $this->statement( $db, $sql );
