@@ -30,7 +30,7 @@ class Input {
 		'text', 'password', 'textarea', 'search', 'select', 'email', 
 		'radio', 'checkbox', 'number', 'range', 'datetime-local', 
 		'file', 'submit', 'button', 'hidden', 'captcha', 'color', 
-		'tel', 'url', 'wysiwyg'
+		'tel', 'url', 'wysiwyg', 'timezone'
 	];
 	
 	/**
@@ -396,6 +396,45 @@ HTML
 	}
 	
 	/**
+	 *  Generate timezone select options
+	 *  
+	 *  @param string	$selected	Currently set timezone
+	 *  @param bool		$req		Field is required if true
+	 *  @return array
+	 */
+	public function timezoneSelectOptions(
+		string	$selected,
+		bool	$req		= true
+	) : array {
+		static $ntpl	= '{tz} ( UTC {prefix} {format} )';
+		
+		$offsets	= \PubCabin\Util::timezoneOffsets();
+		$out		= [];
+		$format		= '';
+		$nice		= '';
+		$sel		= false;
+		
+		foreach ( $offsets as $tz => $offset ) {
+			$format	= \gmdate( 'H:i', \abs( $offset ) );
+			$nice	= 
+			\strtr( $ntpl, [ 
+				'{tz}'		=> $tz, 
+				'{prefix}'	=> 
+					( $offset < 0 ) ? '-' : '+',
+				'{format}'	=> $format
+			] );
+			$sel	= 
+			( 0 === \strcasecmp( $tz, \trim( $selected ) ) ) ? 
+				true : false;
+			
+			// Value, text, selected
+			$out[]	= [ $tz, $nice, $sel ];
+		}
+		
+		return $out;
+	}
+	
+	/**
 	 *  Input field template helper
 	 *  
 	 *  @param string	$params		Placeholder replacements
@@ -440,7 +479,20 @@ HTML
 					static::$templates['tpl_input_wysiwyg'], 
 					$params
 				);
-				
+			
+			// Timezone is a special select
+			case 'timezone':
+				if ( empty( $params['options'] ) ) {
+					$params['options'] = [ [ 0, '' ] ] + 
+					$this->timezoneSelectOptions( 
+						$params['selected'] ?? '' 
+					);
+				}
+				return 
+				\strtr( 
+					static::$templates['tpl_input_select'], 
+					$params
+				);
 			
 			case 'file':
 				return 
@@ -489,7 +541,9 @@ HTML
 	protected function fieldPrefilter( array $field ) : array {
 		// Default input type
 		$field['type']	= 
-		\PubCabin\Util::lowercase( $field['type'] ?? 'text' );
+		\PubCabin\Util::lowercase( 
+			\trim( $field['type'] ) ?? 'text' 
+		);
 		
 		// Default name
 		if ( 0 === \strcmp( $field['name'] ?? '', '' ) ) {
@@ -795,10 +849,21 @@ HTML
 			'desc_after'			=> $hooks->stringResult( 'descafter' )
 		] );
 		
-		// Select is a special type
-		$input	= 
-		( 0 === \strcmp( $vars['type'], 'select' ) ) ? 
-			$this->createSelect(
+		// Select and timezone are special types
+		$it	= $vars['type'];
+		$is_tz	= ( 0 === \strcasecmp( $it, 'timezone' ) ) ? true : false;
+		$is_sel	= ( $is_tz || 0 === \strcasecmp( $it, 'select' ) ) ? true : false;
+		
+		// Timezone and no options yet? Populate
+		if ( $is_tz && empty( $vars['options'] ) ) {
+			$params['options'] = [ [ 0, '' ] ] + 
+			$this->timezoneSelectOptions( 
+				$vars['selected'] ?? '' 
+			);
+		}
+		
+		$input	= $is_sel ? 
+		$this->createSelect(
 			$tpl,
 			$out,
 			$vars['options'] ?? []
@@ -828,12 +893,16 @@ HTML
 		
 		foreach ( $opts as $o ) {
 			$out	.= 
+			( empty( $o[0] ) && empty( $o[1] ) ) ? 
+			$render->templates( 'tpl_input_unselect' ) : 
 			$render->parse( 
 				$render->template( 'tpl_input_select_opt' ), 
 				[
 					'value'		=> $o[0],
 					'text'		=> $o[1],
-					'selected'	=> $o[2] ? 'selected' : ''
+					'selected'	=> 
+					empty( $o[2] ) ? '' : 
+						( $o[2] ? 'selected' : '' )
 				] 
 			);
 		}
@@ -929,6 +998,7 @@ HTML
 		// Try to retrieve given template or use default based on type
 		switch ( $type ) {
 			case 'select':
+			case 'timezone':
 				$tpl = $field['template'] ?? 
 				$render->template( 'tpl_input_select' );
 				break;
