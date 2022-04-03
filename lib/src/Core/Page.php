@@ -262,39 +262,20 @@ class Page extends \PubCabin\Entity {
 		int		$id 
 	) : array {
 		static $sql = 
-		"WITH RECURSIVE ph ( 
-			id, uuid, site_id, type_id, parent_id, is_home, created, 
-			published, settings, settings_id, sort_order, status 
-		) AS (
-			SELECT id, uuid, site_id, type_id, parent_id, is_home, 
-				created, published, settings, settings_id, 
-				sort_order, status
-				
-				FROM pages
-				WHERE id = :id
+		"WITH RECURSIVE ph ( id, parent_id ) AS (
+			SELECT id, parent_id FROM pages WHERE id = :id
 		
 			UNION ALL
-			SELECT p.id, p.uuid, p.site_id, p.type_id, 
-				p.parent_id, p.is_home, p.created, 
-				p.published, p.settings, p.settings_id, 
-				p.sort_order, p.status
-				
-			FROM pages p 
-			JOIN ph ON p.id = ph.parent_id
-		) SELECT DISTINCT * FROM ph;";
+			SELECT p.id, p.parent_id FROM pages p 
+			JOIN ph ON p.parent_id = ph.id
+		) SELECT DISTINCT * FROM ph WHERE id IS NOT :cid;";
 		
-		$db	= $data->getDb( static::MAIN_DATA );
-		$stm	= $data->statement( $db, $sql );
-		
-		$result	=
-		$data->getDataResult( 
-			$db, 
-			[ ':id' => $id ], 
-			'class, \\PubCabin\Core\\Page', 
-			$stm 
+		return 
+		$data->getResults( 
+			$sql, 
+			[ ':id' => $id, ':cid' => $id ], 
+			static::MAIN_DATA
 		);
-		$stm->closeCursor();
-		return $result;
 	}
 	
 	/**
