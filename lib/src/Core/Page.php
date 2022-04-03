@@ -251,6 +251,53 @@ class Page extends \PubCabin\Entity {
 	}
 	
 	/**
+	 *  Get parent hierarchy of given page for breadcrumbs etc...
+	 *  
+	 *  @param \PubCabin\Data	$data	Storage handler
+	 *  @param int			$id	Page unique identifier
+	 *  @return array
+	 */
+	public static function getParents( 
+		\PubCabin\Data	$data, 
+		int		$id 
+	) : array {
+		static $sql = 
+		"WITH RECURSIVE ph ( 
+			id, uuid, site_id, type_id, parent_id, is_home, created, 
+			published, settings, settings_id, sort_order, status 
+		) AS (
+			SELECT id, uuid, site_id, type_id, parent_id, is_home, 
+				created, published, settings, settings_id, 
+				sort_order, status
+				
+				FROM pages
+				WHERE id = :id
+		
+			UNION ALL
+			SELECT p.id, p.uuid, p.site_id, p.type_id, 
+				p.parent_id, p.is_home, p.created, 
+				p.published, p.settings, p.settings_id, 
+				p.sort_order, p.status
+				
+			FROM pages p 
+			JOIN ph ON p.id = ph.parent_id
+		) SELECT DISTINCT * FROM ph;";
+		
+		$db	= $data->getDb( static::MAIN_DATA );
+		$stm	= $data->statement( $db, $sql );
+		
+		$result	=
+		$data->getDataResult( 
+			$db, 
+			[ ':id' => $id ], 
+			'class, \\PubCabin\Core\\Page', 
+			$stm 
+		);
+		$stm->closeCursor();
+		return $result;
+	}
+	
+	/**
 	 *  Helper to turn concated labels and fields into taxonomy
 	 *  
 	 *  @param string	$field		Tag or category field from user form
