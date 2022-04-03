@@ -1291,7 +1291,8 @@ CREATE INDEX idx_page_revision_created ON page_revisions ( created );-- --
 
 CREATE VIEW page_area_view AS SELECT
 	p.id AS id,
-	p.uuid AS uuid,
+	p.uuid AS uuid, 
+	p.parent_id AS parent_id,
 	p.site_id AS site_id,
 	p.is_home AS is_home,
 	p.render AS render,
