@@ -77,14 +77,6 @@ class Util {
 	}
 	
 	/**
-	 *  Check if script is running with the latest supported PHP version
-	 *  This function remains for backward compatibility
-	 */ 
-	public static function newPHP( string $spec = '8.0' ) : bool {
-		return static::libVersion( $spec );
-	}
-	
-	/**
 	 *  Check if a specific library or if PHP is the given version or above
 	 *  
 	 *  @param string	$spec		Minimum supported version
@@ -1093,6 +1085,33 @@ class Util {
 		}
 		
 		return static::truncate( $code, 0, $size );
+	}
+	
+	/**
+	 *  Timezone offset list generator
+	 *  
+	 *  @return array
+	 */
+	public static function timezoneOffsets() : array {
+		static $offsets;
+		
+		if ( isset( $offsets ) ) {
+			return $offsets;
+		}
+		
+		$zones		= 
+		\DateTimeZone::listIdentifiers( \DateTimeZone::ALL );
+		
+		$offsets	= [];
+		foreach ( $zones as $tz ) {
+			$t		= new \DateTimeZone( $tz );
+			$offsets[$t]	= 
+			$tz->getOffset( new \DateTime );
+		}
+		
+		\asort( $offsets );
+		
+		return $offsets;
 	}
 }
 
