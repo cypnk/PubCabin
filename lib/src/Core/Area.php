@@ -44,8 +44,21 @@ class Area extends \PubCabin\Entity {
 	 */
 	protected $_render_settings;
 	
-	// TODO
-	public function save() { }
+	/**
+	 *  Data SQL strings
+	 *  @var array
+	 */
+	protected static $sql	= [
+		"insert"	=>
+		"INSERT INTO areas 
+			( label, permisisons, settings, site_id )
+			VALUES ( :label, :perms, :settings, :site );",
+		
+		"update"	=> 
+		"UPDATE areas SET label = :label, permissions = :perms, 
+			settings = :settings WHERE id = :id;"
+	];
+	
 	
 	public function __set( $name, $value ) {
 		switch ( $name ) {
@@ -107,15 +120,39 @@ class Area extends \PubCabin\Entity {
 		}
 	}
 	
-	// TODO
+	/**
+	 *  Save changes or create new Area 
+	 *  
+	 *  @param \PubCabin\Data	$data	Storage handler
+	 *  @return bool			True on success
+	 */
 	public function save( \PubCabin\Data $data ) : bool {
-		if ( isset( $this->id ) ) {
+		$params	= [
+			':label'	=> $this->label,
+			':perms'	=> \PubCabin\Util::encode( $this->permissions ),
+			':settings'	=> \PubCabin\Util::encode( $this->settings ),
+		];
+		
+		if ( empty( $this->id ) ) {
+			$params[':site'] = $this->site_id;
 			
-		} else {
-			
+			$this->id = 
+			$data->setInsert( 
+				static::$sql['insert'], 
+				$params, 
+				static::MAIN_DATA 
+			);
+			return empty( $this->id ) ? false : true;
 		}
 		
-		return true;
+		$params[':id'] = $this->id;
+		
+		return 
+		$data->setUpdate( 
+			static::$sql['update'], 
+			$params, 
+			static::MAIN_DATA 
+		);
 	}
 }
 
