@@ -54,6 +54,25 @@ class Site extends \PubCabin\Entity {
 JSON;
 	
 	/**
+	 *  Data SQL strings
+	 *  @var array
+	 */
+	protected static $sql	= [
+		"insert"	=>
+		"INSERT INTO sites ( 
+			label, basename, basepath, settings, 
+			is_active, is_maintenance
+		) VALUES ( :label, :basename, :basepath, :settings, 
+			:active, :maint );",
+		
+		"update"	=> 
+		"UPDATE sites SET label = :label, basename = :basename, 
+			basepath = :basepath, settings = :settings, 
+			is_active = :active, is_maintenance = :maint 
+		WHERE id = :id LIMIT 1;"
+	];
+	
+	/**
 	 *  Create or update site entity
 	 *  
 	 *  @param \PubCabin\Data	$data	Storage handler
@@ -70,27 +89,23 @@ JSON;
 		];
 		
 		if ( empty( $this->id ) ) {
-			$sql = 
-			"INSERT INTO sites ( 
-				label, basename, basepath, settings, 
-				is_active, is_maintenance
-			) VALUES ( :label, :basename, :basepath, :settings, 
-				:active, :maint );";
-			
 			$this->id = 
-			$data->setInsert( $sql, $params, static::MAIN_DATA );
+			$data->setInsert( 
+				static::$sql['insert'], 
+				$params, 
+				static::MAIN_DATA 
+			);
 			
 			return empty( $this->id ) ? false : true;
 		}
 		
-		$params[':id'] => $this->id;
-		$sql = 
-		"UPDATE sites SET label = :label, basename = :basename, 
-			basepath = :basepath, settings = :settings, 
-				is_active = :active, is_maintenance = :maint 
-			WHERE id = :id LIMIT 1;";
-		
-		return $data->setUpdate( $sql, $params, static::MAIN_DATA );
+		$params[':id'] = $this->id;
+		return 
+		$data->setUpdate( 
+			static::$sql['update'], 
+			$params, 
+			static::MAIN_DATA 
+		);
 	}
 	
 	/**
