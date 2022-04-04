@@ -32,33 +32,46 @@ class TextBlock extends \PubCabin\Entity {
 	 */
 	public $bare;
 	
+	protected static $sql	= [
+		'insert'	=>
+		"INSERT INTO text_blocks 
+			( body, bare, sort_order, text_id ) 
+		VALUES ( :body, :bare, :sort, :text_id )",
+		
+		'update'	=>
+		"UPDATE text_blocks SET body = :body, bare = :bare, 
+			sort_order = :sort WHERE id = :id LIMIT 1;"
+	];
+	
 	// TODO: Parse authorship
 	public function save( \PubCabin\Data $data ) : bool {
-		$params	= [
+		$this->bare	= \PubCabin\Util::bland( $this->body );
+		$params		= [
 			':body'	=> $this->body,
-			':bare'	=> $this->bare
+			':bare'	=> $this->bare,
+			':sort'	=> $this->sort_order
 		];
 		
 		if ( empty( $this->id ) ) {
-			$sql			= 
-			"INSERT INTO text_blocks (
-				body, bare, text_id
-			) VALUES ( :body, :bare, :text_id )";
-			
 			$params[':text_id']	= $this->text_id;
 			
 			$this->id		= 
-			$data->setInsert( $sql, $params, static::MAIN_DATA );
+			$data->setInsert( 
+				static::$sql['insert'], 
+				$params, 
+				static::MAIN_DATA 
+			);
 			
 			return empty( $this->id ) ? false : true;
 		}
 		
 		$params[':id'] => $this->id;
-		$sql = 
-		"UPDATE text_blocks SET body = :body, bare = :bare 
-			WHERE id = :id LIMIT 1;";
-		
-		return $data->setUpdate( $sql, $params, static::MAIN_DATA );
+		return 
+		$data->setUpdate( 
+			static::$sql['update'], 
+			$params, 
+			static::MAIN_DATA 
+		);
 	}
 	
 	public function __set( $name, $value ) {
