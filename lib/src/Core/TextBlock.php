@@ -32,6 +32,10 @@ class TextBlock extends \PubCabin\Entity {
 	 */
 	public $bare;
 	
+	/**
+	 *  Data SQL strings
+	 *  @var array
+	 */
 	protected static $sql	= [
 		'insert'	=>
 		"INSERT INTO text_blocks 
@@ -40,10 +44,20 @@ class TextBlock extends \PubCabin\Entity {
 		
 		'update'	=>
 		"UPDATE text_blocks SET body = :body, bare = :bare, 
-			sort_order = :sort WHERE id = :id LIMIT 1;"
+			sort_order = :sort WHERE id = :id LIMIT 1;",
+		
+		'authors'	=>
+		"INSERT OR IGNORE INTO text_block_users 
+			( block_id, user_id, ttype )
+		VALUES ( :block_id, :user_id, :ttype );"
 	];
 	
-	// TODO: Parse authorship
+	/**
+	 *  Create or update text block with author info
+	 *   
+	 *  @param \PubCabin\Data	$data	Storage handler
+	 *  @return bool
+	 */
 	public function save( \PubCabin\Data $data ) : bool {
 		$this->bare	= \PubCabin\Util::bland( $this->body );
 		$params		= [
@@ -62,22 +76,40 @@ class TextBlock extends \PubCabin\Entity {
 				static::MAIN_DATA 
 			);
 			
-			return empty( $this->id ) ? false : true;
+			if ( empty( $this->id ) )  {
+				return false;
+			}
+			$this->saveAuthors( $data );
+			return true;
 		}
 		
 		$params[':id'] => $this->id;
-		return 
+		
+		$ok	=  
 		$data->setUpdate( 
 			static::$sql['update'], 
 			$params, 
 			static::MAIN_DATA 
 		);
+		if ( $ok ) {
+			$this->saveAuthors( $data );
+		}
+		return $ok;
 	}
 	
 	public function __set( $name, $value ) {
 		switch ( $name ) {
 			case 'users':
-				// TODO: Parse editorial relationships
+				// Probably user set
+				if ( \is_array( $value ) ) {
+					$this->parseAuthors( $value );
+					
+				// Try to grab from query result
+				} elseif ( \is_string( $value ) ) {
+					$this->parseAuthors( 
+						static::filterAuthors( $value )
+					);
+				}
 				return;
 		}
 		
@@ -91,6 +123,86 @@ class TextBlock extends \PubCabin\Entity {
 		}
 		
 		return parent::__get( $name );
+	}
+	
+	/**
+	 *  String to associative editor array helper
+	 *  
+	 *  @example
+	 *  id[]=id1&ttype[]=editor&id[]=id2&ttype[]=author etc...
+	 *  
+	 *  @param string	$value	Raw query result
+	 *  @return array
+	 */
+	public static function filterAuthors( string $value ) : array {
+		$out = [];
+		\parse_str( $value, $out );
+		
+		if ( empty( $out ) ) {
+			return [];
+		}
+		
+		// Some kind of mismatch?
+		if ( empty( $out['id'] ) || empty( $out['ttype'] ) ) {
+			return [];
+		}
+		
+		if ( count( $out['id'] ) != count( $out['ttype'] ) ) {
+			return [];
+		}
+		
+		return \array_combine( $out['id'], $out['ttype'] );
+	}
+	
+	/**
+	 *  Process associative array of user ids and editorship statuses
+	 *  
+	 *  @param array	$users		User id with editor status
+	 */
+	protected function parseAuthors( array $users ) {
+		if ( empty( $users ) ) {
+			return;
+		}
+		foreach ( $users as $k => $v ) {
+			if ( !\is_numeric( $k ) ) {
+				continue;
+			}
+			
+			// Set id with text editor type. Default to 'editor'
+			$this->_users[] = [
+				'id'	=> ( int ) $k,
+				'ttype' => 
+				\PubCabin\Util::labelName( $v ?? 'editor' )
+			];
+		}
+	}
+	
+	/**
+	 *  Apply block text and text user relationships
+	 *   
+	 *  @param \PubCabin\Data	$data	Storage handler
+	 */
+	protected function saveAuthors( \PubCabin\Data $data ) {
+		// No users to add?
+		if ( empty( $this->_users ) ) {
+			return;
+		}
+		
+		$params = [];
+		foreach ( $this->_users as $u ) {
+			$params[] = [
+				':block_id'	=> $this->id,
+				':user_id'	=> $u['id'],
+				':ttype'	=> $u['ttype']
+			];
+		}
+		
+		$data->dataBatchExec( 
+			static::$sql['authors'], 
+			$params, 
+			'success', 
+			static::MAIN_DATA 
+		);
 	}
 }
 
