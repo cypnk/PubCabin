@@ -16,7 +16,7 @@ class Render {
 	/**
 	 *  JavaScript source tag
 	 */
-	const TPL_SCRIPT_TAG	= '<script src="{url}"></script>';
+	const TPL_SCRIPT_TAG	= '<script src="{url}" nonce="{nonce}"></script>';
 	
 	/**
 	 *  HTML meta tag
@@ -382,6 +382,25 @@ class Render {
 	}
 	
 	/**
+	 *  URL and associated nonce extraction helper
+	 *  
+	 *  @param string	$path	URL|nonce formatted string
+	 *  @return array
+	 */
+	public function splitUrlNonce( string $path ) : array {
+		if ( false === \strpos( $path, '|' ) ) {
+			return [ 'url' => \trim( $path ), 'nonce' => '' ];
+		}
+	
+		$u	= \strstr( $r, '|', true );
+		$n	= \strstr( $r, '|' );
+		return [ 
+			'url'	=> ( false === $n ) ? '' : \trim( $u ), 
+			'nonce'	=> ( false === $n ) ? '' : \trim( $n, '| ' )
+		];
+	}
+	
+	/**
 	 *  Special tag rendering helper (scripts, links etc...)
 	 *  
 	 *  @param string	$tpl	Rendering template
@@ -416,7 +435,8 @@ class Render {
 			// Everything else just has a URL
 			default:
 				foreach( $rg as $r ) {
-					$rgo .= \strtr( $tag, [ 'url' => $r ] );
+					$rgo .= 
+					\strtr( $tag, $this->splitUrlNonce( $r ) );
 				}
 		}
 		
