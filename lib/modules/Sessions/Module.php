@@ -224,6 +224,29 @@ class Module extends \PubCabin\Modules\Module {
 	 */
 	
 	/**
+	 *  Prefixed cookie name helper
+	 *  
+	 *  @return string
+	 */
+	public function cookiePrefix() : string {
+		static $prefix;
+		if ( isset( $prefix ) ) {
+			return $prefix;
+		}
+		
+		$req	= $this->getRequest();
+		$cpath	= 
+		$this->getConfig()->setting( 'cookie_path', 'string' );
+		
+		// Enable locking if connection is secure and path is '/'
+		$prefix = 
+		( 0 === \strcmp( $cpath, '/' ) && $req->isSecure() ) ? 
+			'__Host-' : ( isSecure() ? '__Secure-' : '' );
+		
+		return $prefix;
+	}
+	
+	/**
 	 *  Get collective cookie data
 	 *  
 	 *  @param string	$name		Cookie label name
@@ -231,11 +254,9 @@ class Module extends \PubCabin\Modules\Module {
 	 *  @return mixed
 	 */
 	public function getCookie( string $name, $default ) {
-		$prefix	= $this->getRequest()->isSecure() ? 
-			'__Host-' : '';
-		
 		$app	= 
-		$prefix . $this->getConfig()->setting( 'appname', 'string' );
+		$this->cookiePrefix() . 
+		$this->getConfig()->setting( 'appname', 'string' );
 		
 		if ( !isset( $_COOKIE[$app] ) ) {
 			return $default;
@@ -257,11 +278,10 @@ class Module extends \PubCabin\Modules\Module {
 	 *  @return bool
 	 */
 	public function makeCookie( string $name, $data, array $options = [] ) : bool {
-		$prefix	= $this->getRequest()->isSecure() ? 
-			'__Host-' : '';
 		$options	= $this->defaultCookieOptions( $options );
 		$app		= 
-		$prefix . $this->getConfig()->setting( 'appname', 'string' );
+		$this->cookiePrefix() . 
+		$this->getConfig()->setting( 'appname', 'string' );
 		
 		$this->getModule( 'Hooks' )->event( [ 
 			'sessioncookieparams', $options 
@@ -315,11 +335,16 @@ class Module extends \PubCabin\Modules\Module {
 			'expires'	=> 
 				( int ) ( $options['expires'] ?? time() + $cexp ),
 			'path'		=> $cpath,
-			'domain'	=> $req->getHost(),
 			'samesite'	=> $this->sameSiteCookie(),
 			'secure'	=> $req->isSecure() ? true : false,
 			'httponly'	=> true
 		] );
+		
+		// Domain shouldn't be used when using '__Host-' prefixed cookies
+		$prefix = cookiePrefix();
+		if ( empty( $prefix ) || 0 === \strcmp( $prefix, '__Secure-' ) ) {
+			$opts['domain']	= getHost();
+		}
 		
 		$this->getModule( 'Hooks' )->event( [ 
 			'cookieparams', $opts
@@ -361,13 +386,11 @@ class Module extends \PubCabin\Modules\Module {
 		}
 		
 		$hooks	= $this->getModule( 'Hooks' );
-		$prefix	= $this->getRequest()->isSecure() ? 
-			'__Host-' : '';
-		
 		if ( \session_status() !== \PHP_SESSION_ACTIVE ) {
 			$this->sessionCookieParams();
 			\session_name( 
-				$prefix . $this->getConfig()->setting( 'appname' ), 
+				$this->cookiePrefix() . 
+				$this->getConfig()->setting( 'appname' ), 
 				'string'
 			);
 			\session_start();
