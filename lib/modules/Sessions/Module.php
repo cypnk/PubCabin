@@ -8,6 +8,22 @@ namespace PubCabin\Modules\Sessions;
 class Module extends \PubCabin\Modules\Module {
 	
 	/**
+	 *  '__Host-', '__Secure-', or empty cookie prefix
+	 *  @var array
+	 */
+	protected static $prefix_list = [
+		'none'		=> '__',
+		'host'		=> '__Host-',
+		'secure'	=> '__Secure-'
+	];
+	
+	/**
+	 *  Currently active cookie prefix
+	 *  @var string
+	 */
+	protected $cookie_prefix;
+	
+	/**
 	 *  Session database DSN
 	 */
 	const SESSION_DATA	= 'session.db';
@@ -229,9 +245,8 @@ class Module extends \PubCabin\Modules\Module {
 	 *  @return string
 	 */
 	public function cookiePrefix() : string {
-		static $prefix;
-		if ( isset( $prefix ) ) {
-			return $prefix;
+		if ( isset( $this->cookie_prefix ) ) {
+			return $this->cookie_prefix;
 		}
 		
 		$req	= $this->getRequest();
@@ -239,11 +254,15 @@ class Module extends \PubCabin\Modules\Module {
 		$this->getConfig()->setting( 'cookie_path', 'string' );
 		
 		// Enable locking if connection is secure and path is '/'
-		$prefix = 
+		$this->cookie_prefix = 
 		( 0 === \strcmp( $cpath, '/' ) && $req->isSecure() ) ? 
-			'__Host-' : ( isSecure() ? '__Secure-' : '' );
+			static::$prefix_list['host'] : ( 
+				$req->isSecure() ? 
+					static::$prefix_list['secure'] : 
+					static::$prefix_list['none'] 
+			);
 		
-		return $prefix;
+		return $this->cookie_prefix;
 	}
 	
 	/**
@@ -317,7 +336,6 @@ class Module extends \PubCabin\Modules\Module {
 		
 		return $this->getRequest()->isSecure() ? 'None' : 'Lax';
 	}
-
 	
 	/**
 	 *  Set the cookie options when defaults are/aren't specified
@@ -340,9 +358,12 @@ class Module extends \PubCabin\Modules\Module {
 			'httponly'	=> true
 		] );
 		
-		// Domain shouldn't be used when using '__Host-' prefixed cookies
+		// Domain shouldn't be used when using host prefixed cookies
 		$prefix = cookiePrefix();
-		if ( empty( $prefix ) || 0 === \strcmp( $prefix, '__Secure-' ) ) {
+		if ( 
+			empty( $prefix ) || 
+			( 0 === \strcmp( $prefix, static::$prefix_list['secure'] ) ) 
+		) {
 			$opts['domain']	= getHost();
 		}
 		
