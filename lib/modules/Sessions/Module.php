@@ -231,7 +231,12 @@ class Module extends \PubCabin\Modules\Module {
 	 *  @return mixed
 	 */
 	public function getCookie( string $name, $default ) {
-		$app = $this->getConfig()->setting( 'appname', 'string' );
+		$prefix	= $this->getRequest()->isSecure() ? 
+			'__Host-' : '';
+		
+		$app	= 
+		$prefix . $this->getConfig()->setting( 'appname', 'string' );
+		
 		if ( !isset( $_COOKIE[$app] ) ) {
 			return $default;
 		}
@@ -252,9 +257,11 @@ class Module extends \PubCabin\Modules\Module {
 	 *  @return bool
 	 */
 	public function makeCookie( string $name, $data, array $options = [] ) : bool {
+		$prefix	= $this->getRequest()->isSecure() ? 
+			'__Host-' : '';
 		$options	= $this->defaultCookieOptions( $options );
 		$app		= 
-		$this->getConfig()->setting( 'appname', 'string' );
+		$prefix . $this->getConfig()->setting( 'appname', 'string' );
 		
 		$this->getModule( 'Hooks' )->event( [ 
 			'sessioncookieparams', $options 
@@ -353,12 +360,14 @@ class Module extends \PubCabin\Modules\Module {
 			return;
 		}
 		
-		$hooks = $this->getModule( 'Hooks' );
+		$hooks	= $this->getModule( 'Hooks' );
+		$prefix	= $this->getRequest()->isSecure() ? 
+			'__Host-' : '';
 		
 		if ( \session_status() !== \PHP_SESSION_ACTIVE ) {
 			$this->sessionCookieParams();
 			\session_name( 
-				$this->getConfig()->setting( 'appname' ), 
+				$prefix . $this->getConfig()->setting( 'appname' ), 
 				'string'
 			);
 			\session_start();
