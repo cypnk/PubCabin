@@ -229,6 +229,39 @@ class Module extends \PubCabin\Modules\Module {
 	}
 	
 	/**
+	 *  Override render area region loaded data
+	 *  
+	 *  @param string	$name	Region name
+	 *  @param mixed	$data	New data (meta tags, JS, CSS etc...)
+	 */
+	public function renderSettingsEvent( string $name, $data ) {
+		if ( !\is_stirng( $data ) || !\is_array( $data ) ) {
+			return;
+		}
+		
+		$render = $this->getRender();
+		switch( $name ) {
+			case 'meta':
+				$meta = 
+				\is_array( $data ) ? 
+					[ 'meta' => $data ] :
+					\PubCabin\Util::decode( $data );
+				
+				$render->rsettings( $name, $meta );
+				break;
+			
+			// Everything else
+			default:
+				$render->rsettings( 
+					$name, 
+					\is_array( $data ) ? 
+						$data : 
+						\PubCabin\Util::decode( $data )
+				);
+		}
+	}
+	
+	/**
 	 *  Collection of functions to execute during class destruction
 	 */
 	public function shutdown() {
