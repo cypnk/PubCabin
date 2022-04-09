@@ -68,7 +68,7 @@ class User extends \PubCabin\Entity {
 	/**
 	 *  Authentication info
 	 */
-	public $info		= '';
+	protected $_info		= [];
 	
 	/**
 	 *  Contact for reminders, resets
@@ -235,6 +235,12 @@ class User extends \PubCabin\Entity {
 				$this->_auth_expires = 
 					\PubCabin\Util::utc( ( string ) $value );
 				break;
+			
+			case 'info':
+				$this->_info = 
+					\is_array( $value ) ? $value : 
+					\PubCabin\Util::encode( $value );
+				break;
 				
 			default:
 				parent::__set( $name, $value );
@@ -267,6 +273,9 @@ class User extends \PubCabin\Entity {
 			
 			case 'auth_expires':
 				return $this->_auth_expires ?? null;
+			
+			case 'info'
+				return $this->_info ?? [];
 				
 			default:
 				return parent::__get( $name );
@@ -428,13 +437,22 @@ class User extends \PubCabin\Entity {
 	 *  Authentication creation helper
 	 * 
 	 *  @param \PubCabin\Data	$data	Storage handler
+	 *  @param array		$info	Custom auth data
 	 *  @return bool
 	 */
-	private function createAuth( \PubCabin\Data $data ) : bool {
+	public function createAuth( 
+		\PubCabin\Data	$data, 
+		array		$info	= [] 
+	) : bool {
 		$params = [
 			':user_id'	=> $this->id,
-			':email'	=> $this->email ?? '',
-			':info'		=> $this->info ?? '',
+			':email'	=> 
+				empty( $info ) ? 
+					( $this->email ?? null ) : null,
+			':info'		=> 
+				empty( $info ) ? 
+					\PubCabin\Util::encode( $this->info ) : 
+					\PubCabin\Util::encode( $info ),
 			':is_approved'	=> $this->is_approved ? 1 : 0,
 			':is_locked'	=> $this->is_locked ? 1 : 0
 		];
