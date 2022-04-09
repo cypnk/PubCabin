@@ -318,7 +318,8 @@ CREATE TABLE user_auth(
 		REFERENCES providers ( id )
 		ON DELETE SET NULL
 );-- --
-CREATE UNIQUE INDEX idx_user_email ON user_auth( email );-- --
+CREATE UNIQUE INDEX idx_user_email ON user_auth( email )
+	WHERE email IS NOT NULL;-- --
 CREATE INDEX idx_user_auth_user ON user_auth( user_id );-- --
 CREATE INDEX idx_user_auth_provider ON user_auth( provider_id )
 	WHERE provider_id IS NOT NULL;-- --
