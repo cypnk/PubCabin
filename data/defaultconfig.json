@@ -31,6 +31,12 @@
 	"title_min": 3,
 	"title_max": 255,
 	"cache_ttl": 3200,
+	"uploads": "{files}",
+	"file_path": "{path}htdocs\/",
+	"mod_file_path": "{modstore}",
+	"error": "{error}",
+	"notice": "{store}notice.log",
+	"allow_upload": 0,
 	"site_depth": 25,
 	"max_search_words": 10,
 	"token_bytes": 8,
@@ -40,6 +46,12 @@
 	"meta_limit": 15,
 	"folder_limit": 15,
 	"shared_assets": "\/",
+	"default_basepath":  {
+		"basepath"		: "\/",
+		"is_active"		: 1,
+		"is_maintenance"	: 0,
+		"settings"		: []
+	},
 	"default_stylesheets": [],
 	"default_scripts": [],
 	"default_meta": {
