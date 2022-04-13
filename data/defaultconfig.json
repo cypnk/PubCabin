@@ -30,6 +30,7 @@
 	"auto_approve_reg": 1,
 	"title_min": 3,
 	"title_max": 255,
+	"cache": "{cache}",
 	"cache_ttl": 3200,
 	"uploads": "{files}",
 	"file_path": "{path}htdocs\/",
@@ -37,6 +38,7 @@
 	"error": "{error}",
 	"notice": "{store}notice.log",
 	"allow_upload": 0,
+	"cache_ttl": 3200,
 	"site_depth": 25,
 	"max_search_words": 10,
 	"token_bytes": 8,
@@ -46,6 +48,7 @@
 	"meta_limit": 15,
 	"folder_limit": 15,
 	"shared_assets": "\/",
+	"default_modules": [ "Base" ],
 	"default_basepath":  {
 		"basepath"		: "\/",
 		"is_active"		: 1,
@@ -57,7 +60,7 @@
 	"default_meta": {
 		"meta" : [
 			{ "name" : "generator", "content" : 
-				"Bare; https:\/\/github.com\/cypnk\/PubCabin" }
+				"PubCabin; https:\/\/github.com\/cypnk\/PubCabin" }
 			]
 	},
 	"default_secpolicy" : {
@@ -136,7 +139,7 @@
 					"title", "href", "data-highlight", "data-feature" ],
 		"img"		: [ "style", "class", "src", "height", "width", "alt", 
 					"longdesc", "title", "hspace", "vspace", "srcset", 
-					"sizes" "data-srcset", "data-src", "data-sizes", 
+					"sizes", "data-srcset", "data-src", "data-sizes", 
 					"data-feature" ],
 		"figure"	: [ "style", "class", "data-highlight", "data-feature" ],
 		"figcaption"	: [ "style", "class", "data-highlight", "data-feature" ],
@@ -169,7 +172,7 @@
 	"form_white" : {
 		"form"		: [ "id", "method", "action", "enctype", "style", "class", 
 					"data-feature" ], 
-		"input"		: [ "id", "type", "name", "required", , "max", "min", 
+		"input"		: [ "id", "type", "name", "required", "max", "min", 
 					"value", "size", "maxlength", "checked", "pattern", 
 					"disabled", "style", "class", "data-highlight", 
 					"aria-describedby", "data-feature" ],
