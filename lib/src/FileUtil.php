@@ -3,6 +3,8 @@
  *  @file	/lib/src/FileUtil.php
  *  @brief	File loading and saving helper
  */
+namespace PubCabin;
+
 final class FileUtil {
 	
 	/**
@@ -37,8 +39,8 @@ final class FileUtil {
 		int	$len = 255 
 	) : string {
 		return 
-		Util::truncate( 
-			Util::unifySpaces( 
+		\PubCabin\Util::truncate( 
+			\PubCabin\Util::unifySpaces( 
 				( string ) ( $text ?? '' ) 
 			), 0, $len 
 		);
@@ -161,7 +163,9 @@ final class FileUtil {
 		empty( $ext ) ? '' : 
 		\preg_replace( 
 			'/[[:space:]]+/', 
-			Util::bland( Util::title( $ext ), true ), '' 
+			\PubCabin\Util::bland( 
+				\PubCabin\Util::title( $ext ), true 
+			), '' 
 		);
 	}
 	
@@ -194,7 +198,7 @@ final class FileUtil {
 		
 		// Backup file name inferred from full file path
 		$name	= 
-		Util::slashPath( \dirname( $file ), true ) . $prefix . 
+		\PubCabin\Util::slashPath( \dirname( $file ), true ) . $prefix . 
 			\gmdate( 'Ymd\THis' ) . '.' . 
 			\basename( $file ) . $suffix;
 		
@@ -205,7 +209,7 @@ final class FileUtil {
 	/**
 	 *  Load file contents and check for any server-side code		
 	 */
-	public function loadFile( 
+	public static function loadFile( 
 		string		$name, 
 		array		&$errors = [] 
 	) : string {
@@ -340,7 +344,7 @@ final class FileUtil {
 		$i	= 0;
 		
 		while ( \file_exists( $file ) ) {
-			$file = Util::slashPath( $dir, true ) . 
+			$file = \PubCabin\Util::slashPath( $dir, true ) . 
 				$name . '_' . $i++ . 
 				\rtrim( '.' . $ext, '.' );
 		}
@@ -357,8 +361,8 @@ final class FileUtil {
 	) {
 		$files	= static::parseUploads();
 		$store	= 
-		Util::slashPath( $root, true ) . 
-		Util::slashPath( $path, true );
+		\PubCabin\Util::slashPath( $root, true ) . 
+		\PubCabin\Util::slashPath( $path, true );
 		
 		foreach ( $files as $name ) {
 			foreach( $name as $file ) {
@@ -544,7 +548,7 @@ final class FileUtil {
 			return $tmp;
 			
 		} catch( \Exception $e ) {
-			errors( 
+			\messages( 'error',
 				'Error retrieving files from ' . $pd . ' ' . 
 				$e->getMessage() ?? 
 					'Directory search exception'
