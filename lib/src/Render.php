@@ -4,7 +4,7 @@
  *  @brief	HTML Template processing and user output
  */
 
-namespace PubCabin
+namespace PubCabin;
 
 class Render {
 	
@@ -208,7 +208,9 @@ class Render {
 		// Add new or appened classes while removing duplicates
 		foreach( $cls as $k => $v ) {
 			$cv['{' . $k . '}'] = 
-			\implode( ' ', Util::uniqueTerms( Util::bland( $v ) ) );
+			\implode( ' ', 
+				\PubCabin\Util::uniqueTerms( 
+				\PubCabin\Util::bland( $v ) ) );
 		}
 		return $cv;
 	}
@@ -238,7 +240,7 @@ class Render {
 				
 				$this->store['styles']	= 
 					\is_array( $s ) ? $s : 
-						FileUtil::linePresets( 
+						\PubCabin\FileUtil::linePresets( 
 							'stylesheets', 
 							$s, $lim 
 						);
@@ -257,7 +259,7 @@ class Render {
 				
 				$this->store['scripts']	= 
 					\is_array( $s ) ? $s : 
-						FileUtil::linePresets( 
+						\PubCabin\FileUtil::linePresets( 
 							'scripts', 
 							$s, $lim 
 						);
@@ -270,7 +272,7 @@ class Render {
 				
 				$this->store['meta']		= 
 					\is_string( $meta ) ? 
-						Util::decode( $meta ) : 
+						\PubCabin\Util::decode( $meta ) : 
 						[ 'meta' => $meta ];
 				break;
 			
@@ -313,13 +315,13 @@ class Render {
 	 */
 	public function getClasses( string $name ) : array {
 		$cls	= $this->rsettings( 'classes' );
-		$n	= '{' . \Util::bland( $name ) . '}';
+		$n	= '{' . \PubCabin\Util::bland( $name ) . '}';
 		$va	= [];
 		foreach( $cls as $k => $v ) {
 			if ( 0 != \strcmp( $n , $k ) ) {
 				continue;
 			}
-			$va	= \Util::uniqueTerms( $v );
+			$va	= \PubCabin\Util::uniqueTerms( $v );
 			break;
 		}
 		
@@ -335,8 +337,8 @@ class Render {
 	public function setClass( string $name, string $value ) {
 		$this->rsettings( 
 			'classes', 
-			[ '{' . \Util::bland( $name ) . '}' => 
-				\Util::bland( $value ) ] 
+			[ '{' . \PubCabin\Util::bland( $name ) . '}' => 
+				\PubCabin\Util::bland( $value ) ] 
 		);
 	}
 	
@@ -493,7 +495,7 @@ class Render {
 				
 			// Find render regions
 			$this->regions[$key]	= 
-			Parser::findTplRegions( $this->cache[$key] );
+			\PubCabin\Parser::findTplRegions( $this->cache[$key] );
 		}
 		
 		$out		= [];
