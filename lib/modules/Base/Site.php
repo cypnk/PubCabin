@@ -1,10 +1,10 @@
 <?php declare( strict_types = 1 );
 /**
- *  @file	/lib/src/Core/Site.php
+ *  @file	/lib/modules/Base/Site.php
  *  @brief	Website base data object
  */
 
-namespace PubCabin\Core;
+namespace PubCabin\Modules\Base;
 
 class Site extends \PubCabin\Entity {
 	
@@ -75,10 +75,9 @@ JSON;
 	/**
 	 *  Create or update site entity
 	 *  
-	 *  @param \PubCabin\Data	$data	Storage handler
-	 *  @return bool			True on success
+	 *  @return bool	True on success
 	 */
-	public function save( \PubCabin\Data $data ) : bool {
+	public function save() : bool {
 		$params	= [
 			':label'	=> $this->label,
 			':basename'	=> $this->basename,
@@ -88,12 +87,14 @@ JSON;
 			':maint'	=> ( int ) ( $this->is_maintenance ?? 0 )
 		];
 		
+		$data	= static::getData();
+		$dsn	= static::dsn( static::MAIN_DATA );
 		if ( empty( $this->id ) ) {
 			$this->id = 
 			$data->setInsert( 
 				static::$sql['insert'], 
 				$params, 
-				static::MAIN_DATA 
+				$dsn
 			);
 			
 			return empty( $this->id ) ? false : true;
@@ -104,20 +105,18 @@ JSON;
 		$data->setUpdate( 
 			static::$sql['update'], 
 			$params, 
-			static::MAIN_DATA 
+			$dsn
 		);
 	}
 	
 	/**
 	 *  Find site by domain prefixed path and base URI
 	 *  
-	 *  @param \PubCabin\Data	$data	Storage handler
-	 *  @param string		$path	URI String including domain
-	 *  @param int			$depth	Maximum subdirectory depth
+	 *  @param string	$path		URI String including domain
+	 *  @param int		$depth		Maximum subdirectory depth
 	 *  @return array
 	 */
 	public static function findByPath(
-		\PubCabin\Data	$data, 
 		string		$path, 
 		int		$depth
 	) : array {
@@ -146,8 +145,9 @@ JSON;
 			':bname'	=> $domain
 		];
 		
+		$data	= static::getData();
 		$ins	= $data->getInParam( $paths, $params );
-		$db	= $data->getDb( static::MAIN_DATA );
+		$db	= $data->getDb( static::dsn( static::MAIN_DATA ) );
 		$stm	= 
 		$data->statement( $db, 
 			"SELECT * FROM sites_enabled WHERE 
@@ -161,7 +161,7 @@ JSON;
 		$data->getDataResult( 
 			$db, 
 			$params, 
-			'class, \\PubCabin\Core\\Site', 
+			'class, \\PubCabin\\Modules\\Base\\Site', 
 			$stm 
 		);
 		$stm->closeCursor();
@@ -192,15 +192,15 @@ JSON;
 			
 			// Add default site if empty
 			if ( empty( $base ) ) {
-				$base	= [
-					\PubCabin\Config::setting( 
-						'default_basepath', 
-						self::DEFAULT_BASEPATH, 
-						'json' 
-					)
-				];
+				$base	= 
+				static::getConfig()->setting( 
+					'default_basepath', 
+					'json' 
+				) ?? \PubCabin\Util::decode( 
+					self::DEFAULT_BASEPATH
+				);
 			}
-		
+			
 			// Decode went wrong or setting is invalid
 			if ( !\is_array( $base ) ) {
 				continue;
