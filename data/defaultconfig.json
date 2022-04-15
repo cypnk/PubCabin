@@ -34,10 +34,12 @@
 	"cache_ttl": 3200,
 	"uploads": "{files}",
 	"file_path": "{path}htdocs\/",
+	"error_path": "{store}errors",
 	"mod_file_path": "{modstore}",
 	"error": "{error}",
 	"notice": "{store}notice.log",
-	"allow_upload": 0,
+	"allow_upload": 1,
+	"allow_post": 1,
 	"cache_ttl": 3200,
 	"site_depth": 25,
 	"max_search_words": 10,
@@ -48,7 +50,7 @@
 	"meta_limit": 15,
 	"folder_limit": 15,
 	"shared_assets": "\/",
-	"default_modules": [ "Base" ],
+	"default_modules": [ "Base", "Sessions" ],
 	"default_basepath":  {
 		"basepath"		: "\/",
 		"is_active"		: 1,
@@ -226,5 +228,9 @@
 	"form_delay": 30,
 	"form_expire": 7200,
 	"login_delay": 5,
-	"login_attempts": 3
+	"login_attempts": 3,
+	"parser_idx_item": 3,
+	"parser_idx_param": 5,
+	"parser_idx_skip": 4,
+	"parser_max_depth": 5
 }
