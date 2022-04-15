@@ -23,7 +23,7 @@ define( 'PUBCABIN_CACHE',	\PUBCABIN_DATA . 'cache/' );
  */
 
 // Core class location
-define( 'PUBCABIN_BASE',	\PUBCABIN_PATH . 'src/' );
+define( 'PUBCABIN_BASE',		\PUBCABIN_PATH . 'src/' );
 
 // Plugin and extension class location
 define( 'PUBCABIN_MODBASE',	\PUBCABIN_PATH . 'modules/' );
@@ -34,20 +34,17 @@ define( 'PUBCABIN_OPTIONAL',	\PUBCABIN_PATH . 'opt/' );
 // Externally contributed code
 define( 'PUBCABIN_CONTRIB',	\PUBCABIN_PATH . 'contrib/' );
 
-// Language and translation files
-define( 'PUBCABIN_LANG',	\PUBCABIN_DATA . 'lang/' );
-
 // Backup folder
-define( 'PUBCABIN_BACKUP',	\PUBCABIN_DATA . 'backup/' );
+define( 'PUBCABIN_BACKUP',		\PUBCABIN_DATA . 'backup/' );
 
 // Module created files
 define( 'PUBCABIN_MODSTORE',	\PUBCABIN_DATA . 'modules/' );
 
 // Outgoing mail spool
-define( 'PUBCABIN_OUTBOX',	\PUBCABIN_DATA . 'outbox/' );
+define( 'PUBCABIN_OUTBOX',		\PUBCABIN_DATA . 'outbox/' );
 
 // Error log file
-define( 'PUBCABIN_ERRORS',	\PUBCABIN_DATA . 'errors.log' );
+define( 'PUBCABIN_ERRORS',		\PUBCABIN_DATA . 'errors.log' );
 
 // Notification log file
 define( 'PUBCABIN_NOTICES',	\PUBCABIN_DATA . 'notices.log' );
@@ -58,6 +55,7 @@ define( 'PUBCABIN_NOTICES',	\PUBCABIN_DATA . 'notices.log' );
  */
 \date_default_timezone_set( 'UTC' );
 \ignore_user_abort( true );
+\ob_end_clean();
 
 /**
  *  Isolated message holder
@@ -69,7 +67,7 @@ define( 'PUBCABIN_NOTICES',	\PUBCABIN_DATA . 'notices.log' );
 function messages( string $type, string $message, bool $ret = false ) {
 	static $log	= [];
 	
-	if ( $ret ) {
+	if ( $ret && $message ) {
 		return $log;
 	}
 	
@@ -77,6 +75,7 @@ function messages( string $type, string $message, bool $ret = false ) {
 		$log[$type] = [];	
 	}
 	
+	// Clean message to file safe format
 	$log[$type] = 
 	\preg_replace( 
 		'/[\x00-\x08\x0B\x0C\x0E-\x1F\x80-\x9F[\x{fdd0}-\x{fdef}\p{Cs}\p{Cf}\p{Cn}]/u', 
@@ -86,23 +85,23 @@ function messages( string $type, string $message, bool $ret = false ) {
 }
 
 /**
- *  Error storage. Preserved for backward compatibility
+ *  Notice
  */
-function errors( string $message, bool $ret = false ) {
+function notice( string $message, bool $ret = false ) {
 	if ( $ret ) {
-		return messages( '', '', true )['error'] ?? [];
+		return messages( '', '', true )['notice'] ?? [];
 	}
 	
-	messages( 'error', $message );
+	messages( 'notice', $message );
 }
 
 /**
  *  Write messages to given error file
  */
-function logToFile( array $msgs, string $dest ) {
+function logToFile( string $msg, string $dest ) {
 	\error_log( 
 		\gmdate( 'D, d M Y H:i:s T', time() ) . "\n" . 
-			implode( "\n", $msgs ) . "\n\n\n\n", 
+			$msg . "\n\n\n\n", 
 		3, 
 		$dest
 	);
@@ -125,7 +124,7 @@ function baseEnv() : bool {
 	
 	$miss	= [];
 	foreach ( $req as $f => $name ) {
-		if ( !\function_exists( $name ) ) {
+		if ( !\function_exists( $f ) ) {
 			$miss[] = $name;
 		}
 	}
@@ -160,7 +159,6 @@ function baseEnv() : bool {
 	}
 	
 	$msgs = messages( '', '', true );
-	
 	if ( empty( $msgs ) ) {
 		return;
 	}
@@ -220,7 +218,41 @@ function baseEnv() : bool {
  *  Begin
  */
 if ( baseEnv() ) {
-	$cabin	= new \PubCabin\Modules\Cabin\Module();
+	$dir = [
+		\PUBCABIN_FILES,
+		\PUBCABIN_CACHE,
+		\PUBCABIN_BACKUP,
+		\PUBCABIN_MODSTORE,
+		\PUBCABIN_OUTBOX
+	];
+	
+	$er	= [];
+	foreach ( $dir as $d ) {
+		if ( \is_dir( $d ) ) {
+			continue;
+		}
+		if ( \mkdir( $d, 0755, true ) ) {
+			continue;
+		}
+		$er[] = \basename( $d );
+	}
+	
+	
+	if ( !empty( $er ) ) {
+		\messages(
+			'error', 
+			'Required folder(s) could not be created: ' . 
+			\implode( ', ', $er )
+		);
+	}
+	
+	// Create config, controller and run begin event
+	$config	= new \PubCabin\Config();
+	$ctrl	= new \PubCabin\Controller( $config );
+	$ctrl->run( 'begin', [] );
+	
+	// Run shutdown event
+	$ctrl->run( 'shutdown', [] );
 }
 
 
