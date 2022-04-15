@@ -92,12 +92,12 @@ class Parser {
 	 *  @param string		$tpl	Raw render template
 	 *  @param \PubCabin\Config	$config	Main configuration
 	 */
-	protected function parse( 
-		string			$tpl, 
+	public function parse( 
+		string		$tpl, 
 		\PubCabin\Config	$config
 	) : array {
-		$key		= \hash( 'sha1', $tpl );
-	
+		$key	= \hash( 'sha1', $tpl );
+		
 		if ( isset( $this->parsed[$key] ) ) {
 			return $this->parsed[$key];
 		}
@@ -114,20 +114,20 @@ class Parser {
 		}
 		
 		// Limit to presets
-		$rii = 
+		$rii	= 
 		$config->setting( 'parser_idx_item', 'int' ) ?? 
 			self::IDX_ITEM;
 		
-		$ris = 
+		$ris	= 
 		$config->setting( 'parser_idx_skip', 'int' ) ?? 
 			self::IDX_SKIP;
 		
-		$rip = 
+		$rip	= 
 		$config->setting( 'parser_idx_param', 'int' ) ?? 
 			self::IDX_PARAM;
 		
 		// Append segments to major clusters up to preset limits
-		$mrc = \array_chunk( $matches, $rii + $ris );
+		$mrc	= \array_chunk( $matches, $rii + $ris );
 		foreach ( $mrc as $m ) {
 			$groups[$m[0]] = $m[$rip];
 		}
@@ -143,15 +143,13 @@ class Parser {
 	 *  Items 3, 7, 11, 15, 19, 23
 	 *  Item params 5, 9, 13, 17, 21, 25
 	 */
-	protected function getRenderRegex( 
-		\PubCabin\Config	$config 
-	) : string {
+	public function getRenderRegex( \PubCabin\Config $config ) : string {
 		if ( isset( $this->regex ) ) {
 			return $this->regex;
 		}
 		
 		$mxd		= 
-		$config->setting( 'parser_max_dpth', 'int' ) ?? 
+		$config->setting( 'parser_max_depth', 'int' ) ?? 
 			self::MAX_DEPTH;
 		
 		$m		= \str_repeat( self::RX_REPEAT, $mxd );
