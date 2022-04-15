@@ -26,18 +26,19 @@ class Data {
 	protected $_stmcache	= [];
 	
 	/**
-	 *  Configuration store
-	 *  @var \PubCabin\Config
+	 *  Main event controller
+	 *  @var \PubCabin\Controller
 	 */
-	protected $config;
+	protected $controller;
+	
 	
 	/**
 	 *  Data class begin
 	 *  
-	 *  @param \PubCabin\Config	$config	Main configuration handler
+	 *  @param \PubCabin\Controller	$ctrl	Event controller
 	 */
-	public function __construct( Config $config ) {
-		$this->config	= $config;
+	public function __construct( \PubCabin\Controller $ctrl ) {
+		$this->controller	= $ctrl;
 	}
 	
 	/**
@@ -54,7 +55,7 @@ class Data {
 		
 		// Log any pending errors
 		foreach ( $this->_err as $e ) {
-			errors( $e );
+			\messages( 'error', $e );
 		}
 	}
 	
@@ -65,20 +66,23 @@ class Data {
 	 *  @return array
 	 */
 	public function loadSQL( string $dsn ) : array {
-		// Get the first component from the definition
-		// E.G. "main" from "main.db"
-		$def	= \explode( '.', $dsn )[0];
+		// Get the name component from the full database path
+		$def	= \substr( $dsn, \strlen( \PUBCABIN_DATA ) - 1 );
+		if ( false === $def ) {
+			return [];
+		}
 		
 		$src	= 
-		FileUtil::loadFile( 
-			Util::lowercase( $dsn ) . '.sql' 
+		\PubCabin\FileUtil::loadFile( 
+			\ltrim( $def, '/\\' ) . '.sql' 
 		);
+		
 		if ( empty( $src ) ) {
 			return [];
 		}
 		
 		// SQL Lines from definition
-		return FileUtil::lines( $src, -1, false );
+		return \PubCabin\FileUtil::lines( $src, -1, false );
 	}
 	
 	/**
@@ -146,12 +150,15 @@ class Data {
 			return static::$db[$dsn];
 		}
 		
+		// Configuration from current controller
+		$config		= $this->controller->getConfig();
+		
 		// First time? SQLite database will be created
 		$first_run	= !\file_exists( $dsn );
-		$timeout	= $this->config->setting( 
-					'data_timeout', 'int' 
-				);
-		$opts	= [
+		$timeout	= 
+			$config->setting( 'data_timeout', 'int' );
+		
+		$opts		= [
 			\PDO::ATTR_TIMEOUT		=> $timeout,
 			\PDO::ATTR_DEFAULT_FETCH_MODE	=> \PDO::FETCH_ASSOC,
 			\PDO::ATTR_PERSISTENT		=> false,
@@ -196,7 +203,9 @@ class Data {
 		static::$db[$dsn]->exec( 'PRAGMA foreign_keys = ON;' );
 		
 		if ( $first_run ) {
-			// TODO Hooks
+			$this->controller->run( 
+				'dbcreated', [ 'dsn' => $dsn ] 
+			);
 		}
 		
 		return static::$db[$dsn];
