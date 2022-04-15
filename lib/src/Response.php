@@ -301,7 +301,7 @@ class Response extends Message {
 		// Set content type if mime is found
 		if ( $verify ) {
 			$mime			= 
-			\FileUtil::detectMime( $path );
+			\PubCabin\FileUtil::detectMime( $path );
 			$this->headers[]	= "Content-Type: {$mime}";
 		}
 		$this->headers[] = 
@@ -696,7 +696,7 @@ class Response extends Message {
 		}
 		
 		// Log unkown status type
-		errors( 'Unknown status code "' . $code . '"' );
+		\messages( 'error', 'Unknown status code "' . $code . '"' );
 		
 		\http_response_code( 500 );
 		$this->flushBuffers( true );
@@ -717,7 +717,7 @@ class Response extends Message {
 		
 		// Arbitrary redirect attempt?
 		if ( 0 !== \strcasecmp( $host, $_SERVER['SERVER_NAME'] ) ) {
-			errors( 'Invalid URL: ' . $path );
+			\messages( 'error', 'Invalid URL: ' . $path );
 			$this->eraseBuffers( true );
 		}
 		
