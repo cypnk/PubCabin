@@ -27,7 +27,7 @@ class Config {
 	];
 	
 	/**
-	 *  Configuration presets
+	 *  Overriden configuration during runtime
 	 *  @var array
 	 */
 	private static $options		= [];
@@ -51,7 +51,10 @@ class Config {
 		
 		// Keep going if an array
 		} elseif ( \is_array( $settings ) ) {
-			return $this->placeholders( $settings );
+			foreach ( $settings as $k => $v ) {
+				$settings[$k] = 
+					$this->placeholders( $v );
+			}
 		}
 		
 		// Everything else as-is
@@ -115,15 +118,29 @@ class Config {
 				return 
 				\is_array( $json ) ? 
 					$json : 
-					Util::decode( ( string ) $json );
-					
+					\PubCabin\Util::decode( ( string ) $json );
+			
+			case 'list':
+			case 'listlower':
+				$items	= static::$options[$name];
+				$lower	= 
+				( 0 == \strcmp( $type, 'listlower' ) ) ? 
+					true : false;
+				
+				return 
+				\is_array( $items ) ? 
+					\array_map( 'trim', $items ) : 
+					\PubCabin\Util::trimmedList( 
+						( string ) $items, $lower 
+					);
+				
 			case 'lines':
 				$lines	= static::$options[$name];
 				
 				return 
 				\is_array( $lines ) ? 
 					$lines : 
-					FileUtil::lineSettings( 
+					\PubCabin\FileUtil::lineSettings( 
 						( string ) $lines, 
 						$filter
 					);
@@ -169,12 +186,16 @@ class Config {
 	 *  @return array
 	 */
 	protected function loadDefaults() : array {
-		$data = FileUtil::loadFile( self::DEFAULT_CONFIG );
+		$data = 
+		\PubCabin\FileUtil::loadFile( self::DEFAULT_CONFIG );
+		
 		if ( empty( $data ) ) {
+			\messages( 'error', 
+				'Error decoding default config' );
 			return [];
 		}
 		
-		return Util::decode( $data );
+		return \PubCabin\Util::decode( $data );
 	}
 }
 
