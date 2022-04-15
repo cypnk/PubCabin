@@ -1,10 +1,10 @@
 <?php declare( strict_types = 1 );
 /**
- *  @file	/lib/src/Core/FormField.php
+ *  @file	/lib/modules/Forms/FormField.php
  *  @brief	Custom user input field and formatting
  */
 
-namespace PubCabin\Core;
+namespace PubCabin\Modules\Forms;
 
 class FormField extends \PubCabin\Entity {
 	
@@ -72,19 +72,19 @@ class FormField extends \PubCabin\Entity {
 	 *  HTML New content creation template, including input type
 	 *  @var string
 	 */
-	 public $create_template;
+	public $create_template;
 	 
 	 /**
 	  *  HTML Existing content editing template
 	  *  @var string
 	  */
-	 public $edit_template;
+	public $edit_template;
 	 
 	 /**
 	  *  Field data formatted view template
 	  *  @var string
 	  */
-	 public $view_template;
+	public $view_template;
 	 
 	 /**
 	  *  Style placeholders
@@ -120,7 +120,7 @@ class FormField extends \PubCabin\Entity {
 		return parent::__get( $name );
 	}
 	
-	public function save( \PubCabin\Data $data ) : bool {
+	public function save() : bool {
 		$params	= [
 			':name'		=> $this->name,
 			':form'		=> $this->form_id,
@@ -134,6 +134,7 @@ class FormField extends \PubCabin\Entity {
 				\PubCabin\Util::encode( $this->settings )
 		]
 		
+		$data	= static::getData();
 		if ( empty( $this->id ) ) {
 			$sql = 
 			"INSERT INTO form_fields( name, form_id, filter, 
