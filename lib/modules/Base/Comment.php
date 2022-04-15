@@ -1,10 +1,10 @@
 <?php declare( strict_types = 1 );
 /**
- *  @file	/lib/src/Core/Comment.php
+ *  @file	/lib/modules/Base/Comment.php
  *  @brief	Page feedback item
  */
 
-namespace PubCabin\Core;
+namespace PubCabin\Modules\Base;
 
 class Comment extends \PubCabin\Entity {
 	
@@ -147,7 +147,6 @@ class Comment extends \PubCabin\Entity {
 			author_url = :aurl, author_email = :aemail
 			WHERE id = :id;"
 	];
-		
 	
 	public function __set( $name, $value ) {
 		
@@ -187,7 +186,7 @@ class Comment extends \PubCabin\Entity {
 		$params[':aemail']	= $this->author_email ?? null;
 	}
 	
-	public function save( \PubCabin\Data $data ) : bool {
+	public function save() : bool {
 		$params = [
 			':body'	=> $this->body,
 			':bare'	=> \PubCabin\Util::bland( $this->body ),
@@ -203,7 +202,8 @@ class Comment extends \PubCabin\Entity {
 			$this->authorIdentity( $params );
 		}
 		
-		$db	= $data->getDb( static::MAIN_DATA );
+		$data	= static::getData();
+		$dsn	= static::dsn( static::MAIN_DATA );
 		if ( isset( $this->id ) ) {
 			$this->id = 
 			$data->setInsert( 
@@ -211,7 +211,7 @@ class Comment extends \PubCabin\Entity {
 					static::$csql['insauth'] : 
 					static::$csql['insanon'], 
 				$params, 
-				static::MAIN_DATA 
+				$dsn
 			);
 			return empty( $this->id ) ? false : true;
 		}
@@ -223,7 +223,7 @@ class Comment extends \PubCabin\Entity {
 				static::$csql['upauth'] : 
 				static::$csql['upanon'], 
 			$params, 
-			static::MAIN_DATA 
+			$dsn
 		);
 	}
 }
