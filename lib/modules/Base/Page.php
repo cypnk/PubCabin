@@ -1,10 +1,10 @@
 <?php declare( strict_types = 1 );
 /**
- *  @file	/lib/src/Core/Page.php
+ *  @file	/lib/modules/Base/Page.php
  *  @brief	Basic site content unit
  */
 
-namespace PubCabin\Core;
+namespace PubCabin\Modules\Base;
 
 class Page extends \PubCabin\Entity {
 	
@@ -175,7 +175,7 @@ class Page extends \PubCabin\Entity {
 			!\is_array( $value )			&& 
 			!\is_int( $value ) 
 		) {
-			if ( $value instanceof \PubCabin\Core\PageType ) {
+			if ( $value instanceof \PubCabin\Modules\Base\PageType ) {
 				$this->_ptype = $value;
 				return;
 			}
@@ -240,7 +240,7 @@ class Page extends \PubCabin\Entity {
 	}
 	
 	// TODO
-	public function save( \PubCabin\Data $data ) : bool {
+	public function save() : bool {
 		if ( isset( $this->id ) ) {
 			
 		} else {
@@ -253,14 +253,10 @@ class Page extends \PubCabin\Entity {
 	/**
 	 *  Get parent hierarchy of given page for breadcrumbs etc...
 	 *  
-	 *  @param \PubCabin\Data	$data	Storage handler
 	 *  @param int			$id	Page unique identifier
 	 *  @return array
 	 */
-	public static function getParents( 
-		\PubCabin\Data	$data, 
-		int		$id 
-	) : array {
+	public static function getParents( int $id ) : array {
 		static $sql = 
 		"WITH RECURSIVE ph ( id, parent_id ) AS (
 			SELECT id, parent_id FROM pages WHERE id = :id
@@ -270,11 +266,12 @@ class Page extends \PubCabin\Entity {
 			JOIN ph ON p.parent_id = ph.id
 		) SELECT DISTINCT * FROM ph WHERE id IS NOT :cid;";
 		
+		$data	= static::getData();
 		return 
 		$data->getResults( 
 			$sql, 
 			[ ':id' => $id, ':cid' => $id ], 
-			static::MAIN_DATA
+			static::dsn( static::MAIN_DATA )
 		);
 	}
 	
