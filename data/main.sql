@@ -35,7 +35,7 @@ CREATE TABLE settings(
 	label TEXT NOT NULL COLLATE NOCASE,
 	
 	-- serialized JSON
-	info TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE
+	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE
 );-- --
 CREATE UNIQUE INDEX idx_settings_label ON settings( label );-- --
 
@@ -49,7 +49,7 @@ CREATE TABLE sites (
 	basename TEXT NOT NULL COLLATE NOCASE,
 	
 	-- Relative path
-	basepath TEXT NOT NULL COLLATE NOCASE, 
+	basepath TEXT NOT NULL DEFAULT '/' COLLATE NOCASE, 
 	
 	-- Serialized JSON
 	settings TEXT NOT NULL DEFAULT '{}' COLLATE NOCASE,
@@ -57,6 +57,9 @@ CREATE TABLE sites (
 	
 	is_active INTEGER NOT NULL DEFAULT 1,
 	is_maintenance INTEGER NOT NULL DEFAULT 0,
+	
+	created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	
 	CONSTRAINT fk_site_settings
 		FOREIGN KEY ( settings_id ) 
@@ -69,6 +72,12 @@ CREATE INDEX idx_site_settings ON sites ( settings_id )
 	WHERE settings_id IS NOT NULL;-- --
 CREATE INDEX idx_site_active ON sites ( is_active );-- --
 CREATE INDEX idx_site_maint ON sites ( is_maintenance );-- --
+
+CREATE TRIGGER site_update AFTER UPDATE ON sites FOR EACH ROW
+BEGIN
+	UPDATE sites SET updated = CURRENT_TIMESTAMP
+		WHERE id = NEW.id;
+END;-- --
 
 -- Mirrored sites
 CREATE TABLE site_aliases (
@@ -91,13 +100,15 @@ CREATE VIEW sites_enabled AS SELECT
 	s.basepath AS basepath, 
 	s.is_active AS is_active,
 	s.is_maintenance AS is_maintenance,
-	GROUP_CONCAT( DISTINCT a.basename, ',' ) AS base_alias,
+	GROUP_CONCAT( a.basename, ',' ) AS base_alias,
 	s.settings AS settings_override, 
-	COALESCE( g.settings, '{}' ) AS settings
+	COALESCE( g.settings, '{}' ) AS settings,
+	s.created AS created,
+	s.updated AS updated
 	
 	FROM sites s 
-	LEFT JOIN settings g ON p.settings_id = g.id
-	LEFT JOIN site_aliases a ON s.site_id = s.id;-- --
+	LEFT JOIN settings g ON s.settings_id = g.id
+	LEFT JOIN site_aliases a ON s.id = a.site_id;-- --
 
 -- Localization
 CREATE TABLE languages (
@@ -3423,8 +3434,5 @@ BEGIN
 			strftime( '%s', expires ) < 
 			strftime( '%s', 'now' ) 
 		);
-END;-- --
-
-
--- Content installation moved to main_install.sql
+END;
 
