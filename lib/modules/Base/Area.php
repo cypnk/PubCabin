@@ -1,10 +1,10 @@
 <?php declare( strict_types = 1 );
 /**
- *  @file	/lib/src/Core/Area.php
+ *  @file	/lib/modules/Base/Area.php
  *  @brief	Site content render region
  */
 
-namespace PubCabin\Core;
+namespace PubCabin\Modules\Base;
 
 class Area extends \PubCabin\Entity {
 	
@@ -123,16 +123,16 @@ class Area extends \PubCabin\Entity {
 	/**
 	 *  Save changes or create new Area 
 	 *  
-	 *  @param \PubCabin\Data	$data	Storage handler
 	 *  @return bool			True on success
 	 */
-	public function save( \PubCabin\Data $data ) : bool {
+	public function save() : bool {
 		$params	= [
 			':label'	=> $this->label,
 			':perms'	=> \PubCabin\Util::encode( $this->permissions ),
 			':settings'	=> \PubCabin\Util::encode( $this->settings ),
 		];
 		
+		$data	= static::getData();
 		if ( empty( $this->id ) ) {
 			$params[':site'] = $this->site_id;
 			
@@ -140,7 +140,7 @@ class Area extends \PubCabin\Entity {
 			$data->setInsert( 
 				static::$sql['insert'], 
 				$params, 
-				static::MAIN_DATA 
+				static::dsn( static::MAIN_DATA ) 
 			);
 			return empty( $this->id ) ? false : true;
 		}
@@ -151,7 +151,7 @@ class Area extends \PubCabin\Entity {
 		$data->setUpdate( 
 			static::$sql['update'], 
 			$params, 
-			static::MAIN_DATA 
+			static::dsn( static::MAIN_DATA ) 
 		);
 	}
 }
