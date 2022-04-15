@@ -75,7 +75,7 @@ class Handler implements \SplObserver {
 			\PubCabin\Util::smartTrim( $name );
 		}, $paths );
 		
-		// Handlers are all under River namespace
+		// Handlers are all under PubCabin namespace
 		return '\\PubCabin\\' . \implode( '\\', $paths );
 	}
 }
