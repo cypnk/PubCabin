@@ -5,7 +5,7 @@
  */
 namespace PubCabin\Modules\Sessions;
 
-class Module extends \PubCabin\Modules\Module {
+class Module extends \PubCabin\Handler {
 	
 	/**
 	 *  '__Host-', '__Secure-', or empty cookie prefix
@@ -18,169 +18,126 @@ class Module extends \PubCabin\Modules\Module {
 	];
 	
 	/**
+	 *  Registered trigger events for this module
+	 *  @var array
+	 */
+	protected static $events	= [
+		'modulesloaded',
+		'sessioncheck',
+		'getcookie',
+		'makecookie',
+		'deletecookie',
+		'cleansession',
+		'shutdown'
+	];
+	
+	/**
 	 *  Currently active cookie prefix
 	 *  @var string
 	 */
 	protected $cookie_prefix;
 	
 	/**
-	 *  Session database DSN
-	 */
-	const SESSION_DATA	= 'session.db';
-	
-	public function dependencies() : array {
-		return [ 'Hooks' ];
-	}
-	
-	public function __construct() {
-		parent::__construct();
-		
-		$hooks	= $this->getModule( 'Hooks' );
-		
-		// Register session request start
-		$hooks->event( [ 'request', [ $this, 'begin' ] ] );
-	}
-	
-	/**
-	 *  Register session start and end handler
-	 */
-	public function begin() {
-		/**
-		 *  Set session handler functions
-		 */
-		 \session_set_save_handler(
-			[ $this, 'sessionOpen' ], 
-			[ $this, 'sessionClose' ], 
-			[ $this, 'sessionRead' ], 
-			[ $this, 'sessionWrite' ], 
-			[ $this, 'sessionDestroy' ], 
-			[ $this, 'sessionGC' ], 
-			[ $this, 'sessionCreateID' ]
-		);
-		\register_shutdown_function( 'session_write_close' );
-	}
-	
-	/**
-	 *  Does nothing
-	 */
-	public function sessionOpen( $path, $name ) { return true; }
-	public function sessionClose() { return true; }
-	
-	/**
-	 *  Create session ID in the database and return it
+	 *  Base dependencies
 	 *  
-	 *  @return string
+	 *  @return array
 	 */
-	public function sessionCreateID() {
-		$bt	= 
-		$this->getConfig()->setting( 'session_bytes', 'int' );
+	public static function dependencies() : array {
+		return [ "Base" ];
+	}
+	
+	/**
+	 *  Handle notifications
+	 *  
+	 *  @param \PubCabin\Event		$event	Notification handler
+	 *  @param \PubCabin\Params	$params	Optional staring properties
+	 */
+	public function update( \SplSubject $event, ?array $params = null ) {
+		$ctrl	= &$this->controller;
+		$params	??= $event->data();
 		
-		$id	= \PubCabin\Util::genId( $bt );
-		$sql	= 
-		"INSERT OR IGNORE INTO sessions ( session_id )
-			VALUES ( :id );";
-		$db	= $this->getData();
-		
-		if ( $db->dataExec( 
-			$sql, 
-			[ ':id' => $id ], 
-			'success', 
-			self::SESSION_DATA 
-		) ) {
-			return $id;
+		switch ( $event->name() ) {
+			case 'begin':
+				// Register loaded event
+				$ctrl->register( static::$events, 'Sessions' );
+				break;
+				
+			case 'modulesloaded':
+				if ( \headers_sent() ) {
+					break;
+				}
+				
+				// Register session start and handler
+				$sess	= 
+				new \PubCabin\Modules\Sessions\SHandler( 
+					$ctrl->output( 'begin' )['data'],
+					$ctrl
+				);
+				
+				$this->sessionCheck();
+				
+				// Run session started event
+				$ctrl->run( 'sessionstarted' );
+				break;
+				
+			case 'sessioncheck':
+				$this->sessionCheck();
+				break;
+				
+			case 'getcookie':
+				// Cookie event needs parameters
+				if ( empty( $params['name'] ) ) {
+					break;
+				}
+				
+				$data = 
+				getCookie( 
+					$params['name'], 
+					$params['default'] ?? ''
+				);
+				
+				// Cookie search results
+				$ctrl->run( 'cookiesearch', [
+					$params['name'] => $data
+				] );
+				break;
+			
+			case 'makecookie':
+				if ( empty( $params['name'] ) ) {
+					break;
+				}
+				
+				$params['data']		??= '';
+				$params['options']	??= [];
+				
+				$this->makeCookie( 
+					$params['name'], 
+					$params['data'], 
+					$params['options']
+				);
+				$ctrl->run( 'cookiemade', $params );
+				
+				break;
+			
+			case 'deletecookie':
+				if ( empty( $params['name'] ) ){
+					break;
+				}
+				$this->deleteCookie( $params['name'] );
+				$ctrl->run( 
+					'cookiedeleted', 
+					[ $params['name'] ] 
+				);
+				break;
+				
+			case 'cleansession':
+				$this->cleanSession();
+				break;
+				
+			case 'shutdown':
+				$this->shutdown();
+				break;
 		}
-		
-		// Something went wrong with the database
-		errors( 'Error writing to session ID to database' );
-		die();
-	}
-	
-	/**
-	 *  Delete session
-	 *  
-	 *  @return bool
-	 */
-	public function sessionDestroy( $id ) {
-		$sql	= "DELETE FROM sessions WHERE session_id = :id;";
-		$db	= $this->getData();
-		if ( $db->dataExec( 
-			$sql, 
-			[ ':id' => $id ], 
-			'success', 
-			self::SESSION_DATA 
-		) ) {
-			return true;
-		}
-		return false;
-	}
-	
-	/**
-	 *  Session garbage collection
-	 *  
-	 *  @return bool
-	 */
-	public function sessionGC( $max ) {
-		$sql	= 
-		"DELETE FROM sessions WHERE (
-			strftime( '%s', 'now' ) - 
-			strftime( '%s', updated ) ) > :gc;";
-		$db	= $this->getData();
-		if ( $db->dataExec( 
-			$sql, 
-			[ ':gc' => $max ], 
-			'success', 
-			self::SESSION_DATA 
-		) ) {
-			return true;
-		}
-		return false;
-	}
-	
-	/**
-	 *  Read session data by ID
-	 *  
-	 *  @return string
-	 */
-	public function sessionRead( $id ) {
-		$sql	= 
-		"SELECT session_data FROM sessions 
-			WHERE session_id = :id LIMIT 1;";
-		$db	= $this->getData();
-		$data	= 
-		$db->dataExec( 
-			$sql, [ 'id' => $id ], 'column', self::SESSION_DATA 
-		);
-		
-		$this->getModule( 'Hooks' )->event( [ 
-			'sessionread', [ 'id' => $id, 'data' => $data ]
-		] );
-		
-		return empty( $data ) ? '' : ( string ) $data;
-	}
-	
-	/**
-	 *  Store session data
-	 *  
-	 *  @return bool
-	 */
-	public function sessionWrite( $id, $data ) {
-		$sql	= 
-		"REPLACE INTO sessions ( session_id, session_data )
-			VALUES( :id, :data );";
-		$db	= $this->getData();
-		if ( $db->dataExec( 
-			$sql, 
-			[ ':id' => $id, ':data' => $data ], 
-			'success', 
-			self::SESSION_DATA 
-		) ) {
-			$this->getModule( 'Hooks' )->event( [ 
-				'sessionwrite', 
-				[ 'id' => $id, 'data' => $data ]
-			] );
-			return true;
-		}
-		return false;
 	}
 	
 	/**
@@ -190,8 +147,8 @@ class Module extends \PubCabin\Modules\Module {
 	 *  
 	 *  @param string	$visit	Previous random visitation identifier
 	 */
-	public function sessionCanary( string $visit = '' ) {
-		$config	= $this->getConfig();
+	protected function sessionCanary( string $visit = '' ) {
+		$config	= $this->controller->getConfig();
 		$bt	= $config->setting( 'session_bytes', 'int' );
 		$exp	= $config->setting( 'session_exp', 'int' );
 	
@@ -200,7 +157,7 @@ class Module extends \PubCabin\Modules\Module {
 			'exp'		=> time() + $exp,
 			'visit'		=> 
 			empty( $visit ) ? 
-				\PubCabin::Util::genId( $bt ) : $visit
+				\PubCabin\Util::genId( $bt ) : $visit
 		];
 	}
 	
@@ -211,7 +168,6 @@ class Module extends \PubCabin\Modules\Module {
 	 */
 	public function sessionCheck( bool $reset = false ) {
 		$this->session( $reset );
-		
 		if ( empty( $_SESSION['canary'] ) ) {
 			$this->sessionCanary();
 			return;
@@ -249,9 +205,9 @@ class Module extends \PubCabin\Modules\Module {
 			return $this->cookie_prefix;
 		}
 		
-		$req	= $this->getRequest();
-		$cpath	= 
-		$this->getConfig()->setting( 'cookie_path', 'string' );
+		$ctrl	= $this->controller;
+		$req	= $ctrl->output( 'begin' )['request'];
+		$cpath	= $ctrl->getConfig()->setting( 'cookie_path', 'string' );
 		
 		// Enable locking if connection is secure and path is '/'
 		$this->cookie_prefix = 
@@ -275,7 +231,7 @@ class Module extends \PubCabin\Modules\Module {
 	public function getCookie( string $name, $default ) {
 		$app	= 
 		$this->cookiePrefix() . 
-		$this->getConfig()->setting( 'appname', 'string' );
+		$this->controller->getConfig()->setting( 'appname', 'string' );
 		
 		if ( !isset( $_COOKIE[$app] ) ) {
 			return $default;
@@ -296,15 +252,17 @@ class Module extends \PubCabin\Modules\Module {
 	 *  @param array	$options	Cookie settings and options
 	 *  @return bool
 	 */
-	public function makeCookie( string $name, $data, array $options = [] ) : bool {
+	public function makeCookie( 
+		string		$name, 
+				$data, 
+		array		$options	= [] 
+	) : bool {
 		$options	= $this->defaultCookieOptions( $options );
 		$app		= 
 		$this->cookiePrefix() . 
-		$this->getConfig()->setting( 'appname', 'string' );
+		$this->controller->getConfig()->setting( 'appname', 'string' );
 		
-		$this->getModule( 'Hooks' )->event( [ 
-			'sessioncookieparams', $options 
-		] );
+		$this->controller->run( 'sessioncookieparams', $options );
 		
 		return 
 		\setcookie( $app . "[$name]", $data, $options );
@@ -316,10 +274,10 @@ class Module extends \PubCabin\Modules\Module {
 	 *  @param string	$name		Cookie label
 	 *  @return bool
 	 */
-	function deleteCookie( string $name ) : bool {
-		$this->getModule( 'Hooks' )->event( [ 
+	protected function deleteCookie( string $name ) : bool {
+		$this->controller->run( 
 			'cookiedelete', [ 'name' => $name ] 
-		] );
+		);
 		
 		return $this->makeCookie( $name, '', [ 'expires' => 1 ] );
 	}
@@ -330,11 +288,14 @@ class Module extends \PubCabin\Modules\Module {
 	 *  @return string
 	 */
 	public function sameSiteCookie() : string {
-		if ( $this->getConfig()->setting( 'cookie_restrict', 'bool' ) ) {
+		$ctrl	= $this->controller;
+		if ( $ctrl->getConfig()->setting( 'cookie_restrict', 'bool' ) ) {
 			return 'Strict';
 		}
 		
-		return $this->getRequest()->isSecure() ? 'None' : 'Lax';
+		return 
+		$ctrl->output( 'begin' )['request']->isSecure() ? 
+			'None' : 'Lax';
 	}
 	
 	/**
@@ -344,10 +305,12 @@ class Module extends \PubCabin\Modules\Module {
 	 *  @return array
 	 */
 	public function defaultCookieOptions( array $options = [] ) : array {
-		$config	= $this->getConfig();
+		$ctrl	= &$this->controller;
+		$config	= $ctrl->getConfig();
 		$cexp	= $config->setting( 'cookie_exp', 'int' );
 		$cpath	= $config->setting( 'cookie_path', 'string' );
-		$req	= $this->getRequest();
+		$req	= $ctrl->output( 'begin' )['request'];
+		
 		$opts	= 
 		\array_merge( $options, [
 			'expires'	=> 
@@ -359,18 +322,15 @@ class Module extends \PubCabin\Modules\Module {
 		] );
 		
 		// Domain shouldn't be used when using host prefixed cookies
-		$prefix = cookiePrefix();
+		$prefix = $this->cookiePrefix();
 		if ( 
 			empty( $prefix ) || 
 			( 0 === \strcmp( $prefix, static::$prefix_list['secure'] ) ) 
 		) {
-			$opts['domain']	= getHost();
+			$opts['domain']	= $req->getHost();
 		}
 		
-		$this->getModule( 'Hooks' )->event( [ 
-			'cookieparams', $opts
-		] );
-		
+		$ctrl->run( 'cookieparams', $opts );
 		return $opts;
 	}
 	
@@ -381,16 +341,14 @@ class Module extends \PubCabin\Modules\Module {
 	 */
 	public function sessionCookieParams() : bool {
 		$options		= $this->defaultCookieOptions();
-	
+		$config			= $this->controller->getConfig();
+		
 		// Override some defaults
 		$options['lifetime']	=  
-			$this->getConfig()->setting( 'cookie_exp', 'int' );
+			$config->setting( 'cookie_exp', 'int' );
 		unset( $options['expires'] );
 		
-		$this->getModule( 'Hooks' )->event( [ 
-			'sessioncookieparams', $opts 
-		] );
-		
+		$this->controller->run( 'sessioncookieparams', $options );
 		return \session_set_cookie_params( $options );
 	}
 	
@@ -406,20 +364,20 @@ class Module extends \PubCabin\Modules\Module {
 			return;
 		}
 		
-		$hooks	= $this->getModule( 'Hooks' );
+		$config	= $this->controller->getConfig();
+		
 		if ( \session_status() !== \PHP_SESSION_ACTIVE ) {
 			$this->sessionCookieParams();
 			\session_name( 
 				$this->cookiePrefix() . 
-				$this->getConfig()->setting( 'appname' ), 
-				'string'
+				$config->setting( 'appname', 'string' ) 
 			);
 			\session_start();
 			
-			$hooks->event( [ 
+			$this->controller->run(
 				'sessioncareated', 
 				[ 'id' => \session_id() ]
-			] );
+			);
 		}
 		
 		if ( $reset ) {
@@ -428,7 +386,16 @@ class Module extends \PubCabin\Modules\Module {
 				unset( $_SESSION[$k] );
 			}
 			
-			$hooks->event( [ 'sessiondestroyed', [] ] );
+			$this->controller->run( 'sessiondestroyed' );
+		}
+	}
+	
+	/**
+	 *  Carry out cleanup
+	 */
+	protected function shutdown() {
+		if ( \session_status() === \PHP_SESSION_ACTIVE ) {
+			\session_write_close();
 		}
 	}
 }
