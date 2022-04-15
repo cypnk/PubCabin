@@ -1,10 +1,10 @@
 <?php declare( strict_types = 1 );
 /**
- *  @file	/lib/src/Core/User.php
- *  @brief	Core membership object
+ *  @file	/lib/modules/Base/User.php
+ *  @brief	Base membership object
  */
 
-namespace PubCabin\Core;
+namespace PubCabin\Modules\Base;
 
 class User extends \PubCabin\Entity {
 	
@@ -177,7 +177,7 @@ class User extends \PubCabin\Entity {
 	
 	
 	// TODO
-	public function save( \PubCabin\Data $data ) : bool {
+	public function save() : bool {
 		if ( isset( $this->id ) ) {
 			
 		} else {
@@ -285,10 +285,9 @@ class User extends \PubCabin\Entity {
 	/**
 	 *  Create or update user
 	 *  
-	 *  @param \PubCabin\Data	$data	Storage handler
 	 *  @return bool			True on success
 	 */
-	public function save( \PubCabin\Data $data ) : bool {
+	public function save() : bool {
 		$params	= [
 			':display'	=> $this->display ?? '',
 			':bio'		=> $this->bio ?? '',
@@ -296,6 +295,7 @@ class User extends \PubCabin\Entity {
 			':status'	=> ( int ) ( $this->status ?? 0 )
 		];
 		
+		$data	= static::getData();
 		// New user
 		if ( empty( $this->id ) ) {
 			// Provider must be set if not using password to login
@@ -307,11 +307,13 @@ class User extends \PubCabin\Entity {
 			"INSERT INTO users ( display, bio, settings, status, username, password ) 
 				VALUES( :display, :bio, :settings, :status, :username, :password )";
 			$params[':username']	= $this->username;
-			$params[':password']	= empty( $this->password ) ? 
-				'' : \PubCabin\Crypto::hashPasword( $this->password );
+			$params[':password']	= 
+			empty( $this->password ) ? 
+				'' : 
+				\PubCabin\Crypto::hashPasword( $this->password );
 			
 			$this->id = 
-			$data->setInsert( $sql, $params, static::MAIN_DATA );
+			$data->setInsert( $sql, $params, static::dsn( static::MAIN_DATA ) );
 			
 			$ok	= empty( $this->id ) ? false : true;
 			
@@ -329,27 +331,26 @@ class User extends \PubCabin\Entity {
 			settings = :settings, status = :status 
 			WHERE id = :id;";
 		
-		return $data->setUpdate( $sql, $params, static::MAIN_DATA );
+		return $data->setUpdate( $sql, $params, static::dsn( static::MAIN_DATA ) );
 	}
 	
 	/**
 	 *  Authenticate loaded user with given password
 	 *  
-	 *  @param \PubCabin\Data	$data		Storage handler
 	 *  @param int			$user		User unique identifier
 	 *  @param string		$password	Raw entered password 
 	 *  @return int
 	 */
 	public static function passwordAuth( 
-		\PubCabin\Data $data, 
 		int	$id
 		string	$password 
 	) : int {
+		$data	= static::getData();
 		$res	= 
 		$data->getSingle( 
 			$id, 
-			"SELECT password FROM users WHERE id = :id", 
-			static::MAIN_DATA 
+			'SELECT password FROM users WHERE id = :id', 
+			static::dsn( static::MAIN_DATA ) 
 		);
 		
 		return  
@@ -362,19 +363,17 @@ class User extends \PubCabin\Entity {
 	/**
 	 *  Login user credentials
 	 *  
-	 *  @param \PubCabin\Data	$data		Storage handler
 	 *  @param string		$username	Login name to search
 	 *  @param string		$password	User provided password
 	 *  @param int			$status		Authentication success etc...
 	 *  @return array
 	 */
 	public static function authByCredentials(
-		\PubCabin\Data	$data, 
 		string		$username,
 		string		$password,
 		int		&$status
 	) : array {
-		$user = static::findUserByUsername( $data, $username );
+		$user	= static::findUserByUsername( $username );
 		
 		// No user found?
 		if ( empty( $user ) ) {
@@ -386,13 +385,11 @@ class User extends \PubCabin\Entity {
 		if ( \PubCabin\Crypto::verifyPassword( 
 			$password, $user['password'] 
 		) ) {
-			
 			// Refresh password if needed
 			if ( \PubCabin\Crypto::passNeedsRehash( 
 				$user['password'] 
 			) ) {
 				static::savePassword( 
-					$data, 
 					( int ) $user['id'], 
 					$password 
 				);
@@ -410,49 +407,43 @@ class User extends \PubCabin\Entity {
 	/**
 	 *  Set a new password for the user
 	 *  
-	 * 
-	 *  @param \PubCabin\Data	$data	Storage handler
 	 *  @param int			$id	User unique identifier
 	 *  @param string		$param	Raw password as entered
 	 *  @return bool
 	 */
 	public static function savePassword( 
-		\PubCabin\Data	$data,
 		int		$id, 
 		string		$password 
 	) : bool {
-		$sql	= 
+		static $sql	= 
 		"UPDATE users SET password = :password 
 			WHERE id = :id";
 		
+		$data	= static::getData();
 		return 
 		$data->setUpdate( $sql, [ 
 			':password'	=> 
 			\PubCabin\Crypto::hashPassword( $password ), 
 			':id'		=> $id
-		], static::MAIN_DATA );
+		], static::dsn( static::MAIN_DATA ) );
 	}
 	
 	/**
 	 *  Authentication creation helper
-	 * 
-	 *  @param \PubCabin\Data	$data	Storage handler
+	 *  
 	 *  @param array		$info	Custom auth data
 	 *  @return bool
 	 */
-	public function createAuth( 
-		\PubCabin\Data	$data, 
-		array		$info	= [] 
-	) : bool {
+	public function createAuth( array $info	= [] ) : bool {
 		$params = [
 			':user_id'	=> $this->id,
 			':email'	=> 
 				empty( $info ) ? 
-					( $this->email ?? null ) : null,
+				( $this->email ?? null ) : null,
 			':info'		=> 
 				empty( $info ) ? 
-					\PubCabin\Util::encode( $this->info ) : 
-					\PubCabin\Util::encode( $info ),
+				\PubCabin\Util::encode( $this->info ) : 
+				\PubCabin\Util::encode( $info ),
 			':is_approved'	=> $this->is_approved ? 1 : 0,
 			':is_locked'	=> $this->is_locked ? 1 : 0
 		];
@@ -475,7 +466,8 @@ class User extends \PubCabin\Entity {
 			// Third party logins may have an expiration
 			$params[':expires'] = $this->auth_expires;
 		}
-		$id = $data->setInsert( $sql, $params, static::MAIN_DATA );
+		$data	= static::getData();
+		$id	= $data->setInsert( $sql, $params, static::dsn( static::MAIN_DATA ) );
 		
 		return empty( $id ) ? false : true;
 	}
@@ -483,15 +475,12 @@ class User extends \PubCabin\Entity {
 	/**
 	 *  Reset cookie lookup token and return new lookup
 	 *  
-	 *  @param \PubCabin\Data	$data	Storage handler
 	 *  @param int			$id	Logged in user's ID
 	 *  @return string
 	 */
-	public static function resetLookup( 
-		\PubCabin\Data	$data, 
-		int		$id 
-	) : string {
-		$db	= $data->getDb( static::MAIN_DATA );
+	public static function resetLookup( int $id ) : string {
+		$data	= static::getData();
+		$db	= $data->getDb( static::dsn( static::MAIN_DATA ) );
 		$stm	= 
 		$data->statement( $db, 
 			"UPDATE logout_view SET lookup = '' 
@@ -521,26 +510,24 @@ class User extends \PubCabin\Entity {
 	/**
 	 *  Create public/secret keypair and return generated secret key
 	 *  
-	 *  @param \PubCabin\Data	$data		Storage handler
 	 *  @param int			$id		Logged in user's ID
 	 *  @param string		$label		Public key short description
 	 *  @param string		$expires	Key expiration date
 	 *  @return string
 	 */
 	public static function createKeypair( 
-		\PubCabin\Data	$data, 
 		int		$id, 
 		?string		$label,
 		?string		$expires
 	) : string {
+		static $sql	= 
+		"INSERT INTO public_keys( user_id, public_key, label, expires ) 
+			VALUES( :user_id, :public_key, :label, :expires );";
+		
 		$keys = \PubCabin\Crypto::keypair();
 		if ( empty( $keys ) ) {
 			return '';
 		}
-		
-		$sql	= 
-		"INSERT INTO public_keys( user_id, public_key, label, expires ) 
-			VALUES( :user_id, :public_key, :label, :expires );";
 		$params = [
 			':user_id'	=> $id,
 			':public_key'	=> $keys['public'],
@@ -549,31 +536,29 @@ class User extends \PubCabin\Entity {
 			':expires'	=> empty( $expires ) ? 
 				null : \PubCabin\Util::utc( $expires )
 		];
-		
+		$data	= static::getData();
 		return
-		$data->setInsert( $sql, $params, static::MAIN_DATA ) ? 
+		$data->setInsert( $sql, $params, static::dsn( static::MAIN_DATA ) ) ? 
 			$keys['secret'] : '';
 	}
 	
 	/**
 	 *  Return given user's active (unexpired) public keys
-	 * 
-	 *  @param \PubCabin\Data	$data		Storage handler
+	 *  
 	 *  @param int			$id		Designated user ID
 	 */
-	public static function getPubKeys( 
-		\PubCabin\Data	$data, 
-		int		$id 
-	) : array {
-		$sql		= 
+	public static function getPubKeys( int $id ) : array {
+		static $sql		= 
 		"SELECT public_key FROM public_keys WHERE id = :id 
 			AND (
 				strftime( '%s', expires ) > 
 				strftime( '%s', 'now' ) 
 			);";
+		
+		$data	= static::getData();
 		$results	= 
 		$data->getResults( 
-			$sql, [ ':id' => $id ], static::MAIN_DATA
+			$sql, [ ':id' => $id ], static::dsn( static::MAIN_DATA )
 		);
 		
 		if ( empty( $results ) ) {
@@ -589,22 +574,22 @@ class User extends \PubCabin\Entity {
 	/**
 	 *  Find user authorization by cookie lookup
 	 *  
-	 *  @param \PubCabin\Data	$data	Storage handler
 	 *  @param string		$lookup	Raw cookie lookup term
 	 *  @param int			$cexp	Cookie expiration
 	 *  @param bool			$reset	Reset lookup if expired
 	 *  @return array
 	 */
 	public static function findCookie( 
-		\PubCabin\Data	$data, 
 		string		$lookup, 
 		int		$cexp, 
 		bool		$reset		= false
 	) : array {
-		$sql	= 
+		static $sql	= 
 		"SELECT * FROM login_view 
 			WHERE lookup = :lookup LIMIT 1;";
-		$db	= $data->getDb( static::MAIN_DATA );
+		
+		$data	= static::getData();
+		$db	= $data->getDb( static::dsn( static::MAIN_DATA ) );
 		$stm	= $data->statement( $db, $sql );
 		
 		// First find lookup
@@ -641,24 +626,21 @@ class User extends \PubCabin\Entity {
 	/**
 	 *  Get profile details by id
 	 *  
-	 *  @param \PubCabin\Data	$data	Storage handler
 	 *  @param int			$id	User's id
 	 *  @return array
 	 */
-	public static function findUserById(
-		\PubCabin\Data	$data, 
-		int		$id 
-	) : array {
-		$sql		= 
+	public static function findUserById( int $id ) : array {
+		static $sql		= 
 		'SELECT * FROM users WHERE id = :id LIMIT 1;';
 		
-		$db		= $data->getDb( static::MAIN_DATA );
+		$data		= static::getData();
+		$db		= $data->getDb( static::dsn( static::MAIN_DATA ) );
 		$stm		= $data->statement( $db, $sql );
 		$result		= 
 		$data->getDataResult( 
 			$db,
 			[ ':id' => $id ], 
-			'class,\\PubCabin\\Core\\User', 
+			'class,\\PubCabin\\Modules\\Base\\User', 
 			$stm
 		);
 		$stm->closeCursor();
@@ -668,24 +650,23 @@ class User extends \PubCabin\Entity {
 	/**
 	 *  Get login details by username
 	 *  
-	 *  @param \PubCabin\Data	$data		Storage handler
 	 *  @param string		$username	User's login name as entered
 	 *  @return array
 	 */
 	public static function findUserByUsername( 
-		\PubCabin\Data	$data, 
 		string		$username 
 	) : array {
-		$sql		= 
+		static $sql	= 
 		'SELECT * FROM login_view WHERE name = :user LIMIT 1;';
 		
-		$db		= $data->getDb( static::MAIN_DATA );
+		$data		= static::getData();
+		$db		= $data->getDb( static::dsn( static::MAIN_DATA ) );
 		$stm		= $data->statement( $db, $sql );
 		$result		= 
 		$data->getDataResult( 
 			$db,
 			[ ':user' => $username ], 
-			'class,\\PubCabin\\Core\\User', 
+			'class,\\PubCabin\\Modules\\Base\\User', 
 			$stm
 		);
 		$stm->closeCursor();
@@ -695,19 +676,18 @@ class User extends \PubCabin\Entity {
 	/**
 	 *  Check if username or it's clean equivalent exists
 	 *  
-	 *  @param \PubCabin\Data	$data		Storage handler
 	 *  @param string		$username	User's login name
 	 *  @return bool
 	 */
-	public static function usernameExists(  
-		\PubCabin\Data	$data, 
+	public static function usernameExists( 
 		string		$username 
 	) : bool {
-		$sql		= 
+		static $sql	= 
 		"SELECT COUNT( id ) FROM users WHERE 
 			username = :user OR user_clean = :clean;";
 		
-		$db		= $data->getDb( static::MAIN_DATA );
+		$data		= static::getData();
+		$db		= $data->getDb( static::dsn( static::MAIN_DATA ) );
 		$stm		= $data->statement( $db, $sql );
 		$result		= 
 		$data->getDataResult( 
@@ -731,23 +711,20 @@ class User extends \PubCabin\Entity {
 	 *  Update the last activity IP of the given user
 	 *  Most of these actions use triggers in the database
 	 *  
-	 *  @param \PubCabin\Data	$data	Storage handler
-	 *  @param \PubCabin\Config	$config	Current configuration
-	 *  @param \PubCabin\Request	$req	Current vistor request
 	 *  @param int			$id	User unique identifier
 	 *  @param string		$mode	Activity type
 	 *  @return bool
 	 */
 	public static function updateUserActivity(
-		\PubCabin\Data		$data, 
-		\PubCabin\Config	$config, 
-		\PubCabin\Request	$req, 
-		int			$id,
-		?string			$mode = null
+		int		$id,
+		?string		$mode = null
 	) : bool {
 		$now	= \PubCabin\Util::utc();
 		$mode 	??= '';
 		
+		$config	= static::getConfig();
+		$req	= static::getRequest();
+		$data	= static::getData();
 		switch ( $mode ) {
 			case 'active':
 				$sql	= 
@@ -873,12 +850,12 @@ class User extends \PubCabin\Entity {
 						':sess'	=> \session_id(),
 						':ap'	=> $ap ? 1 : 0
 					], 
-					static::MAIN_DATA
+					static::dsn( static::MAIN_DATA )
 				) ? true : false;
 		}
 		
 		return 
-		$data->setUpdate( $sql, $params, static::MAIN_DATA );
+		$data->setUpdate( $sql, $params, static::dsn( static::MAIN_DATA ) );
 	}
 }
 
