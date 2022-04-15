@@ -3,6 +3,9 @@
  *  @file	/lib/src/Upload.php
  *  @brief	File uploading and processing helper
  */
+
+namespace PubCabin;
+
 class Upload {
 	
 	// Enable generating thumbnails for image types
@@ -48,7 +51,8 @@ class Upload {
 		$height		= $imgsize[1];
 		
 		$t_width	= 
-		$this->config->setting( 'thumbnail_width', 'int' ) ?? self::THUMBNAIL_WIDTH;
+		$this->config->setting( 'thumbnail_width', 'int' ) ?? 
+			self::THUMBNAIL_WIDTH;
 		
 		// Width too small to generate thumbnail
 		if ( $t_width > $width ) {
@@ -86,10 +90,16 @@ class Upload {
 		
 		// Thunbnail destination
 		$tnp	= 
-		$this->config->setting( 'thumbnail_prefix' ) ?? self::THUMBNAIL_PREFIX;
+		$this->config->setting( 'thumbnail_prefix' ) ?? 
+			self::THUMBNAIL_PREFIX;
 		
 		$dest	= 
-		FileUtil::dupRename( Util::prefixPath( $src, Util::labelName( $tnp ) ) );
+		\PubCabin\FileUtil::dupRename( 
+			\PubCabin\Util::prefixPath( 
+				$src, 
+				\PubCabin\Util::labelName( $tnp ) 
+			) 
+		);
 		
 		// Create thumbnail at destination
 		switch( $mime ) {
@@ -143,7 +153,7 @@ class Upload {
 	 *  @param bool		$tn	Create a thumbnail for allowed types, if true
 	 */
 	protected function processUpload( string $src, array $img, bool $tn = false ) {
-		$mime	= FileUtil::detectMime( $src );
+		$mime	= \PubCabin\FileUtil::detectMime( $src );
 		
 		return [
 			'src'		=> $src,
@@ -195,8 +205,8 @@ class Upload {
 	) {
 		$files	= $this->parseUploads();
 		$store	= 
-		Util::slashPath( $root, true ) . 
-		Util::slashPath( $path, true );
+		\PubCabin\Util::slashPath( $root, true ) . 
+		\PubCabin\Util::slashPath( $path, true );
 		
 		$saved	= [];
 		foreach ( $files as $name ) {
@@ -211,7 +221,7 @@ class Upload {
 				static::filterUpName( $file['name'] );
 				
 				// Check for duplicates and rename 
-				$up	= FileUtil::dupRename( $store . $n );
+				$up	= \PubCabin\FileUtil::dupRename( $store . $n );
 				if ( \move_uploaded_file( $tn, $up ) ) {
 					$saved[] = $up;
 				}
@@ -222,7 +232,7 @@ class Upload {
 		$this->config->setting( 'thumbnail_gen', 'bool' ) ?? self::THUMBNAIL_GEN;
 		
 		$img		= 
-		Util::trimmedList( 
+		\PubCabin\Util::trimmedList( 
 			$this->config->setting( 'thumbnail_types' ) ?? 
 			self::THUMBNAIL_TYPES 
 		);
