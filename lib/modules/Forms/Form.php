@@ -4,7 +4,7 @@
  *  @brief	User input submission form
  */
 
-namespace PubCabin\Core;
+namespace PubCabin\Modules\Forms;
 
 class Form extends \PubCabin\Entity {
 	
@@ -116,7 +116,7 @@ class Form extends \PubCabin\Entity {
 	}
 	
 	// TODO
-	public function save( \PubCabin\Data $data ) : bool {
+	public function save() : bool {
 		return false;
 	}
 }
