@@ -1,10 +1,10 @@
 <?php declare( strict_types = 1 );
 /**
- *  @file	/lib/src/Core/PageType.php
+ *  @file	/lib/Modules/Base/PageType.php
  *  @brief	Page behavior and rendering parameters
  */
 
-namespace PubCabin\Core;
+namespace PubCabin\Modules\Base;
 
 class PageType extends \PubCabin\Entity {
 	
@@ -55,10 +55,9 @@ class PageType extends \PubCabin\Entity {
 	/**
 	 *  Create or update page type entity
 	 *  
-	 *  @param \PubCabin\Data	$data	Storage handler
-	 *  @return bool			True on success
+	 *  @return bool	True on success
 	 */
-	public function save( \PubCabin\Data $data ) : bool {
+	public function save() : bool {
 		$params	= [
 			':label'	=> $this->label,
 			':render'	=> $this->render,
@@ -66,6 +65,7 @@ class PageType extends \PubCabin\Entity {
 			\PubCabin\Util::encode( $this->_behavior ),
 		];
 		
+		$data	= static::getData();
 		if ( empty( $this->id ) ) {
 			$sql = 
 			"INSERT INTO page_types ( 
@@ -73,7 +73,7 @@ class PageType extends \PubCabin\Entity {
 			) VALUES ( :label, :render, :behavior );";
 			
 			$this->id = 
-			$data->setInsert( $sql, $params, static::MAIN_DATA );
+			$data->setInsert( $sql, $params, static::dsn( static::MAIN_DATA ) );
 			
 			return empty( $this->id ) ? false : true;
 		}
@@ -85,7 +85,7 @@ class PageType extends \PubCabin\Entity {
 			WHERE id = :id LIMIT 1;";
 		
 		return 
-		$data->setUpdate( $sql, $params, static::MAIN_DATA );
+		$data->setUpdate( $sql, $params, static::dsn( static::MAIN_DATA ) );
 	}
 }
 
