@@ -1,10 +1,10 @@
 <?php declare( strict_types = 1 );
 /**
- *  @file	/lib/src/Core/PageText.php
+ *  @file	/lib/modules/Base/PageText.php
  *  @brief	Site content text data
  */
 
-namespace PubCabin\Core;
+namespace PubCabin\Modules\Base;
 
 class PageText extends \PubCabin\Entity {
 	
@@ -103,7 +103,7 @@ class PageText extends \PubCabin\Entity {
 	public $remote_updated;
 	
 	// TODO
-	public function save( \PubCabin\Data $data ) : bool {
+	public function save() : bool {
 		if ( isset( $this->id ) ) {
 			
 		} else {
