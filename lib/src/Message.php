@@ -45,12 +45,19 @@ class Message {
 	
 	/**
 	 *  Core settings and configuration 
-	 *  @var PubCabin\Config
+	 *  @var \PubCabin\Config
 	 */
 	protected $config;
 	
-	public function __construct( \PubCabin\Config $_config ) {
-		$this->config	= $_config;
+	/**
+	 *  Main event controller
+	 *  @var \PubCabin\Controller
+	 */
+	protected $ctrl;
+	
+	public function __construct( \PubCabin\Controller $ctrl ) {
+		$this->ctrl	= $ctrl;
+		$this->config	= $ctrl->getConfig();
 	}
 	
 	/**
