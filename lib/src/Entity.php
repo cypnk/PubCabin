@@ -8,6 +8,10 @@ namespace PubCabin;
 abstract class Entity {
 	
 	/**
+	 *  Core database file names
+	 */
+	
+	/**
 	 *  Main database name
 	 */
 	const MAIN_DATA			= 'main.db';
@@ -104,7 +108,6 @@ abstract class Entity {
 	 */
 	protected $s_changed	= false;
 	
-	
 	/**
 	 *  When in paged mode, current index of paged items 
 	 *  @var int
@@ -112,18 +115,17 @@ abstract class Entity {
 	protected $_total;
 	
 	/**
-	 *  Current request data
-	 *  @var \PubCabin\Request
+	 *  Main event controller
+	 *  @var \PubCabin\Controller
 	 */
-	protected static $_req;
+	protected static $_ctrl;
 	
 	/**
 	 *  Store changes by creating a new item or updating if ID is set
 	 *  
-	 *  @param \PubCabin\Data	$data	Storage class
-	 *  @return bool			True if successfully saved
+	 *  @return bool True if successfully saved
 	 */
-	abstract public function save( \PubCabin\Data $data ) : bool;
+	abstract public function save() : bool;
 	
 	public function __construct() {
 		if ( isset( $this->_settings_id ) ) {
@@ -189,7 +191,7 @@ abstract class Entity {
 				$this->_permissions = 
 				\is_array( $value ) ? 
 					$value : 
-					Util::decode( ( string ) $value );
+					\PubCabin\Util::decode( ( string ) $value );
 				break;
 		}
 	}
@@ -219,24 +221,95 @@ abstract class Entity {
 		return null;
 	}
 	
-	public static function setRequest( \PubCabin\Request $req ) {
-		static::$_req = $req;
+	/**
+	 *  Database path string helper
+	 *  
+	 *  @param string		$db	Database file name
+	 *  @return string
+	 */
+	protected static function dsn( string $db ) : string {
+		return \PubCabin\Util::slashPath( \PUBCABIN_DATA ) . $db;
 	}
 	
-	protected static function getRequest( \PubCabin\Request $req ) {
-		return static::$_req ?? null;
+	/**
+	 *  Set the main event controller for all shared entities
+	 *  
+	 *  @param \PubCabin\Controller	$ctrl	Main event controller
+	 */
+	public static function setController( \PubCabin\Controller $ctrl ) {
+		static::$_ctrl = $ctrl;
 	}
 	
+	/**
+	 *  Get the currently set controller for all shared entities
+	 *   
+	 *  @return mixed
+	 */
+	protected static function getController() {
+		return static::$_ctrl ?? null;
+	}
+	
+	/**
+	 *  Get the current request from the 'begin' event output
+	 *   
+	 *  @return mixed
+	 */
+	protected static function getRequest() {
+		if ( !isset( static::$_ctrl ) ) {
+			return null;
+		}
+		return static::$_ctrl->output( 'begin' )['request'];
+	}
+	
+	/**
+	 *  Get the current data handler from the 'begin' event output
+	 *   
+	 *  @return mixed
+	 */
+	protected static function getData() {
+		if ( !isset( static::$_ctrl ) ) {
+			return null;
+		}
+		return static::$_ctrl->output( 'begin' )['data'];
+	}
+	
+	/**
+	 *  Get the configuration from the main event controller
+	 *   
+	 *  @return mixed
+	 */
+	protected static function getConfig() {
+		if ( !isset( static::$_ctrl ) ) {
+			return null;
+		}
+		return static::$_ctrl->getConfig;
+	}
+	
+	/**
+	 *  Property helper to set any modified entity setttings
+	 *   
+	 *  @return mixed
+	 */
 	public function setSettings( array $new_settings ) {
 		$this->_settings = 
 			\array_merge( $this->_settings, $new_settings );
 		$this->s_changed = true;
 	}
 	
+	/**
+	 *  Change the current entity ID property
+	 *   
+	 *  @return mixed
+	 */
 	public function swapSettingID( int $_new ) {
 		$this->_n_settings_id	= $_new;
 	}
 	
+	/**
+	 *  Get the current request from the 'begin' event output
+	 *   
+	 *  @return mixed
+	 */
 	public static function populateFromArray( array $cols ) {
 		$obj	= new self;
 		$props	= \get_object_vars( $obj );
@@ -277,7 +350,7 @@ abstract class Entity {
 			\str_starts_with( $t, '{' ) && 
 			\str_ends_with( $t, '}' )
 		) {
-			return Util::decode( ( string ) $t );
+			return \PubCabin\Util::decode( ( string ) $t );
 		}
 		
 		return [];
