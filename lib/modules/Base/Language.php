@@ -1,9 +1,9 @@
 <?php declare( strict_types = 1 );
 /**
- *  @file	/lib/src/Core/Language.php
+ *  @file	/lib/modules/Base/Language.php
  *  @brief	Site content translation unit
  */
-namespace PubCabin\Core;
+namespace PubCabin\Modules\Base;
 
 class Language extends \PubCabin\Entity {
 	
@@ -95,16 +95,14 @@ class Language extends \PubCabin\Entity {
 		return [ 'lang' => $k, 'locale' => $v ];
 	}
 	
-	private static function loadLanguage( 
-		\PubCabin\Data	$data,
-		array		$lang 
-	) {
-		static $default = 
+	private static function loadLanguage( array $lang ) {
+		static $default	=
 		"SELECT * FROM locale_view WHERE 
 			is_lang_default = 1 AND 
 			is_locale_default = 1 LIMIT 1;";
 		
-		$db		= $data->getDb( static::MAIN_DATA );
+		$dsn		= static::dsn( static::MAIN_DATA );
+		$db		= $data->getDb( $dsn );
 		
 		// Default language and default locale
 		if ( 0 === \strcmp( $lang['lang'], 'default' ) ) {
@@ -144,10 +142,7 @@ class Language extends \PubCabin\Entity {
 		return $res;
 	}
 	
-	public static function find( 
-		\PubCabin\Data	$data,
-		array		$vlang
-	) {
+	public static function find( array $vlang ) {
 		// Language setting and priority or default
 		if ( empty( $vlang ) ) {
 			$vlang = static::priorityLang();
@@ -155,7 +150,6 @@ class Language extends \PubCabin\Entity {
 		}
 		
 		$lang	= [];
-		
 		// Filter out languages to those supported
 		foreach ( $vlang as $l ) {
 			if ( empty( $l['lang'] ) ) {
@@ -188,7 +182,7 @@ class Language extends \PubCabin\Entity {
 				'locale' => 'defalut' 
 			];
 		}
-		return static::loadLanguage( $data, $lang );
+		return static::loadLanguage( $lang );
 	}
 	
 	public function __set( $name, $value ) {
@@ -240,7 +234,7 @@ class Language extends \PubCabin\Entity {
 	}
 	
 	// TODO
-	public function save( \PubCabin\Data $data ) : bool {
+	public function save() : bool {
 		if ( isset( $this->id ) ) {
 			
 		} else {
