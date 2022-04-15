@@ -189,7 +189,7 @@ class Request extends Message {
 				$lc	= 
 				\array_map( '\PubCabin\Util::lowercase', $terms );
 				
-				$sh	= Util::lowercase( $_SERVER[$h] );
+				$sh	= \PubCabin\Util::lowercase( $_SERVER[$h] );
 				$found	= \in_array( $sh, $lc ) ? $sh : '';
 			} else {
 				$found	= 
@@ -227,7 +227,7 @@ class Request extends Message {
 		// Gather forwarded values
 		foreach ( $pt as $p ) {
 			// Break into comma delimited list, if any
-			$chain = Util::trimmedList( $p );
+			$chain = \PubCabin\Util::trimmedList( $p );
 			if ( empty( $chain ) ) {
 				continue;
 			}
@@ -276,7 +276,7 @@ class Request extends Message {
 		}
 		
 		$chain = 
-		Util::trimmedList( 
+		\PubCabin\Util::trimmedList( 
 			$_SERVER['HTTP_X_FORWARDED_FOR'] ?? 
 			$_SERVER['HTTP_CLIENT_IP'] ?? 
 			$_SERVER['REMOTE_ADDR'] ?? '' 
@@ -440,7 +440,7 @@ class Request extends Message {
 		
 		$found	= [];
 		$lang	= 
-		Util::bland( 
+		\PubCabin\Util::bland( 
 			$this->httpheaders( true )['accept-language'] ?? '' 
 		);
 		
@@ -545,7 +545,7 @@ class Request extends Message {
 		// Check reverse proxy host name in whitelist
 		if ( \array_key_exists( 'host', $fd ) ) {
 			$host	= 
-			Util::lowercase( ( string ) $fd['host'] );
+			\PubCabin\Util::lowercase( ( string ) $fd['host'] );
 			
 		// Check base host headers
 		} else {
@@ -553,7 +553,7 @@ class Request extends Message {
 				if ( empty( $_SERVER[$h] ) ) {
 					continue;
 				}
-				$host = Util::lowercase( 
+				$host = \PubCabin\Util::lowercase( 
 					( string ) $_SERVER[$h] 
 				);
 				break;
@@ -591,7 +591,7 @@ class Request extends Message {
 		
 		$this->url = 
 			$this->website() . 
-			Util::slashPath( $this->getURI() );
+			\PubCabin\Util::slashPath( $this->getURI() );
 		return $this->url;
 	}
 }
