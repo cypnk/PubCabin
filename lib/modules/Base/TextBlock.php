@@ -1,10 +1,10 @@
 <?php declare( strict_types = 1 );
 /**
- *  @file	/lib/src/Core/TextBlock.php
+ *  @file	/lib/modules/Base/TextBlock.php
  *  @brief	Segmented page content
  */
 
-namespace PubCabin\Core;
+namespace PubCabin\Modules\Base;
 
 class TextBlock extends \PubCabin\Entity {
 	
@@ -54,11 +54,10 @@ class TextBlock extends \PubCabin\Entity {
 	
 	/**
 	 *  Create or update text block with author info
-	 *   
-	 *  @param \PubCabin\Data	$data	Storage handler
+	 *  
 	 *  @return bool
 	 */
-	public function save( \PubCabin\Data $data ) : bool {
+	public function save() : bool {
 		$this->bare	= \PubCabin\Util::bland( $this->body );
 		$params		= [
 			':body'	=> $this->body,
@@ -66,6 +65,7 @@ class TextBlock extends \PubCabin\Entity {
 			':sort'	=> $this->sort_order
 		];
 		
+		$data		= static::getData();
 		if ( empty( $this->id ) ) {
 			$params[':text_id']	= $this->text_id;
 			
@@ -179,10 +179,8 @@ class TextBlock extends \PubCabin\Entity {
 	
 	/**
 	 *  Apply block text and text user relationships
-	 *   
-	 *  @param \PubCabin\Data	$data	Storage handler
 	 */
-	protected function saveAuthors( \PubCabin\Data $data ) {
+	protected function saveAuthors() {
 		// No users to add?
 		if ( empty( $this->_users ) ) {
 			return;
@@ -197,6 +195,7 @@ class TextBlock extends \PubCabin\Entity {
 			];
 		}
 		
+		$data	= static::getData();
 		$data->dataBatchExec( 
 			static::$sql['authors'], 
 			$params, 
