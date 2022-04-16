@@ -136,7 +136,7 @@ class Handler implements \SplObserver {
 		}
 		
 		return 
-		\PubCabin\Util::slashPath( \RIVER_MODBASE, true ) . $name . 
+		\PubCabin\Util::slashPath( \PUBCABIN_MODBASE, true ) . $name . 
 		\PubCabin\Util::slashPath( $mode ) . 
 		\PubCabin\Util::slashPath( $path );
 	}
