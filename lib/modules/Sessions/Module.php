@@ -67,10 +67,20 @@ class Module extends \PubCabin\Handler {
 					break;
 				}
 				
+				$data	= $ctrl->output( 'begin' )['data'];
+				
+				// Set install dir
+				$data->installDir( 
+					\PubCabin\Entity::SESSION_DATA,
+					static::resourcePath( 
+						$this, 'install', '' 
+					)
+				);
+				
 				// Register session start and handler
 				$sess	= 
 				new \PubCabin\Modules\Sessions\SHandler( 
-					$ctrl->output( 'begin' )['data'],
+					$data,
 					$ctrl
 				);
 				
