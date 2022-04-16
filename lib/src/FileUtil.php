@@ -219,19 +219,32 @@ final class FileUtil {
 	}
 
 	/**
-	 *  Load file contents and check for any server-side code		
+	 *  Load file contents and check for any server-side code
+	 *  
+	 *  @param string	$name	File path name
+	 *  @param string	$root	Optional root if not from data dir
+	 *  @param array	$errors	Any errors during loading
 	 */
 	public static function loadFile( 
 		string		$name, 
-		array		&$errors = [] 
+		string		$root		= '',
+		array		&$errors	= [] 
 	) : string {
 		// Check if already loaded
-		if ( isset( static::$loaded[$name] ) ) {
-			return static::$loaded[$name];
+		if ( isset( static::$loaded[$root . $name] ) ) {
+			return static::$loaded[$root . $name];
 		}
 		
+		$root = empty( $root ) ? 
+			\PubCabin\Util::slashPath( \RIVER_DATA, true ) :
+			\PubCabin\Util::slashPath( $root, true );
+		
 		// Relative path to storage
-		$fname	= \PUBCABIN_DATA . $name;
+		$fname	= $root . $name;
+		if ( empty( static::filterDir( $fname, $root ) ) ) {
+			return '';
+		}
+		
 		if ( !\file_exists( $fname ) ) {
 			return '';
 		}
