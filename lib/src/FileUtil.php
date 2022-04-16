@@ -242,10 +242,12 @@ final class FileUtil {
 		// Relative path to storage
 		$fname	= $root . $name;
 		if ( empty( static::filterDir( $fname, $root ) ) ) {
+			$errors[] = 'Folder check failed: ' . $fname;
 			return '';
 		}
 		
 		if ( !\file_exists( $fname ) ) {
+			$errors[] = 'File not found: ' . $fname;
 			return '';
 		}
 		
