@@ -31,6 +31,12 @@ class Data {
 	 */
 	protected $controller;
 	
+	/**
+	 *  SQL Installation file source
+	 *  @var string
+	 */
+	protected $install_dir	= '';
+	
 	
 	/**
 	 *  Data class begin
@@ -60,6 +66,50 @@ class Data {
 	}
 	
 	/**
+	 *  Set SQL installation file source
+	 *  
+	 *  @param string	$def	Bare database name
+	 *  @param string	$root	Source file destination
+	 *  @return bool
+	 */
+	public function installDir( string $def, string $root ) : bool {
+		if ( empty( $def ) || empty( $root ) ) {
+			return false;
+		}
+		
+		$chk = 
+		\PubCabin\FileUtil::filterDir( $root . $def, $root );
+		if ( empty( $chk ) ) {
+			return false;
+		}
+		
+		$this->install_dir[$def] = $root;
+		return true;
+	}
+	
+	/**
+	 *  Load SQL installation file contents
+	 *  
+	 *  @param string	$def	Definition source file
+	 *  @return string
+	 */
+	private function sqlFile( string $def ) : string {
+		$def	= \ltrim( $def, '/\\' ) . '.sql';
+		$err	= [];
+		
+		$file	= 
+		\PubCabin\FileUtil::loadFile( 
+			$def, $this->install_dir[$def] ?? '', $err 
+		);
+		
+		if ( empty( $file ) ) {
+			$this->_err = 
+			\array_merge( $this->_err, $err );
+		}
+		return $file;
+	}
+	
+	/**
 	 *  Get the SQL definition from DSN
 	 *  
 	 *  @param string	$dsn	User defined database path
@@ -72,11 +122,7 @@ class Data {
 			return [];
 		}
 		
-		$src	= 
-		\PubCabin\FileUtil::loadFile( 
-			\ltrim( $def, '/\\' ) . '.sql' 
-		);
-		
+		$src	= $this->sqlFile( $def );
 		if ( empty( $src ) ) {
 			return [];
 		}
