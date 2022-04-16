@@ -137,7 +137,7 @@ class Handler implements \SplObserver {
 		}
 		
 		return 
-		\PUBCABIN_MODSTORE . \PubCabin\Util::slashPath( $path );
+		\PubCabin\Util::slashPath( \PUBCABIN_MODSTORE, true ) . $path;
 	}
 }
 
