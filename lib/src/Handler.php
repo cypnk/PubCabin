@@ -20,6 +20,13 @@ class Handler implements \SplObserver {
 	protected $data		= [];
 	
 	/**
+	 *  List of resource sub folders
+	 *  @var array
+	 */
+	private static $resource_list = 
+	[ 'public', 'install', 'update', 'assets' ];
+	
+	/**
 	 *  Initialize handler with current controller
 	 *  
 	 *  @param \PubCabin\Controller	$ctrl	Event controller
@@ -110,16 +117,27 @@ class Handler implements \SplObserver {
 	 *  
 	 *  @param mixed	$obj	Source handler to derive name
 	 *  @param string	$path	Resource file subppath
+	 *  @param string	$mode	Sub directory selection mode
 	 *  @return string
 	 */
-	public static function resourcePath( $obj, string $path ) : string {
+	public static function resourcePath( 
+			$obj, 
+		string	$path,
+		string	$mode	= 'public'
+	) : string {
+		// Restrict mode
+		if ( !\in_array( $mode, static::$resource_list ) ) {
+			return '';
+		}
+		
 		$name	= static::classStub( $obj );
 		if ( empty( $name ) ) {
 			return '';
 		}
 		
 		return 
-		\PubCabin\Util::slashPath( $name ) . '/public' . 
+		\PubCabin\Util::slashPath( \RIVER_MODBASE, true ) . $name . 
+		\PubCabin\Util::slashPath( $mode ) . 
 		\PubCabin\Util::slashPath( $path );
 	}
 	
