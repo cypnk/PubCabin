@@ -78,5 +78,66 @@ class Handler implements \SplObserver {
 		// Handlers are all under PubCabin namespace
 		return '\\PubCabin\\' . \implode( '\\', $paths );
 	}
+	
+	/**
+	 *  Base module class name
+	 *  
+	 *  @param mixed	$obj	Source handler
+	 *  @return string
+	 */
+	protected static function classSub( $obj ) : string {
+		$class	= new \ReflectionClass( $obj );
+		
+		// Skip non-namespaced classes
+		if ( !$class->inNamespace() ) {
+			return '';
+		}
+		
+		$name	= $class->getNamespaceName();
+		$name	= \strstr( $name, 'PubCabin\\' );
+		
+		// Only allow PubCabin namespaced classes
+		if ( false === $name ) {
+			return '';
+		}
+		
+		return 
+		\trim( \strtr( $name, [ '\\' => '/' ] ), '/');
+	}
+	
+	/**
+	 *  Module resource path helper for visitor requests
+	 *  
+	 *  @param mixed	$obj	Source handler to derive name
+	 *  @param string	$path	Resource file subppath
+	 *  @return string
+	 */
+	public static function resourcePath( $obj, string $path ) : string {
+		$name	= static::classStub( $obj );
+		if ( empty( $name ) ) {
+			return '';
+		}
+		
+		return 
+		\PubCabin\Util::slashPath( $name ) . '/public' . 
+		\PubCabin\Util::slashPath( $path );
+	}
+	
+	/**
+	 *  Visitor sent or generated file storage destination helper
+	 *  
+	 *  @param mixed	$obj	Destination handler to derive name
+	 *  @param string	$path	Storage subppath
+	 *  @return string
+	 */
+	public static function uploadPath( $obj, string $path ) : string {
+		$name	= static::classStub( $obj );
+		if ( empty( $name ) ) {
+			return '';
+		}
+		
+		return 
+		\PUBCABIN_MODSTORE . \PubCabin\Util::slashPath( $path );
+	}
 }
 
