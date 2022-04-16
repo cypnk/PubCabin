@@ -32,6 +32,18 @@ final class FileUtil {
 	private static $presets	= [];
 	
 	/**
+	 *  Valid image types to create a thumbnail
+	 *  @var array
+	 */
+	private static $thumbnail_types	= [
+		'image/jpeg',
+		'image/png',
+		'image/gif',
+		'image/bmp',
+		'image/webp'
+	];
+	
+	/**
 	 *  Logging safe string
 	 */
 	public static function logStr(
@@ -353,21 +365,169 @@ final class FileUtil {
 	}
 	
 	/**
-	 * Move uploaded files to the same directory as the post
+	 *  Given a compelete file path, prefix a term to the filename and 
+	 *  return a unique file name path
+	 *  
+	 *  @param string	$path		Base file path
+	 *  @param string	$prefix		Special file prefix added to path
+	 */
+	public static function prefixPath( string $path, string $prefix ) {
+		$tn	= 
+		\PubCabin\Util::slashPath( \dirname( $path ), true ) . 
+			$prefix . \basename( $path );
+		
+		// Avoid duplicates
+		return static::dupRename( $tn );
+	}
+	
+	/**
+	 *  Create image thumbnails from file path and given mime type
+	 *  
+	 *  @param string	$src	File source location
+	 *  @param string	$mime	Image mime type
+	 */
+	public static function createThumbnail( 
+		string	$src,
+		string	$mime 
+	) : string {
+		static $hasgd;
+		
+		if ( !isset( $hasgd ) ) {
+			// Check for GD
+			if ( \PubCabin\Util::missing( 'imagecreatetruecolor' ) ) {
+				$hasgd = false;
+				errors( 
+					'Upload thumbnail: Check GD function availability' 
+				);
+				return '';
+			}
+			$hasgd = true;
+		}
+		
+		if ( !$hasgd ) {
+			return '';
+		}
+		
+		// Get size and set proportions
+		list( $width, $height ) = \getimagesize( $src );
+		$t_width	= 100;
+		$t_height	= ( $t_width / $width ) * $height;
+		
+		// New thumbnail
+		$thumb		= \imagecreatetruecolor( $t_width, $t_height );
+		
+		// Create new image
+		switch( $mime ) {
+			case 'image/png':
+				// Set transparent background
+				\imagesavealpha( $thumb, true );
+				$source	= \imagecreatefrompng( $src );
+				break;
+				
+			case 'image/gif':
+				$source	= \imagecreatefromgif( $src );
+				break;
+			
+			case 'image/bmp':
+				$source	= \imagecreatefrombmp( $src );
+				break;
+			
+			case 'image/webp':
+				$source	= \imagecreatefromwebp( $src );
+				break;
+				
+			default:
+				$source	= \imagecreatefromjpeg( $src );
+		}
+		
+		// Resize to new resources
+		\imagecopyresized( $thumb, $source, 0, 0, 0, 0, 
+			$t_width, $t_height, $width, $height );
+		
+		// Thunbnail destination
+		$dest	= static::prefixPath( $src, 'tn_' );
+		
+		// Create thumbnail at destination
+		switch( $mime ) {
+			case 'image/png':
+				$tn = \imagepng( $thumb, $dest, 100 );
+				break;
+			
+			case 'image/gif':
+				$tn = \imagegif( $thumb, $dest, 100 );
+				break;
+			
+			case 'image/bmp':
+				$tn = \imagebmp( $thumb, $dest, 100 );
+				break;
+			
+			case 'image/webp':
+				$tn = \imagewebp( $thumb, $dest, 100 );
+				break;
+			
+			default:
+				$tn = \imagejpeg( $thumb, $dest, 100 );
+		}
+		
+		// Did anything go wrong?
+		if ( false === $tn ) {
+			return '';
+		}
+		
+		// Cleanup
+		\imagedestroy( $thumb );
+		
+		return $dest;
+	}
+	
+	/**
+	 *  Format uploaded file info for storage or database metadata
+	 *  
+	 *  @param string	$src	File original location
+	 *  @return array
+	 */
+	public static function processFile( string $src, ) : array {
+		$mime	= static::adjustMime( $src );
+		
+		return [
+			'src'		=> $src,
+			'mime'		=> $mime,
+			'filename'	=> \basename( $src ),
+			'filesize'	=> \filesize( $src ),
+			'description'	=> '',
+			
+			// Process thumbnail if needed
+			'thumbnail'	=>
+				\in_array( $mime, static::$thumbnail_types ) ? 
+				static::createThumbnail( $src, $mime ) : ''
+		];
+	}
+	
+	/**
+	 *  Move uploaded files to the same directory as the post
+	 *  
+	 *  @param string	$path	Full upload destination directory
+	 *  @param string	$root	Root destination prefix
+	 *  @param array	$err	Any upload processing errors
 	 */
 	public static function saveUploads( 
 		string	$path, 
-		string	$root 
-	) {
+		string	$root,
+		array	&$err
+	) : array {
 		$files	= static::parseUploads();
 		$store	= 
 		\PubCabin\Util::slashPath( $root, true ) . 
 		\PubCabin\Util::slashPath( $path, true );
 		
+		$saved	= [];
+		$err	= [];
+		
 		foreach ( $files as $name ) {
 			foreach( $name as $file ) {
 				// If errors were found, skip
 				if ( $file['error'] != \UPLOAD_ERR_OK ) {
+					$err[] = 'Error handling upload: ' . $name;
 					continue;
 				}
 				
@@ -377,9 +537,102 @@ final class FileUtil {
 				
 				// Check for duplicates and rename 
 				$up	= static::dupRename( $store . $n );
-				\move_uploaded_file( $tn, $up );
+				if ( \move_uploaded_file( $tn, $up ) ) {
+					$saved[] = $up;
+				}
 			}
 		}
+		
+		// Once uploaded and moved, format info
+		$processed	= [];
+		foreach( $saved as $k => $v ) {
+			$processed[] = static::processFile( $v );	
+		}
+		return $processed;
+	}
+	
+	/**
+	 *  Handle PUT method file upload
+	 *  
+	 *  @param string	$path	Uploading destination
+	 *  @param string	$store	Root storage directory
+	 *  @param array	$err	Any PUT processing errors
+	 *  @return array
+	 */
+	public function saveStream( 
+		string	$path, 
+		string	$store,
+		array	&$err;
+	) : array {
+		$src	= '';
+		$err	= [];
+		
+		try {
+			// Temp storage
+			$tmp	= \tmpnam( $store, 'upload' );
+			if ( false === $tmp ) {
+				$err[] = 'Unable to create temp file in ' . $store;
+				
+				return [];
+			}
+			
+			$wr	= \fopen( $tmp, 'w' );
+			if ( false === $wr ) {
+				unlink( $tmp );
+				$err[] = 'Unable to open temp file ' . $tmp;
+				
+				return [];
+			}
+			
+			$stream	= \fopen( 'php://input', 'r' );
+			if ( false === $stream ) {
+				\fclose( $wr );
+				unlink( $tmp );
+				unset( $stream );
+				$err[] = 'Cannot open upload stream php://input';
+				
+				return [];
+			}
+			
+			\stream_set_chunk_size( $stream, self::PUT_CHUNK );
+			$ss = \stream_copy_to_stream( $stream, $wr );
+			
+			// Cleanup
+			\fclose( $stream );
+			\fclose( $wr );
+			
+			$fs = \filesize( $tmp );
+			
+			// Compare file size to total written bytes
+			if ( 
+				false === $ss || 
+				false === $fs || 
+				$ss != $fs 
+			) {
+				unlink( $tmp );
+				$err[] = 'Corrupted or empty data in ' . $tmp;
+				
+				return [];
+			}
+			
+			// Exract file path from destination
+			$name	= static::filterUpName( \basename( $path ) );
+			$src	= static::dupRename( $store . $name );
+			
+			if ( !\rename( $tmp, $src ) ) {
+				unlink( $tmp );
+				
+				$err[] = 'Cannot move temp file ' . $tmp;
+				return [];
+			}
+			
+		} catch( \Exception $e ) {
+			$err[] = 'messages'	=> $e->getMessage();
+			
+			return [];
+		}
+		
+		return [ static::processFile( $src ) ];
 	}
 	
 	/**
