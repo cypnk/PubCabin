@@ -1,9 +1,9 @@
 <?php declare( strict_types = 1 );
 /**
- *  @file	/lib/modules/Files/Captcha.php
+ *  @file	/lib/modules/Forms/Captcha.php
  *  @brief	Bot test image generator (requires GD)
  */
-namespace PubCabin\Modules\Files;
+namespace PubCabin\Modules\Forms;
 
 class Captcha {
 	
@@ -16,17 +16,11 @@ class Captcha {
 	// Captcha image height
 	const CAPTCHA_HEIGHT	= 35;
 	
-	// Captcha string length
-	const CAPTCHA_LENGTH	= 5;
-	
 	// Captcha image mime type (currently, jpg, png, or bmp)
 	const CAPTCHA_MIME	= 'image/png';
 	
 	// Captcha image file name (extension should match mime)
 	const CAPTCHA_NAME	= 'captcha.png';
-	
-	// Default hashing algorithm
-	const CAPTCHA_HASH	= 'tiger160,4';
 	
 	// RGB Background color
 	const CAPTCHA_BG	= '255, 255, 255';
@@ -41,6 +35,7 @@ class Captcha {
 	 *  Generate captcha image
 	 *  
 	 *  @param string		$txt	Random captcha string
+	 *  @param string		$assets	Resource file directory
 	 *  @param \PubCabin\Config	$config	Main configuration
 	 */
 	public function genCaptcha( 
@@ -50,7 +45,6 @@ class Captcha {
 		
 		// Prepare response
 		$rsp	= new \PubCabin\Response( $config );
-		$assets	= $this->moduleBase( 'assets' );
 		
 		// Font file (not served to visitor directly)
 		$ffile	= $config->setting( 'captcha_font' ) ?? 
