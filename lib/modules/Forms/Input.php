@@ -10,17 +10,34 @@ class Input {
 	/**
 	 *  Default textarea columns
 	 */
-	const RENDER_MULTILINE_COLS = 60;
+	const RENDER_MULTILINE_COLS	= 60;
 	
 	/**
 	 *  Default textarea rows
 	 */
-	const RENDER_MULTILINE_ROWS = 10;
+	const RENDER_MULTILINE_ROWS	= 10;
 	
 	/**
-	 *  Form module
+	 *  Captcha string length
 	 */
-	protected $module;
+	const CAPTCHA_LENGTH		= 5;
+	
+	/** 
+	 *  Default captcha hashing algorithm
+	 */
+	const CAPTCHA_HASH		= 'tiger160,4';
+	
+	/**
+	 *  Event controller
+	 *  @var \PubCabin\Controller
+	 */
+	protected $ctrl;
+	
+	/**
+	 *  Render and output handler
+	 *  @var \PubCabin\Render
+	 */
+	protected $render;
 	
 	/**
 	 *  Supported input types
@@ -250,10 +267,9 @@ HTML
 		'tpl_autocomplete'		=> ' autocomplete="{msg}" ';
 		
 	
-	public function __construct( 
-		\PubCabin\Modules\Forms\Module $_module 
-	) {
-		$this->module = $_module;
+	public function __construct( \PubCabin\Controller $_ctrl ) {
+		$this->ctrl	= $_ctrl;
+		$this->render	= $_ctrl->output( 'begin' )['render'];
 		$this->extendInput();
 	}
 	
@@ -266,26 +282,25 @@ HTML
 	 *  Functionality change helper
 	 */
 	protected function extendInput() {
-		$hooks	= $this->module->getModule( 'Hooks' );
-		$hooks->event( [ 
+		$this->ctrl->run( 
 			'autocompleteopts',
 			[ 'options' => static::$autocomplete ]
-		] );
-		$hooks->event( [
+		);
+		$this->ctrl->run( 
 			'inputtemplates',
 			[ 'types' => static::$templates ]
-		] );
-		$hooks->event( [ 
+		);
+		$this->ctrl->run( 
 			'wysiwygtools', 
 			[ 'tools' => static::$wysiwyg_tools ] 
-		] );
+		);
 		
 		
 		// Modify base supported input type
 		static::$input_types	= 
 		\array_merge( 
 			static::$input_types, 
-			$hooks->arrayResult( 
+			$this->ctrl->output(  
 				'inputtypes' 
 			)['types'] ?? [] 
 		);
@@ -294,7 +309,7 @@ HTML
 		static::$autocomplete	= 
 		\array_merge( 
 			static::$autocomplete, 
-			$hooks->arrayResult( 
+			$this->ctrl->output(  
 				'autocompleteopts' 
 			)['options'] ?? [] 
 		);
@@ -303,13 +318,13 @@ HTML
 		static::$templates	= 
 		\array_merge( 
 			static::$templates, 
-			$hooks->arrayResult( 
-				'inputtemplates', [] 
+			$this->ctrl->output(  
+				'inputtemplates' 
 			)['templates'] ?? [] 
 		);
 		
 		// New tools or new wysiwyg functionality?
-		$nt	= $hooks->arrayResult( 'wysiwygtools' );
+		$nt	= $this->ctrl->output(  'wysiwygtools' );
 		
 		static::$wysiwyg_tools	= 
 		\array_merge( 
@@ -576,7 +591,6 @@ HTML
 		$btn	= '';
 		$tpl	= '';
 		$type	= '';
-		$render	= $this->module->getRender();
 		
 		foreach ( $buttons as $b ) {
 			// Buttons specially need a type
@@ -599,8 +613,8 @@ HTML
 			if ( empty( $b['template'] ) ) {
 				$tpl = 
 				( 0 === \strcmp( $type, 'submit' ) ) ?
-					$render->template( 'tpl_input_submit' ) : 
-					$render->template( 'tpl_input_button' );
+					$this->render->template( 'tpl_input_submit' ) : 
+					$this->render->template( 'tpl_input_button' );
 				
 				// Fallback 
 				$tpl = empty( $tpl ) ? 
@@ -645,7 +659,8 @@ HTML
 		string	$enctype	= '',
 		bool	$is_block	= true
 	) : string {
-		$config = $this->module->getConfig();
+		$ctrl	= &$this->ctrl;
+		$config = $ctrl->getConfig();
 		
 		// Check posting method
 		if ( 0 != \strncasecmp( $method, 'get' ) ) {
@@ -657,9 +672,6 @@ HTML
 				return '';
 			}
 		}
-		
-		$hooks	= $this->module->getModule( 'Hooks' );
-		$render	= $this->module->getRender();
 		
 		// Inline or block type form
 		$tpl	= $is_block ? 'tpl_form_block' : 'tpl_form';
@@ -675,28 +687,28 @@ HTML
 			'buttons'	=> $buttons 
 		];
 		
-		// Pre-input hooks
-		$hooks->event( [ 'formbefore', $opts ] );
+		// Pre-input
+		$this->ctrl->run( 'formbefore', $opts );
 		
-		// Call block level or inline level form hooks
+		// Call block level or inline level form events
 		// Replace input fields if needed
 		if ( $is_block ) {
-			$hooks->event( [ 'formblockbefore', $opts ] );
-			$opts = $hooks->arrayResult( 'formblockbefore', $opts );
+			$ctrl->run( 'formblockbefore', $opts );
+			$opts = $ctrl->output( 'formblockbefore' ) ?? $opts;
 		} else {
-			$hooks->event( [ 'forminlinebefore', $opts ] );
-			$opts = $hooks->arrayResult( 'formblockbefore', $opts );
+			$ctrl->run( 'forminlinebefore', $opts );
+			$opts = $ctrl->output( 'formblockbefore' ) ?? $opts;
 		}
 		
-		$hooks->event( [ 'forminputbefore', $opts ] );
+		$ctrl->run( 'forminputbefore', $opts );
 		
 		// Create anti-XSRF token fields before other fields
 		$pair	= $this->module->genNoncePair( $name );
 		$out	= 
-		$hooks->wrap( 
+		$ctrl->wrap( 
 			'before'. $name .'xsrf',
 			'after'. $name .'xsrf',
-			$render->template( 'tpl_input_xsrf' ), 
+			$this->render->template( 'tpl_input_xsrf' ), 
 			[ 
 				'nonce'	=> $pair['nonce'], 
 				'token'	=> $pair['token'] 
@@ -716,60 +728,58 @@ HTML
 				true : false;
 			
 			if ( $wys ) {
-				$hooks->event( [ 'wysiwygload', [ 'field' => $f ] );
+				$ctrl->run( 'wysiwygload', [ 'field' => $f ] );
 			} elseif ( $cap ) {
-				$hooks->event( [ 'captchaload', [ 'field' => $f ] );
+				$ctrl->run( 'captchaload', [ 'field' => $f ] );
 			}
 			
 			$out .= $this->createFormField( $f );
-			
-			if ( $wys ) {
-				$hooks->event( [ 'wysiwygload', '' ] );
-			} elseif ( $cap ) {
-				$hooks->event( [ 'captchaload', '' ] );
-			}
 		}
 		
 		// Append buttons
-		$hooks->event( [ 'buttonwrapbefore', $opts ] );
-		$hooks->event( [ 'buttonwrapafter', $opts ] );
+		$ctrl->run( 'buttonwrapbefore', $opts );
+		$ctrl->run( 'buttonwrapafter', $opts );
 		
 		$out	.= 
-		$render->parse( $render->template( 'tpl_form_button_wrap' ), [ 
-			'button_wrap_before'	=> $hooks->stringResult( 'buttonwrapbefore' ),
-			'button_wrap_after'	=> $hooks->stringResult( 'buttonwrapafter' ),
+		$this->render->parse( 
+			$this->render->template( 'tpl_form_button_wrap' ), [ 
+			'button_wrap_before'	=> $ctrl->stringResult( 'buttonwrapbefore' ),
+			'button_wrap_after'	=> $ctrl->stringResult( 'buttonwrapafter' ),
 			'buttons'		=> $this->createButtons( $buttons )
 		] );
 		
-		// Post-input hooks
-		$hooks->event( [ 'forminputafter', $opts ] );
+		// Post-input
+		$ctrl->un( 'forminputafter', $opts );
 		if ( $is_block ) {
-			$hooks->event( [ 'formblockafter',  $opts ] );
+			$ctrl->run( 'formblockafter', $opts );
 		} else {
-			$hooks->event( [ 'forminlineafter', $opts ] );
+			$ctrl->run( 'forminlineafter', $opts );
 		}
 		
 		// Form after event
-		$hooks->( [ 'formafter', $opts ] );
+		$this->ctrl->run( 'formafter', $opts );
 		
 		// Append template placeholders
 		$vars	= [
-			'form_before'		=> $hooks->stringResult( 'formbefore' ), 
-			'form_after'		=> $hooks->stringResult( 'formafter' ),
-			'form_input_before'	=> $hooks->stringResult( 'forminputbefore' ),
-			'form_input_after'	=> $hooks->stringResult( 'forminputafter' ),
+			'form_before'		=> $ctrl->stringResult( 'formbefore' ), 
+			'form_after'		=> $ctrl->stringResult( 'formafter' ),
+			'form_input_before'	=> $ctrl->stringResult( 'forminputbefore' ),
+			'form_input_after'	=> $ctrl->stringResult( 'forminputafter' ),
 			'fields'		=> $out
 		];
 		
 		if ( $is_block ) {
-			$vars['form_block_before']	= $hooks->stringResult( 'formblockbefore' );
-			$vars['form_block_after']	= $hooks->stringResult( 'formblockafter' );
+			$vars['form_block_before']	= $ctrl->stringResult( 'formblockbefore' );
+			$vars['form_block_after']	= $ctrl->stringResult( 'formblockafter' );
 		} else {
-			$vars['form_inline_before']	= $hooks->stringResult( 'forminlinebefore' );
-			$vars['form_inline_after']	= $hooks->stringResult( 'forminlineafter' );
+			$vars['form_inline_before']	= $ctrl->stringResult( 'forminlinebefore' );
+			$vars['form_inline_after']	= $ctrl->stringResult( 'forminlineafter' );
 		}
 		
-		return $render->parse( $render->template( $tpl ), $vars );
+		return 
+		$this->render->parse( 
+			$this->render->template( $tpl ), $vars 
+		);
 	}
 
 	/**
@@ -785,6 +795,7 @@ HTML
 		string		$tpl, 
 		array		$vars
 	) : string {
+		$ctrl		= $this->ctrl;
 		// Set field ID if not already set
 		$vars['id']	= $vars['id'] ?? $name;
 		
@@ -795,58 +806,55 @@ HTML
 		// Hook settings
 		$opts		= [ 'name' => $name, 'details' => $vars ];
 		
-		$hooks	= $this->module->getModule( 'Hooks' );
-		$render	= $this->module->getRender();
-		
 		/**
 		 *  Run field hooks
 		 */
 		// General input before/after hooks
-		$hooks->event( [ 'inputbefore', $opts ] );
-		$hooks->event( [ 'inputafter', $opts ] );
+		$ctrl->run( 'inputbefore', $opts );
+		$ctrl->run( 'inputafter', $opts );
 		
 		// Input name specific before/after hooks
-		$hooks->event( [ $nbf, $opts ] );
-		$hooks->event( [ $naf, $opts ] );
+		$ctrl->run( $nbf, $opts );
+		$ctrl->run( $naf, $opts );
 		
 		// Input label and special detail hooks
-		$hooks->event( [ 'labelbefore', $opts ] );
-		$hooks->event( [ 'labelafter', $opts ] );
+		$ctrl->run( 'labelbefore', $opts );
+		$ctrl->run( 'labelafter', $opts );
 		
-		$hooks->event( [ 'specialbefore', $opts ] );
-		$hooks->event( [ 'specialafter', $opts ] );
+		$ctrl->run( 'specialbefore', $opts );
+		$ctrl->run( 'specialafter', $opts );
 	
 		// Input field hooks
-		$hooks->event( [ 'inputfieldbefore', $opts ] );
-		$hooks->event( [ 'inputfieldafter', $opts ] );
+		$ctrl->run( 'inputfieldbefore', $opts );
+		$ctrl->run( 'inputfieldafter', $opts );
 		
 		// Description/help info hooks
-		$hooks->event( [ 'desc_before', $opts ] );
-		$hooks->event( [ 'desc_after', $opts ] );
+		$ctrl->run( 'desc_before', $opts );
+		$ctrl->run( 'desc_after', $opts );
 		
 		// Form field input wrap
-		$hooks->event( [ 'inputwrapbefore', $opts ] );
-		$hooks->event( [ 'inputwrapafter', $opts ] );
+		$ctrl->run( 'inputwrapbefore', $opts );
+		$ctrl->run( 'inputwrapafter', $opts );
 		
 		$out		= 
 		\array_merge( $vars, [
-			'input_before'			=> $hooks->stringResult( 'inputbefore' ),
-			'input_after'			=> $hooks->stringResult( 'inputafter' ),
+			'input_before'			=> $ctrl->stringResult( 'inputbefore' ),
+			'input_after'			=> $ctrl->stringResult( 'inputafter' ),
 			
-			'input_' . $name .'_before'	=> $hooks->stringResult( $nbf ),
-			'input_' . $name .'_after'	=> $hooks->stringResult( $naf ),
+			'input_' . $name .'_before'	=> $ctrl->stringResult ( $nbf ),
+			'input_' . $name .'_after'	=> $ctrl->stringResult ( $naf ),
 			
-			'label_before'			=> $hooks->stringResult( 'labelbefore' ),
-			'input_after'			=> $hooks->stringResult( 'labelafter' ),
+			'label_before'			=> $ctrl->stringResult( 'labelbefore' ),
+			'input_after'			=> $ctrl->stringResult( 'labelafter' ),
 			
-			'special_before'		=> $hooks->stringResult( 'specialbefore' ),
-			'special_after'			=> $hooks->stringResult( 'specialafter' ),
+			'special_before'		=> $ctrl->stringResult( 'specialbefore' ),
+			'special_after'			=> $ctrl->stringResult( 'specialafter' ),
 			
-			'input_field_before'		=> $hooks->stringResult( 'inputfieldbefore' ),
-			'input_field_before'		=> $hooks->stringResult( 'inputfieldafter' ),
+			'input_field_before'		=> $ctrl->stringResult( 'inputfieldbefore' ),
+			'input_field_before'		=> $ctrl->stringResult( 'inputfieldafter' ),
 			
-			'desc_before'			=> $hooks->stringResult( 'descbefore' ),
-			'desc_after'			=> $hooks->stringResult( 'descafter' )
+			'desc_before'			=> $ctrl->stringResult( 'descbefore' ),
+			'desc_after'			=> $ctrl->stringResult( 'descafter' )
 		] );
 		
 		// Select and timezone are special types
@@ -867,14 +875,14 @@ HTML
 			$tpl,
 			$out,
 			$vars['options'] ?? []
-		) : $render->parse( $tpl, $out );
+		) : $this->render->parse( $tpl, $out );
 		
 		return 
-		$render->parse( 
-			$render->template( 'tpl_form_input_wrap' ), 
+		$this->render->parse( 
+			$this->render->template( 'tpl_form_input_wrap' ), 
 			[ 
-				'input_wrap_before'	=> $hooks->stringResult( 'inputwrapbefore' ),
-				'input_wrap_after'	=> $hooks->stringResult( 'inputwrapafter' ),
+				'input_wrap_before'	=> $ctrl->stringResult( 'inputwrapbefore' ),
+				'input_wrap_after'	=> $ctrl->stringResult( 'inputwrapafter' ),
 				'input'			=> $input
 			] 
 		);
@@ -889,14 +897,13 @@ HTML
 		array		$opts 
 	) : string {
 		$out	= '';
-		$render	= $this->module->getRender();
 		
 		foreach ( $opts as $o ) {
 			$out	.= 
 			( empty( $o[0] ) && empty( $o[1] ) ) ? 
-			$render->templates( 'tpl_input_unselect' ) : 
-			$render->parse( 
-				$render->template( 'tpl_input_select_opt' ), 
+			$this->render->template( 'tpl_input_unselect' ) : 
+			$this->render->parse( 
+				$this->render->template( 'tpl_input_select_opt' ), 
 				[
 					'value'		=> $o[0],
 					'text'		=> $o[1],
@@ -908,7 +915,7 @@ HTML
 		}
 		
 		return 
-		$render->parse( $tpl, \array_merge( $vars, [ 
+		$this->render->parse( $tpl, \array_merge( $vars, [ 
 			'options' => $out 
 		] ) );
 	}
@@ -932,7 +939,7 @@ HTML
 		array		$opts 
 	) {
 		return 
-		$this->module->getModule( 'Hooks' )->wrap( 
+		$this->ctrl->wrap( 
 			$before, 
 			$after, 
 			$this->createSelect( $tpl, $input, $opts ),
@@ -952,8 +959,7 @@ HTML
 		array		&$field 
 	) : string {
 		
-		$render	= $this->module->getRender();
-		$config = $this->module->getConfig();
+		$config = $this->ctrl->getConfig();
 		// Set textarea defaults
 		$field['rows'] = 
 		\PubCabin\Util::intRange(
@@ -976,7 +982,7 @@ HTML
 		// Send back preset template or wysiwyg/multiline
 		return 		
 		$field['template'] ?? 
-		$render->template( 
+		$this->render->template( 
 			( 0 == \strcmp( $field['type'], 'wysiwyg' ) ) ? 
 			'tpl_input_wysiwyg' : 'tpl_input_multiline'			
 		);
@@ -993,35 +999,33 @@ HTML
 		$field	= $this->fieldPrefilter( $field );
 		$type	= $field['type'];
 		
-		$render	= $this->module->getRender();
-		
 		// Try to retrieve given template or use default based on type
 		switch ( $type ) {
 			case 'select':
 			case 'timezone':
 				$tpl = $field['template'] ?? 
-				$render->template( 'tpl_input_select' );
+				$this->render->template( 'tpl_input_select' );
 				break;
 			
 			case 'text':
 				$tpl = $field['template'] ?? 
-				$render->template( 'tpl_input_text' );
+				$this->render->template( 'tpl_input_text' );
 				break;
 				
 			case 'datetime-local':
 				$tpl = $field['template'] ?? 
-				$render->template( 'tpl_input_datetime' );
+				$this->render->template( 'tpl_input_datetime' );
 				break;
 				
 			case 'email':
 				$tpl = $field['template'] ?? 
-				$render->template( 'tpl_input_email' );
+				$this->render->template( 'tpl_input_email' );
 				break;
 				
 			case 'pass':
 			case 'password':
 				$tpl = $field['template'] ?? 
-				$render->template( 'tpl_input_pass' );
+				$this->render->template( 'tpl_input_pass' );
 				break;
 			
 			case 'wysiwyg':
@@ -1035,22 +1039,22 @@ HTML
 			case 'checkbox':
 				$tpl = 
 				$field['template'] ?? 
-					$render->template( 'tpl_input_checkbox' );
+					$this->render->template( 'tpl_input_checkbox' );
 				break;
 				
 			case 'file':
 			case 'upload':
 				$tpl = 
 				$field['template'] ?? 
-					$render->template( 'tpl_input_upload' );
+					$this->render->template( 'tpl_input_upload' );
 				break;
 			
 			// This only works if 'type' is given, E.G. number, range etc...
 			default:
 				$tpl = 
 				$field['template'] ?? \strtr( 
-					$render->template( 'tpl_input_field' ), 
-					[ '{input}' => $render->template( 'tpl_input' ) ]
+					$this->render->template( 'tpl_input_field' ), 
+					[ '{input}' => $this->render->template( 'tpl_input' ) ]
 				);
 				
 		}
