@@ -92,7 +92,7 @@ class Handler implements \SplObserver {
 	 *  @param mixed	$obj	Source handler
 	 *  @return string
 	 */
-	protected static function classSub( $obj ) : string {
+	protected static function classStub( $obj ) : string {
 		$class	= new \ReflectionClass( $obj );
 		
 		// Skip non-namespaced classes
@@ -101,15 +101,15 @@ class Handler implements \SplObserver {
 		}
 		
 		$name	= $class->getNamespaceName();
-		$name	= \strstr( $name, 'PubCabin\\' );
 		
 		// Only allow PubCabin namespaced classes
-		if ( false === $name ) {
+		if ( false === $name || empty( $name ) ) {
 			return '';
 		}
 		
-		return 
-		\trim( \strtr( $name, [ '\\' => '/' ] ), '/');
+		$name	= \strtr( $name, [ '\\' => '/' ] );
+		$ls	= \explode( '/', $name );
+		return empty( $ls ) ? '' : end( $ls ) ?? '';
 	}
 	
 	/**
