@@ -1,14 +1,4 @@
 
--- Database presets
-PRAGMA trusted_schema = OFF;	-- Preemptive defense
-PRAGMA cell_size_check = ON;	-- Integrity check
-PRAGMA encoding = "UTF-8";	-- Default encoding set to UTF-8
-PRAGMA page_size = "16384";	-- Blob performance improvement
-PRAGMA auto_vacuum = "2";	-- File size improvement
-PRAGMA temp_store = "2";	-- Memory temp storage for performance
-PRAGMA journal_mode = "WAL";	-- Performance improvement
-PRAGMA secure_delete = "1";	-- Privacy improvement
-
 CREATE TABLE logfiles(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	title TEXT NOT NULL COLLATE NOCASE,
@@ -86,6 +76,6 @@ BEGIN
 	INSERT INTO logdata ( label_id ) VALUES ( NEW.label_id );
 	INSERT INTO log_content_insert( docid, body ) 
 		VALUES( ( SELECT last_insert_rowid() ), NEW.content );
-END;-- --
+END;
 
 
