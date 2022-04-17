@@ -209,7 +209,7 @@ class Controller {
 	 *  
 	 *  @return array
 	 */
-	public function loadedModules() : string {
+	public function loadedModules() : array {
 		return \array_keys( $this->handlers );
 	}
 	
