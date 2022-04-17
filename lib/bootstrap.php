@@ -76,7 +76,7 @@ function messages( string $type, string $message, bool $ret = false ) {
 	}
 	
 	// Clean message to file safe format
-	$log[$type] = 
+	$log[$type][] = 
 	\preg_replace( 
 		'/[\x00-\x08\x0B\x0C\x0E-\x1F\x80-\x9F[\x{fdd0}-\x{fdef}\p{Cs}\p{Cf}\p{Cn}]/u', 
 		'', 
@@ -166,11 +166,17 @@ function baseEnv() : bool {
 	foreach ( $msgs as $k => $v ) {
 		switch ( $k ) {
 			case 'error':
-				logToFile( $v, \PUBCABIN_ERRORS );
+			case 'errors':
+				foreach( $v as $m ) {
+					logToFile( $m, \RIVER_ERRORS );
+				}
 				break;
 				
 			case 'notice':
-				logToFile( $v, \PUBCABIN_NOTICES );
+			case 'notices':
+				foreach( $v as $m ) {
+					logToFile( $m, \RIVER_NOTICES );
+				}
 				break;
 				
 			case 'mail':
