@@ -26,14 +26,6 @@ else
 	echo "	- Created cache.db" >> setup.log
 fi
 
-if [ -f logs.db ]; then
-	sqlite3 logs.db .dump > snaps/logs-$DATE.sql
-	echo "	- Backed up logs.db" >> setup.log
-else
-	sqlite3 logs.db < logs.sql
-	echo "	- Created logs.db" >> setup.log
-fi
-
 if [ -f firewall.db ]; then
 	sqlite3 firewall.db .dump > snaps/firewall-$DATE.sql
 	echo "	- Backed up firewall.db" >> setup.log
@@ -54,7 +46,6 @@ if id "$W_USER" >/dev/null 2>&1; then
 	# Set permissions
 	chmod -R 0600 snaps
 	
-	chmod 0755 logs.db
 	chmod 0755 cache.db
 	chmod 0755 firewall.db
 	
