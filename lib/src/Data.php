@@ -32,10 +32,10 @@ class Data {
 	protected $controller;
 	
 	/**
-	 *  SQL Installation file source
-	 *  @var string
+	 *  SQL Installation file sources
+	 *  @var array
 	 */
-	protected $install_dir	= '';
+	protected $install_dir	= [];
 	
 	
 	/**
@@ -73,13 +73,19 @@ class Data {
 	 *  @return bool
 	 */
 	public function installDir( string $def, string $root ) : bool {
-		if ( empty( $def ) || empty( $root ) ) {
+		if ( empty( $def ) ) {
+			\messages( 'error', 'Empty SQL install file' );
 			return false;
 		}
 		
 		$chk = 
 		\PubCabin\FileUtil::filterDir( $root . $def, $root );
 		if ( empty( $chk ) ) {
+			\messages( 
+				'error', 
+				'Setting install SQL file failed: ' . 
+				$def 
+			);
 			return false;
 		}
 		
@@ -94,15 +100,23 @@ class Data {
 	 *  @return string
 	 */
 	private function sqlFile( string $def ) : string {
-		$def	= \ltrim( $def, '/\\' ) . '.sql';
 		$err	= [];
+		$def	= \ltrim( $def, '/\\' );
+		
+		// Empty source implies common data dir
+		$this->install_dir[$def] ??= '';
 		
 		$file	= 
 		\PubCabin\FileUtil::loadFile( 
-			$def, $this->install_dir[$def] ?? '', $err 
+			$def . '.sql', $this->install_dir[$def], $err 
 		);
 		
 		if ( empty( $file ) ) {
+			\messages( 
+				'error', 
+				'Loading SQL install file failed: ' . 
+					$def . ' From: ' . $src
+			);
 			$this->_err = 
 			\array_merge( $this->_err, $err );
 		}
@@ -124,6 +138,10 @@ class Data {
 		
 		$src	= $this->sqlFile( $def );
 		if ( empty( $src ) ) {
+			\messages( 
+				'error', 
+				'Loading SQL install file failed: ' . $dsn
+			);
 			return [];
 		}
 		
