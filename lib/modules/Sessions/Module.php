@@ -46,6 +46,8 @@ class Module extends \PubCabin\Handler {
 		return [ "Base" ];
 	}
 	
+	protected $session_started = false;
+	
 	/**
 	 *  Handle notifications
 	 *  
@@ -63,17 +65,18 @@ class Module extends \PubCabin\Handler {
 				break;
 				
 			case 'modulesloaded':
-				if ( \headers_sent() ) {
+				if ( \headers_sent() || $this->session_started ) {
 					break;
 				}
 				
+				$this->session_started = true;
 				$data	= $ctrl->output( 'begin' )['data'];
 				
 				// Set install dir
 				$data->installDir( 
 					\PubCabin\Entity::SESSION_DATA,
 					static::resourcePath( 
-						$this, 'install', '' 
+						$this, '', 'install'
 					)
 				);
 				
