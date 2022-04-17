@@ -13,14 +13,9 @@ echo "\n\nRunning backup $DATE" >> backup.log
 # Prepare backup folder if it doesn't exist
 mkdir -p backup
 
-if [ -f config.db ]; then
-	sqlite3 config.db .dump > backup/config-$DATE.sql
-	echo "	- Backed up config.db" >> backup.log
-fi
-
-if [ -f config.json ]; then
-	cp config.json > backup/config-$DATE.json
-	echo "	- Backed up config.json" >> backup.log
+if [ -f defaultconfig.json ]; then
+	cp config.json > backup/defaultconfig-$DATE.json
+	echo "	- Backed up defaultconfig.json" >> backup.log
 fi
 
 if [ -f main.db ]; then
