@@ -10,7 +10,6 @@ W_USER=${1:-http}
 DATE=`date +%Y-%m-%d-%H-%M-%S`
 
 # Log files
-touch errors.log
 touch setup.log
 
 # Status
@@ -62,7 +61,6 @@ if id "$W_USER" >/dev/null 2>&1; then
 	chown $W_USER logs.db
 	chown $W_USER filter.db
 	chown $W_USER cache.db
-	chown $W_USER errors.log
 	
 	echo "Ownership set for $W_USER" >> setup.log
 	
@@ -72,7 +70,6 @@ if id "$W_USER" >/dev/null 2>&1; then
 	chmod 0755 logs.db
 	chmod 0755 filter.db
 	chmod 0755 cache.db
-	chmod 0755 errors.log
 	chmod 0755 firewall.db
 	
 	# Custom config
