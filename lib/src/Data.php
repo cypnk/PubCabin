@@ -115,7 +115,8 @@ class Data {
 			\messages( 
 				'error', 
 				'Loading SQL install file failed: ' . 
-					$def . ' From: ' . $src
+					$def . ' From: ' . 
+					$this->install_dir[$def]
 			);
 			$this->_err = 
 			\array_merge( $this->_err, $err );
