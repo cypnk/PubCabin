@@ -18,14 +18,6 @@ echo "\n\nRunning setup $DATE" >> setup.log
 # Snapshots
 mkdir -p snaps
 
-if [ -f cache.db ]; then
-	sqlite3 cache.db .dump > snaps/cache-$DATE.sql
-	echo "	- Backed up cache.db" >> setup.log
-else
-	sqlite3 cache.db < cache.sql
-	echo "	- Created cache.db" >> setup.log
-fi
-
 if [ -f firewall.db ]; then
 	sqlite3 firewall.db .dump > snaps/firewall-$DATE.sql
 	echo "	- Backed up firewall.db" >> setup.log
@@ -38,15 +30,11 @@ fi
 if id "$W_USER" >/dev/null 2>&1; then
 	chown -R $W_USER snaps
 	
-	chown $W_USER logs.db
-	chown $W_USER cache.db
-	
 	echo "Ownership set for $W_USER" >> setup.log
 	
 	# Set permissions
 	chmod -R 0600 snaps
 	
-	chmod 0755 cache.db
 	chmod 0755 firewall.db
 	
 	# Custom config
