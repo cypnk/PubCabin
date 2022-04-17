@@ -214,6 +214,15 @@ class Controller {
 	}
 	
 	/**
+	 *  Get list of modules which failed to load
+	 *  
+	 *  @return array
+	 */
+	public function failedModules() : array {
+		return $this->failed;
+	}
+	
+	/**
 	 *  Event data parameters from last notification
 	 *  
 	 *  @param string	$name	Event label
@@ -285,7 +294,7 @@ class Controller {
 		string		$default,
 		array		$input,
 		bool		$full		= false
-	) {
+	) : string {
 		// Get render from begin event
 		$render = $this->output( 'begin' )['render'] ?? null;
 		
@@ -318,7 +327,7 @@ class Controller {
 		string		$tpl		= '', 
 		array		$input		= [],
 		bool		$full		= false
-	) {
+	) : string {
 		// Send "before" event notification
 		$this->run( $before, [
 			'data'		=> $input,
