@@ -7,10 +7,13 @@
 W_USER=${1:-http}
 
 # Default deployment folder on Arch. On OpenBSD, /var/www/pubcabin
-SVR=${2:-/usr/share/nginx/pubcabin}
+SVR=${2:-/srv/http/pubcabin}
 
 # Timestamp
 DATE=`date +%Y-%m-%d-%H-%M-%S`
+
+# Deploy folder
+mkdir -p $SRV
 
 # Create snapshots of existing content
 mkdir -p $SVR/../snaps-$DATE
