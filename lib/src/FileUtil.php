@@ -577,7 +577,7 @@ final class FileUtil {
 	public function saveStream( 
 		string	$path, 
 		string	$store,
-		array	&$err;
+		array	&$err
 	) : array {
 		$src	= '';
 		$err	= [];
@@ -642,7 +642,7 @@ final class FileUtil {
 			}
 			
 		} catch( \Exception $e ) {
-			$err[] = 'messages'	=> $e->getMessage();
+			$err[] = $e->getMessage();
 			
 			return [];
 		}
