@@ -1,12 +1,3 @@
--- Database presets
-PRAGMA trusted_schema = OFF;	-- Preemptive defense
-PRAGMA cell_size_check = ON;	-- Integrity check
-PRAGMA encoding = "UTF-8";	-- Default encoding set to UTF-8
-PRAGMA auto_vacuum = "2";	-- File size improvement
-PRAGMA temp_store = "2";	-- Memory temp storage for performance
-PRAGMA journal_mode = "WAL";	-- Performance improvement
-PRAGMA secure_delete = "1";	-- Privacy improvement
-PRAGMA foreign_keys = "1";	-- Enable foreign key relationships
 
 -- Content and access filters
 CREATE TABLE filters(
@@ -56,5 +47,5 @@ END;-- --
 CREATE TRIGGER filter_delete BEFORE DELETE ON filters FOR EACH ROW
 BEGIN
 	DELETE FROM filter_search WHERE docid = OLD.id;
-END;-- --
+END;
 
