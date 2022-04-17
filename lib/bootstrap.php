@@ -226,7 +226,9 @@ function baseEnv() : bool {
 if ( baseEnv() ) {
 	$dir = [
 		\PUBCABIN_FILES,
-		\PUBCABIN_CACHE,
+		\PUBCABIN_CACHE . 'workspaces/collections/categories/entries',
+		\PUBCABIN_CACHE . 'static',
+		\PUBCABIN_CACHE . 'volatile',
 		\PUBCABIN_BACKUP,
 		\PUBCABIN_MODSTORE,
 		\PUBCABIN_OUTBOX
@@ -243,13 +245,13 @@ if ( baseEnv() ) {
 		$er[] = \basename( $d );
 	}
 	
-	
 	if ( !empty( $er ) ) {
 		\messages(
 			'error', 
 			'Required folder(s) could not be created: ' . 
 			\implode( ', ', $er )
 		);
+		die();
 	}
 	
 	// Create config, controller and run begin event
