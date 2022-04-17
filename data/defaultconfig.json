@@ -40,7 +40,6 @@
 	"notice": "{store}notice.log",
 	"allow_upload": 1,
 	"allow_post": 1,
-	"cache_ttl": 3200,
 	"site_depth": 25,
 	"max_search_words": 10,
 	"token_bytes": 8,
@@ -244,5 +243,26 @@
 	"captcha_fsize": 30,
 	"captcha_bg": "255, 255, 255",
 	"captcha_lines": "150, 200, 150, 200, 150, 200",
-	"captcha_colors": "0, 150, 10, 150, 10, 150"
+	"captcha_colors": "0, 150, 10, 150, 10, 150", 
+	"site_configurable": [ 
+		"page_title", "page_sub", "timezone", "language", 
+		"locale", "mail_from", "mail_whitelist", 
+		"frame_whitelist", "app_name", "app_start", 
+		"skip_local", "name_min", "name_max", "pass_min", 
+		"display_min", "display_max", "enable_register", 
+		"auto_approve_reg", "title_min", "title_max", 
+		"cache_ttl", "error_path", "max_search_words", 
+		"default_modules", "default_stylesheets", 
+		"default_scripts", "default_meta", "default_secpolicy", 
+		"tag_white", "form_white", "ext_whitelist", 
+		"session_exp", "session_bytes", "session_limit_count", 
+		"session_limit_medium", "session_limit_heavy", 
+		"cookie_exp", "cookie_path", "cookie_restrict", 
+		"form_delay", "form_expire", "login_delay", 
+		"login_attempts", "render_multiline_rows", 
+		"render_multiline_cols", "captcha_length", 
+		"captcha_hash", "captcha_font", "captcha_mime", 
+		"captcha_name", "captcha_height", "captcha_fsize", 
+		"captcha_bg", "captcha_lines", "captcha_colors" 
+	]
 }
