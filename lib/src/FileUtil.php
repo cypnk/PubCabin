@@ -236,7 +236,7 @@ final class FileUtil {
 		}
 		
 		$root = empty( $root ) ? 
-			\PubCabin\Util::slashPath( \RIVER_DATA, true ) :
+			\PubCabin\Util::slashPath( \PUBCABIN_DATA, true ) :
 			\PubCabin\Util::slashPath( $root, true );
 		
 		// Relative path to storage
