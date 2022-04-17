@@ -205,6 +205,15 @@ class Controller {
 	}
 	
 	/**
+	 *  Base names of currently loaded handlers
+	 *  
+	 *  @return array
+	 */
+	public function loadedModules() : string {
+		return \array_keys( $this->handlers );
+	}
+	
+	/**
 	 *  Event data parameters from last notification
 	 *  
 	 *  @param string	$name	Event label
@@ -252,6 +261,89 @@ class Controller {
 	}
 	
 	/**
+	 *  Get HTML from notification result, if sent
+	 *  
+	 *  @param string	$event		Notification event name
+	 *  @param string	$default	Fallback html content
+	 *  @return string
+	 */
+	public function htmlResult( string $name, string $default = '' ) : string {
+		return $this->output( $event )['html'] ?? $default;
+	}
+	
+	/**
+	 *  Get HTML render template from notification result, if sent
+	 *  
+	 *  @param string	$event		Hook event name
+	 *  @param string	$default	Fallback template
+	 *  @param array	$input		Component to apply template to
+	 *  @param bool		$full		Render full regions
+	 *  @return string
+	 */
+	public function templateRender(
+		string		$event, 
+		string		$default,
+		array		$input,
+		bool		$full		= false
+	) {
+		// Get render from begin event
+		$render = $this->output( 'begin' )['render'] ?? null;
+		
+		if ( \is_null( $render ) ) {
+			return '';
+		}
+		
+		return 
+		$render->render(
+			$this->output( $event )['template'] ?? 
+				$this->stringResult( $event, $default ),
+			$input,
+			$full
+		);
+	}
+	
+	/**
+	 *  Wrap component region in 'before' and 'after' event hooks and their output
+	 *  
+	 *  @param string	$before		Before template parsing event
+	 *  @param string	$after		After template parsing event
+	 *  @param string	$tpl		Base component template
+	 *  @param array	$input		Raw component data
+	 *  @param bool		$full		Render full regions
+	 *  @return string
+	 */
+	public function wrap( 
+		string		$before, 
+		string		$after, 
+		string		$tpl		= '', 
+		array		$input		= [],
+		bool		$full		= false
+	) {
+		// Send "before" event notification
+		$this->run( $before, [
+			'data'		=> $input,
+			'template'	=> $tpl,
+			'full'		=> $full
+		] );
+		
+		// Prepend any HTML output and render the new ( or old ) template
+		$html	= 
+		$this->htmlResult( $before ) . 
+			$this->templateRender( $before, $tpl, $input, $full );
+		
+		$this->run( $after, [ 
+			'data'		=> $input,	// Raw component data
+			'before'	=> $before,	// Event called before
+			'html'		=> $html,	// Current HTML
+			'full'		=> $full,	// Full region render
+			'template'	=> $tpl		// New or previously replaced
+		] );
+		
+		// Send any replaced HTML or already rendered HTML
+		return $this->htmlResult( $after, $html );
+	}
+	
+	/**
 	 *  Post 'begin' event housekeeping
 	 */
 	private function postBegin() {
@@ -261,12 +353,12 @@ class Controller {
 			return;
 		}
 		
+		$begin = true;
 		// Run default modules loaded event
 		$this->run( 'modulesloaded', [
 			'modules'	=> 
 			$this->config->setting( 'default_modules', 'list' ) ?? []
 		] );
-		$begin = true;
 	}
 	
 	/**
