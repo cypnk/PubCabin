@@ -18,18 +18,6 @@ echo "\n\nRunning setup $DATE" >> setup.log
 # Snapshots
 mkdir -p snaps
 
-# Runtime application data
-
-echo "	- Folders created" >> setup.log
-
-if [ -f filter.db ]; then
-	sqlite3 filter.db .dump > snaps/filter-$DATE.sql
-	echo "	- Backed up filter.db" >> setup.log
-else
-	sqlite3 filter.db < filter.sql
-	echo "	- Created filter.db" >> setup.log
-fi
-
 if [ -f cache.db ]; then
 	sqlite3 cache.db .dump > snaps/cache-$DATE.sql
 	echo "	- Backed up cache.db" >> setup.log
@@ -59,7 +47,6 @@ if id "$W_USER" >/dev/null 2>&1; then
 	chown -R $W_USER snaps
 	
 	chown $W_USER logs.db
-	chown $W_USER filter.db
 	chown $W_USER cache.db
 	
 	echo "Ownership set for $W_USER" >> setup.log
@@ -68,7 +55,6 @@ if id "$W_USER" >/dev/null 2>&1; then
 	chmod -R 0600 snaps
 	
 	chmod 0755 logs.db
-	chmod 0755 filter.db
 	chmod 0755 cache.db
 	chmod 0755 firewall.db
 	
