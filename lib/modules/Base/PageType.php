@@ -9,6 +9,29 @@ namespace PubCabin\Modules\Base;
 class PageType extends \PubCabin\Entity {
 	
 	/**
+	 *  Overridable page type behavior
+	 *  @var array
+	 */
+	protected $default_behavior = [
+		'type_handler'	=> '\\PubCabin\\Modules\\Base\\PageType',
+		'parents'	=> [ '*', 'page' ],
+		'children'	=> [ 'page' ],
+		'label'		=> '{lang:ptypes:page}',
+		'description'	=> '{lang:ptypes:pagedesc}',
+		'allow_children'=> 1,
+		'allow_comments'=> 1,
+		'privileges'	=> [
+			'create_roles'	=> [],
+			'edit_roles'	=> [],
+			'delete_roles'	=> [],
+			'upload_roles'	=> [],
+			'mod_roles'	=> [],
+			'comment_roles'	=> []
+		],
+		'settings'	=> []
+	];
+	
+	/**
 	 *  Page specific type E.G. blogpost, forum, shop etc...
 	 *  @var string
 	 */ 
@@ -46,7 +69,9 @@ class PageType extends \PubCabin\Entity {
 	public function __get( $name ) {
 		switch ( $name ) {
 			case 'behavior':
-				return $this->_behavior ?? [];
+				return 
+				$this->_behavior ?? 
+				static::$default_behavior;
 		}
 		
 		return parent::__get( $name );
