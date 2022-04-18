@@ -1,6 +1,6 @@
 <?php declare( strict_types = 1 );
 /**
- *  @file	/libs/modules/Base.php
+ *  @file	/libs/modules/Base/Module.php
  *  @brief	First module to run and set the PubCabin environment
  */
 namespace PubCabin\Modules\Base;
@@ -68,18 +68,26 @@ class Module extends \PubCabin\Handler {
 		// Register site start after session
 		$ctrl->register( static::$events, 'Base' );
 		
+		// Current install path
+		$install	= 
+		static::resourcePath( $this, '', 'install' );
+		
+		// Set default database if not specified
+		if ( !defined( 'DATA' ) ) {
+			define( 
+				'DATA', 
+				\PubCabin\Util::slashPath( $install, true ) . 
+					\PubCabin\Entity::MAIN_DATA 
+			);
+		}
+		
 		// Get default config, request, and data
 		$config		= $ctrl->getConfig();
 		$data		= new \PubCabin\Data( $ctrl );
 		
 		// Set main data install dir
-		$data->installDir( 
-			\PubCabin\Entity::MAIN_DATA,
-			static::resourcePath( 
-				$this, '', 'install'
-			)
-		);
-				
+		$data->installDir( \PubCabin\Entity::MAIN_DATA, $install );
+		
 		// Shared components with current controller
 		$this->data['begin']	= 
 		[
