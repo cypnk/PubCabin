@@ -308,7 +308,7 @@ class Data {
 				$e->getMessage() ?? '';
 		}
 		
-		$opt	= Util::trimmedList( $rtype );
+		$opt	= \PubCabin\Util::trimmedList( $rtype );
 		switch ( $opt[0] ) {
 			// Query with array return
 			case 'results':
@@ -446,7 +446,7 @@ class Data {
 				__FUNCTION__ . ' ' . 
 				$e->getMessage() ?? '';
 		}
-		return \is_array( $res ) ? $res : [];
+		return \PubCabin\Util::arrayFormat( $res );
 	}
 	
 	/**
@@ -483,6 +483,47 @@ class Data {
 	}
 	
 	/**
+	 *  Get list of tables from specified database
+	 *  
+	 *  @param string	$dsn	Database string
+	 *  @return array		List of tables
+	 */
+	public function getTables( string $dsn = \DATA ) : array {
+		static $sql = 
+		"SELECT tables FROM ( 
+			SELECT * FROM sqlite_schema 
+			UNION ALL SELECT * FROM sqlite_temp_schema 
+		) WHERE type = 'table' ORDER BY name;";
+		
+		$res = $this->dataExec( $sql, [], 'results', $dsn );
+		
+		return \PubCabin\Util::arrayFormat( $res );
+	}
+	
+	/**
+	 *  Get table definition
+	 * 
+	 *  @param string	$name	Raw table name
+	 *  @param string	$dsn	Database string
+	 */
+	public function getTableInfo( 
+		string		$name, 
+		string		$dsn		= \DATA 
+	) : array {
+		$name = \PubCabin\Util::labelName( $name );
+		if ( empty( $name ) ) {
+			return [];
+		}
+		$db	= $this->getDb( $dsn );
+		$res	= 
+		$db->query(
+			'PRAGMA schema.table_info(' . $name . ')'
+		) ?? [];
+		
+		return \PubCabin\Util::arrayFormat( $res );
+	}
+	
+	/**
 	 *  Get parameter result from database
 	 *  
 	 *  @param string	$sql	Database SQL query
@@ -497,8 +538,7 @@ class Data {
 	) : array {
 		$res = 
 		$this->dataExec( $sql, $params, 'results', $dsn );
-		return 
-		empty( $res ) ? [] : ( \is_array( $res ) ? $res : [] );
+		return \PubCabin\Util::arrayFormat( $res );
 	}
 	
 	/**
