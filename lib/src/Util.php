@@ -1019,6 +1019,17 @@ class Util {
 	}
 	
 	/**
+	 *  Array formatted return helper
+	 *  
+	 *  @param mixed	$res	Raw data
+	 *  @return array
+	 */
+	public static function arrayFormat( $res ) : array {
+		return 
+		empty( $res ) ? [] : ( \is_array( $res ) ? $res : [] );
+	}
+	
+	/**
 	 *  Generators
 	 */
 	
