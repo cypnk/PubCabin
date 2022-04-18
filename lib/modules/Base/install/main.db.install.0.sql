@@ -127,10 +127,10 @@ INSERT INTO translations (
 			"submit"	: "Save changes"
 		},
 		"captcha"	: {
-	  		"title"		: "Captcha",
-	  		"titledesc"	: "Copy the text in the image shown",
-	  		"msg"		: "This field is required to continue",
-	  		"msgdesc"	: "<a href=\"{accessibility\"}>Accessibility options<\/a>.",
+			"title"		: "Captcha",
+			"titledesc"	: "Copy the text in the image shown",
+			"msg"		: "This field is required to continue",
+			"msgdesc"	: "<a href=\"{accessibility\"}>Accessibility options<\/a>.",
 			"alt"		: "captcha"
 		}, 
 		"anonpost"	: {
@@ -272,13 +272,17 @@ INSERT INTO translations (
 	},
 	"ptypes": {
 		"page"		: "Page",
-	  	"pagedesc"	: "Full page content such as Home, About or other main section",
-	  	"blog"		: "Blog",
-	  	"blogdesc"	: "A date-archived journal",
-	  	"forum"		: "Forum",
-	  	"forumdesc"	: "Shared subject for community discussion topics",
-	  	"forumtopic"	: "Forum Topic",
-	  	"forumtopicdesc": "Indexed discussion thread relevant to the forum subject"
+		"pagedesc"	: "Full page content such as Home, About or other main section",
+		"blog"		: "Blog",
+		"blogdesc"	: "A date-archived journal",
+		"blogpost"	: "Journal",
+		"blogpostdesc"	: "Blog post entry",
+		"blogpage"	: "Journal page",
+		"blogpagedesc"	: "Static blog page",
+		"forum"		: "Forum",
+		"forumdesc"	: "Shared subject for community discussion topics",
+		"forumtopic"	: "Forum Topic",
+		"forumtopicdesc": "Indexed discussion thread relevant to the forum subject"
 	},
 	"roles" : {
 		"admin": {
