@@ -8,10 +8,13 @@ namespace PubCabin\Atom;
 abstract class Base {
 	
 	/**
-	 *  XML Namespace
-	 *  @var string
+	 *  XML Namespaces
+	 *  @var array
 	 */
-	public $xmlns	= 'http://www.w3.org/2005/Atom';
+	protected $xmlns	= [
+		'atom'	=> 'http://www.w3.org/2005/Atom', 
+		'app'	=>'http://www.w3.org/2007/app'
+	];
 		
 	/**
 	 *  Unique URN identifier
@@ -37,6 +40,17 @@ abstract class Base {
 	 */
 	public $dom;
 	
+	/**
+	 *  Error storage
+	 *  @var array
+	 */
+	protected $err	= [];
+	
+	/**
+	 *  Internal error state for libxml
+	 *  @var bool
+	 */
+	protected static $e_state;
 	
 	public function __construct( bool $xml = false ) {
 		$this->dom	= 
@@ -45,13 +59,24 @@ abstract class Base {
 			new \DOMDocument();
 	}
 	
+	public function __destruct() {
+		if ( empty( $this->err ) ) {
+			return;
+		}
+		
+		foreach ( $this->err as $e ) {
+			errors( $e );
+		}
+	}
+	
 	/**
 	 *  String content loader to current base
 	 *  
 	 *  @param string	$content	Inner content
 	 */
 	public function load( string $content ) {
-		$err		= \libxml_use_internal_errors( true );
+		$this->captureXMLError( true );
+		
 		$lstate		= 
 		$this->dom->loadHTML( 
 			$content, 
@@ -61,18 +86,13 @@ abstract class Base {
 			\LIBXML_NOCDATA | \LIBXML_NONET
 		);
 		if ( !$lstate ) {
-			// Log last error if possible and return
-			$e = \libxml_get_last_error();
-			if ( false !== $e ) {
-				errors( 
-					$e->message ?? 
-					'Error loading DOMDocument' 
-				);
-			}
+			$this->captureXMLError( 
+				false, 'Error loading DOMDocument.' 
+			);
+			return;
 		}
 		
-		\libxml_clear_errors();
-		\libxml_use_internal_errors( $err );
+		$this->resetEState();
 	}
 	
 	/**
@@ -132,9 +152,108 @@ abstract class Base {
 			return '';
 		}
 		
-		return $xml ? 
+		$this->captureXMLError( true );
+		$out = $xml ? 
 			$this->dom->saveXML() : 
 			$this->dom->saveHTML();
+		
+		if ( false !== $out ) {
+			$this->resetEState();
+			return ( string ) $out;
+		}
+		
+		$msg	= 
+		'Error saving Document output as ' . 
+			( $xml ? 'XML.' : 'HTML.' );
+		
+		$this->captureXMLError( false, $msg );
+		return '';
+	}
+	
+	/** 
+	 *  Prepare and process error storage
+	 *  
+	 *  @param bool		$err	Begin internal errors if true
+	 *  @param string	$msg	Optional prepended message
+	 */
+	protected function captureXMLError( bool $begin, string $msg = '' ) {
+		if ( $begin ) {
+			if ( !isset( static::$e_state ) ) {
+				static::$e_state	= 
+				\libxml_use_internal_errors( true );
+			} else {
+				\libxml_use_internal_errors( true );
+			}
+			return;
+		}
+		
+		if ( !empty( $msg ) ) {
+			$this->err[] = $msg;
+		}
+		
+		$xerr = \libxml_get_errors();
+		foreach ( $xerr as $e ) {
+			$this->err[] = $this->formatXMLError( $e );
+		}
+		
+		\libxml_clear_errors();
+		$this->resetEState();
+	}
+	
+	/**
+	 *  Reset libxml error state
+	 */
+	protected function resetEState() {
+		if ( isset( static::$e_state ) ) {
+			\libxml_use_internal_errors( static::$e_state );
+		}
+	}
+	
+	/**
+	 *  Detailed XML error message or plain string 
+	 *  
+	 *  @param mixed	$e	Error string or LibXMLError
+	 *  @return string
+	 */
+	protected function formatXMLError( $e ) : string {
+		// Default error message
+		static $d	= 'XML Error';
+		
+		if ( false === $e ) {
+			return $d;
+		} elseif ( \is_string( $e ) ) {
+			return $e;
+		}
+		
+		$msg = $e->message ?? $d;
+		if ( 0 === \strcmp( $d, $msg ) ) {
+			// Nothing further to extract?
+			return $d;
+		}
+		
+		$out	= '';
+		switch ( $e->level ) {
+			case \LIBXML_ERR_ERROR:
+				$out .= 'Error: ';
+				break;
+			
+			case \LIBXML_ERR_FATAL:
+				$out .= 'Fatal error: ';
+				break;
+				
+			case \LIBXML_ERR_WARNING:
+				$out .= 'Warning: ';
+				break;
+				
+			default:
+				$out .= 'Error: ';
+		}
+		
+		return 
+		$out . $e->code . 
+			' in line ' . $e->line . 
+			' column ' . $e->column . 
+			' - ' . \trim( $msg );
 	}
 }
 
