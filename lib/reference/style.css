@@ -1,0 +1,46 @@
+
+body {
+	margin: 2.5rem auto;
+	max-width: 40rem;
+	line-height: 1.6;
+	font: 400 1rem Georgia, serif;
+	color: #444;
+	background: #fff;
+	padding: 0 1rem
+}
+
+h1, h2, h3 {
+	line-height: 1.2
+}
+
+em, article datetime {
+	font-style: italic;
+}
+
+strong {
+	font-weight: 600;
+}
+
+a, .link {
+	text-decoration: underline;
+}
+
+nav ul {
+	list-style: none;
+}
+
+nav li {
+	display: inline-block;
+}
+
+nav li + li {
+	margin-left: 1rem;
+}
+
+nav.pages ul li:first-child:before {
+	content: '<< ';
+}
+
+nav.pages ul li:last-child:after {
+	content: ' >>';
+}
