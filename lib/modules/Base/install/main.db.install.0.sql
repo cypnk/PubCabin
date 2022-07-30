@@ -55,7 +55,7 @@ INSERT INTO languages (
 ( 'uk', 'Українська', 'Ukranian' ),
 ( 'ur', 'اُردُو‬', 'Urdu' ),
 ( 'vi', 'Tiếng Việt', 'Vietnamese' ),
-( 'zh', '汉语', 'Chinese' );-- --
+( 'zh', '中文', 'Chinese' );-- --
 
 -- Translations are JSON which need placeholder replacements before parsing
 INSERT INTO translations (
