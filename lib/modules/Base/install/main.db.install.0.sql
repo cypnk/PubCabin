@@ -1,38 +1,61 @@
 -- Default database content
 
 -- Language and translations
+
+-- Default language
 INSERT INTO languages (
 	id, iso_code, label, display, is_default
+) VALUES ( 'en', 'English', 'English', 1 ); 
+
+-- Others
+INSERT INTO languages (
+	iso_code, label, display
 ) VALUES 
-( 1, 'en', 'English', 'English', 1 ), 
-( 2, 'es', 'Español', 'Spanish', 0 ), 
-( 3, 'ar', 'عربى', 'Arabic', 0 ),
-( 4, 'bn', 'বাংলা', 'Bengali', 0 ),
-( 5, 'de', 'Deutsch', 'German', 0 ),
-( 6, 'el', 'ελληνικά', 'Greek', 0 ),
-( 7, 'fa', 'فارسی', 'Farsi', 0 ),
-( 8, 'fr', 'Français', 'French', 0 ),
-( 9, 'gu', 'ગુજરાતી', 'Gujarati', 0 ),
-( 10, 'he', 'עברית‬', 'Hebrew', 0 ),
-( 11, 'hi', 'हिंदी', 'Hindi', 0 ),
-( 12, 'hy', 'հայերեն', 'Armenian', 0 ),
-( 13, 'it', 'Italiano', 'Italian', 0 ),
-( 14, 'jp', '日本語', 'Japanese', 0 ),
-( 15, 'ko', '조선말', 'Korean', 0 ),
-( 16, 'lo', 'ພາສາລາວ', 'Lao', 0 ),
-( 17, 'ml', 'Melayu', 'Malay', 0 ),
-( 18, 'nl', 'Nederlands', 'Dutch', 0 ),
-( 19, 'pa', 'ਪੰਜਾਬੀ', 'Punjabi', 0 ),
-( 20, 'pt', 'Português', 'Portuguese', 0 ),
-( 21, 'pl', 'Język polski', 'Polish', 0 ),
-( 22, 'ru', 'русский', 'Russian', 0 ),
-( 23, 'si', 'සිංහල', 'Sinhalese', 0 ),
-( 24, 'ta', 'தமிழ்', 'Tamil', 0 ),
-( 25, 'th', 'ภาษาไทย', 'Thai', 0 ),
-( 26, 'uk', 'Українська', 'Ukranian', 0 ),
-( 27, 'ur', 'اُردُو‬', 'Urdu', 0 ),
-( 28, 'vi', 'Tiếng Việt', 'Vietnamese', 0 ),
-( 29, 'zh', '中文', 'Chinese', 0 );-- --
+( 'ar', 'عربى', 'Arabic' ),
+( 'be', 'Беларуская мова', 'Belarusian' ),
+( 'bn', 'বাংলা', 'Bengali' ),
+( 'bo', 'ལྷ་སའི་སྐད་', 'Tibetan' ),
+( 'ca', 'Català', 'Catalan' ),
+( 'cs', 'Čeština', 'Czech' ),
+( 'da', 'Dansk', 'Danish' ),
+( 'de', 'Deutsch', 'German' ),
+( 'el', 'Ελληνικά', 'Greek' ),
+( 'es', 'Español', 'Spanish' ), 
+( 'et', 'Eesti', 'Estonian' ),
+( 'fa', 'فارسی', 'Farsi' ),
+( 'fi', 'Suomi', 'Finnish' ),
+( 'fr', 'Français', 'French' ),
+( 'gu', 'ગુજરાતી', 'Gujarati' ),
+( 'he', 'עברית‬', 'Hebrew' ),
+( 'hi', 'हिंदी', 'Hindi' ),
+( 'hr', 'Hrvatski', 'Croatian' ),
+( 'hu', 'Magyar', 'Hungarian' ),
+( 'hy', 'Հայերեն', 'Armenian' ),
+( 'it', 'Italiano', 'Italian' ),
+( 'jp', '日本語', 'Japanese' ),
+( 'ka', 'ქართული ენა', 'Georgian' ),
+( 'kn', 'ಕನ್ನಡ', 'Kannada' ),
+( 'ko', '조선말', 'Korean' ),
+( 'lt', 'Lietuvių kalba', 'Lithuanian' ),
+( 'lo', 'ພາສາລາວ', 'Lao' ),
+( 'ml', 'Melayu', 'Malay' ),
+( 'nl', 'Nederlands', 'Dutch' ),
+( 'pa', 'ਪੰਜਾਬੀ', 'Punjabi' ),
+( 'pt', 'Português', 'Portuguese' ),
+( 'pl', 'Język polski', 'Polish' ),
+( 'ru', 'русский', 'Russian' ),
+( 'sl', 'Slovenska', 'Slovenian' ),
+( 'sk', 'Slovenčina', 'Slovak' ),
+( 'si', 'සිංහල', 'Sinhalese' ),
+( 'sv', 'Svenska', 'Swedish' ),
+( 'ta', 'தமிழ்', 'Tamil' ),
+( 'te', 'తెలుగు', 'Telugu' ),
+( 'th', 'ภาษาไทย', 'Thai' ),
+( 'tr', 'Türkçe', 'Turkish' ),
+( 'uk', 'Українська', 'Ukranian' ),
+( 'ur', 'اُردُو‬', 'Urdu' ),
+( 'vi', 'Tiếng Việt', 'Vietnamese' ),
+( 'zh', '汉语', 'Chinese' );-- --
 
 -- Translations are JSON which need placeholder replacements before parsing
 INSERT INTO translations (
