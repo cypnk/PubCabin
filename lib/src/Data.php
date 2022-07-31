@@ -7,6 +7,8 @@ namespace PubCabin;
 
 class Data {
 	
+	const SUB_SQL_MAX	= 20;
+	
 	/**
 	 *  Database connections
 	 *  @var array
@@ -120,6 +122,30 @@ class Data {
 			);
 			$this->_err = 
 			\array_merge( $this->_err, $err );
+			
+			return '';
+		}
+		
+		$t = '';
+		$f = '';
+		// Load and append any sub install files
+		for ( $i = 0; $i < static::SUB_SQL_MAX; $i++ ) {
+			$f = $def . '.install.' . $i .'.sql';
+			if ( !\file_exists( 
+				\PubCabin\Util::slashPath( $this->install_dir[$def] ) . $f 
+			) ) {
+				break;
+			}
+			
+			$t =
+			\PubCabin\FileUtil::loadFile( 
+				$f, $this->install_dir[$def], $err 
+			);
+			if ( empty( $t ) ) {
+				break;	
+			}
+			
+			$file .= "\n" . $t;
 		}
 		return $file;
 	}
@@ -132,7 +158,11 @@ class Data {
 	 */
 	public function loadSQL( string $dsn ) : array {
 		// Get the name component from the full database path
-		$def	= \substr( $dsn, \strlen( \PUBCABIN_DATA ) - 1 );
+		$def	= 
+		\str_contains( $dsn, '/' ) ?
+			\end( \explode( '/', $dsn ) ) : 
+			\substr( $dsn, \strlen( \PUBCABIN_DATA ) - 1 );
+		
 		if ( false === $def ) {
 			return [];
 		}
