@@ -99,5 +99,5 @@ INSERT INTO page_texts(
 	1, 1, 1, 1, 'home', 'Home', 
 	'<h1>Home</h1><p>Welcome to your default homepage</p>', 
 	'Home Welcome to your default homepage' 
-);
+);-- --
 
