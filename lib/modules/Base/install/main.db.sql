@@ -903,9 +903,16 @@ END;-- --
 -- URL Slug prefix paths
 CREATE TABLE page_paths (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
-	url TEXT NOT NULL DEFAULT '/' COLLATE NOCASE
+	site_id INTEGER NOT NULL, 
+	url TEXT NOT NULL DEFAULT '/' COLLATE NOCASE, 
+	
+	CONSTRAINT fk_path_site 
+		FOREIGN KEY ( site_id ) 
+		REFERENCES sites ( id )
+		ON DELETE RESTRICT
 );-- --
-CREATE UNIQUE INDEX idx_page_paths ON page_paths ( url ASC );-- --
+CREATE UNIQUE INDEX idx_page_path_site ON page_paths ( site_id, url );-- --
+CREATE INDEX idx_page_path_url ON page_paths ( url ASC );-- --
 
 
 -- Path searching
@@ -941,7 +948,11 @@ CREATE UNIQUE INDEX idx_route_marker_pattern ON route_markers( pattern );-- --
 CREATE TABLE routes(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 	path_id INTEGER NOT NULL,
+	
+	-- GET, POST, HEAD etc..
+	verb TEXT NOT NULL COLLATE NOCASE,
 	handler TEXT NOT NULL COLLATE NOCASE,
+	sort_order INTEGER NOT NULL DEFAULT 0,
 	
 	CONSTRAINT fk_route_path
 		FOREIGN KEY ( path_id ) 
@@ -949,6 +960,9 @@ CREATE TABLE routes(
 		ON DELETE CASCADE
 );-- --
 CREATE UNIQUE INDEX idx_route_handler ON routes( path_id, handler );-- --
+CREATE UNIQUE INDEX idx_route_path_handler ON routes( path_id, verb, handler );-- --
+CREATE INDEX idx_route_verb ON routes( verb );-- --
+CREATE INDEX idx_route_sort ON routes( sort_order );-- --
 
 -- Render clusters
 CREATE TABLE page_area(
@@ -1056,8 +1070,8 @@ CREATE VIEW path_global_view AS SELECT
 	COALESCE( s.settings, '{}' ) AS path_settings,
 	COALESCE( gs.settings, '{}' ) AS path_settings_override
 	
-	FROM paths p
-	LEFT JOIN global_path_settings gs ON paths.id = gs.path_id 
+	FROM page_paths p
+	LEFT JOIN global_path_settings gs ON p.id = gs.path_id 
 	LEFT JOIN settings s ON gs.settings_id = s.id;-- --
 
 
@@ -1071,9 +1085,9 @@ CREATE VIEW path_role_view AS SELECT
 	COALESCE( gs.settings, '{}' ) AS global_settings_override,
 	COALESCE( rs.settings, '{}' ) AS role_settings_override
 	
-	FROM paths p
-	LEFT JOIN global_path_settings gs ON paths.id = gs.path_id
-	LEFT JOIN role_path_settings rs ON paths.id = rs.path_id 
+	FROM page_paths p
+	LEFT JOIN global_path_settings gs ON p.id = gs.path_id
+	LEFT JOIN role_path_settings rs ON p.id = rs.path_id 
 	LEFT JOIN settings s ON gs.settings_id = s.id;-- --
 
 
@@ -1091,12 +1105,12 @@ CREATE VIEW path_user_view AS SELECT
 	
 	COALESCE( us.settings, '{}' ) AS user_settings_override
 	
-	FROM paths p
-	LEFT JOIN global_path_settings gs ON paths.id = gs.path_id
-	LEFT JOIN role_path_settings rs ON paths.id = rs.path_id
+	FROM page_paths p
+	LEFT JOIN global_path_settings gs ON p.id = gs.path_id
+	LEFT JOIN role_path_settings rs ON p.id = rs.path_id
 	LEFT JOIN user_roles ON rs.role_id = user_roles.id
 	LEFT JOIN user_path_settings us ON 
-		paths.id = us.path_id AND us.user_id = user_roles.id 
+		p.id = us.path_id AND us.user_id = user_roles.id 
 	LEFT JOIN settings s ON gs.settings_id = s.id;-- --
 
 
