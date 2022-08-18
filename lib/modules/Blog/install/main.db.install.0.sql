@@ -34,5 +34,5 @@ INSERT INTO page_types (
 		"comment_roles"	: []
 	},
 	"settings"	: {}
-}' );
+}' );-- --
 
