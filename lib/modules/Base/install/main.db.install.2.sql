@@ -1043,5 +1043,5 @@ VALUES
 	"alt_classes"			: "",
 	"warn_classes"			: "",
 	"action_classes"		: ""
-}' );
+}' );-- --
 
