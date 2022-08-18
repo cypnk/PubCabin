@@ -331,5 +331,5 @@ INSERT INTO translations (
 			"desc"	: "Website user content moderator"
 		}
 	}
-}' );
+}' );-- --
 
