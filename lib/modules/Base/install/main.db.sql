@@ -3437,5 +3437,5 @@ BEGIN
 			strftime( '%s', expires ) < 
 			strftime( '%s', 'now' ) 
 		);
-END;
+END;-- --
 
