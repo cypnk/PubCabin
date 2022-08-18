@@ -99,21 +99,25 @@ class Data {
 	 *  Load SQL installation file contents
 	 *  
 	 *  @param string	$def	Definition source file
+	 *  @param string	$root	Custom sub install SQL file location
 	 *  @return string
 	 */
-	private function sqlFile( string $def ) : string {
+	public function sqlFile( string $def, string $root = '' ) : string {
 		$err	= [];
 		$def	= \ltrim( $def, '/\\' );
 		
 		// Empty source implies common data dir
 		$this->install_dir[$def] ??= '';
 		
-		$file	= 
+		$r = empty( $root );
+		
+		$file	= $r ? 
 		\PubCabin\FileUtil::loadFile( 
 			$def . '.sql', $this->install_dir[$def], $err 
-		);
+		) : '';
 		
-		if ( empty( $file ) ) {
+		// Load default installation
+		if ( empty( $file ) && !$r ) {
 			\messages( 
 				'error', 
 				'Loading SQL install file failed: ' . 
@@ -128,25 +132,43 @@ class Data {
 		
 		$t = '';
 		$f = '';
+		
 		// Load and append any sub install files
-		for ( $i = 0; $i < static::SUB_SQL_MAX; $i++ ) {
-			$f = $def . '.install.' . $i .'.sql';
-			if ( !\file_exists( 
-				\PubCabin\Util::slashPath( $this->install_dir[$def] ) . $f 
-			) ) {
-				break;
-			}
+		if ( $r ) {
+			for ( $i = 0; $i < static::SUB_SQL_MAX; $i++ ) {
+				$f = $def . '.install.' . $i .'.sql';
+				
+				if ( !\file_exists( 
+					\PubCabin\Util::slashPath( $this->install_dir[$def] ) . $f 
+				) ) {
+					break;
+				}
+				
+				$t =
+				\PubCabin\FileUtil::loadFile( 
+					$f, $this->install_dir[$def], $err 
+				);
+				if ( empty( $t ) ) {
+					break;	
+				}
 			
-			$t =
-			\PubCabin\FileUtil::loadFile( 
-				$f, $this->install_dir[$def], $err 
-			);
-			if ( empty( $t ) ) {
-				break;	
-			}
+				$file .= "\n" . $t;
+		} else {
+			for ( $i = 0; $i < static::SUB_SQL_MAX; $i++ ) {
+				$f = $def . '.install.' . $i .'.sql';
+				if ( !\file_exists( \PubCabin\Util::slashPath( $root ) . $f ) ) {
+					break;
+				}
+				
+				$t = \PubCabin\FileUtil::loadFile( $f, $root, $err );
+				if ( empty( $t ) ) {
+					break;	
+				}
 			
-			$file .= "\n" . $t;
+				$file .= "\n" . $t;
+			}
 		}
+		
 		return $file;
 	}
 	
