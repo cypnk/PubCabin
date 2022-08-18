@@ -68,10 +68,6 @@ VALUES
 ( 3, '{lang:roles:sitemod:label}', '{lang:roles:sitemod:desc}' );-- --
 
 
--- Homepage URL
-INSERT INTO page_paths ( id, url ) 
-VALUES ( 1, '/' );-- --
-
 -- Base website
 INSERT INTO sites ( id, label, basename, basepath, settings_id ) 
 VALUES ( 1, 'localhost', 'localhost', '', 1 );-- --
@@ -83,6 +79,10 @@ VALUES ( 1, 1, 'pubcabin.local' );-- --
 -- Main viewable render area 
 INSERT INTO areas ( id, label, site_id ) 
 VALUES ( 1, 'main', 1 );-- --
+
+-- Homepage URL
+INSERT INTO page_paths ( id, site_id, url ) 
+VALUES ( 1, 1, '/' );-- --
 
 -- Default content
 INSERT INTO pages( id, site_id, type_id, is_home ) 
