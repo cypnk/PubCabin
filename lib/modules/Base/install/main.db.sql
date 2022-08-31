@@ -61,11 +61,26 @@ CREATE INDEX idx_site_settings ON sites ( settings_id )
 	WHERE settings_id IS NOT NULL;-- --
 CREATE INDEX idx_site_active ON sites ( is_active );-- --
 CREATE INDEX idx_site_maint ON sites ( is_maintenance );-- --
+CREATE INDEX idx_site_created ON sites ( created );-- --
+CREATE INDEX idx_site_updated ON sites ( updated );-- --
 
 CREATE TRIGGER site_update AFTER UPDATE ON sites FOR EACH ROW
 BEGIN
 	UPDATE sites SET updated = CURRENT_TIMESTAMP
 		WHERE id = NEW.id;
+END;-- --
+
+-- Format settingss
+CREATE TRIGGER site_insert_setting_fmt AFTER INSERT ON sites FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE sites SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
+CREATE TRIGGER site_update_setting_fmt AFTER UPDATE ON sites FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE sites SET settings = '{}' WHERE id = NEW.id;
 END;-- --
 
 -- Mirrored sites
@@ -74,7 +89,7 @@ CREATE TABLE site_aliases (
 	site_id INTEGER NOT NULL,
 	basename TEXT NOT NULL COLLATE NOCASE,
 	
-	CONSTRAINT fk_pages_site 
+	CONSTRAINT fk_alias_site 
 		FOREIGN KEY ( site_id ) 
 		REFERENCES sites ( id )
 		ON DELETE CASCADE
@@ -89,7 +104,7 @@ CREATE VIEW sites_enabled AS SELECT
 	s.basepath AS basepath, 
 	s.is_active AS is_active,
 	s.is_maintenance AS is_maintenance,
-	GROUP_CONCAT( a.basename, ',' ) AS base_alias,
+	GROUP_CONCAT( DISTINCT a.basename ) AS base_alias,
 	s.settings AS settings_override, 
 	COALESCE( g.settings, '{}' ) AS settings,
 	s.created AS created,
@@ -285,7 +300,7 @@ CREATE TABLE user_auth(
 	provider_id INTEGER DEFAULT NULL,
 	email TEXT DEFAULT NULL COLLATE NOCASE,
 	mobile_pin TEXT DEFAULT NULL COLLATE NOCASE,
-	info TEXT NOT NULL DEFAULT '{}',
+	settings TEXT NOT NULL DEFAULT '{}',
 	
 	-- Activity
 	last_ip TEXT DEFAULT NULL COLLATE NOCASE,
@@ -498,6 +513,31 @@ BEGIN
 	DELETE FROM user_search WHERE rowid = OLD.rowid;
 END;-- --
 
+-- Format settings
+CREATE TRIGGER user_insert_setting_fmt AFTER INSERT ON users FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE users SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
+CREATE TRIGGER user_update_setting_fmt AFTER UPDATE ON users FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE users SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
+CREATE TRIGGER ua_insert_setting_fmt AFTER INSERT ON user_auth FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE user_auth SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
+CREATE TRIGGER ua_update_setting_fmt AFTER UPDATE ON user_auth FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE user_auth SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
 
 
 -- Public key storage
@@ -600,6 +640,21 @@ CREATE TABLE permission_providers(
 );-- --
 CREATE UNIQUE INDEX idx_perm_provider_label ON permission_providers( label ASC );-- --
 
+-- Format settings
+CREATE TRIGGER pp_insert_setting_fmt AFTER INSERT ON permission_providers FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE permission_providers SET settings = '{}' 
+		WHERE id = NEW.id;
+END;-- --
+
+CREATE TRIGGER pp_update_setting_fmt AFTER UPDATE ON users FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE permisison_providers SET settings = '{}' 
+		WHERE id = NEW.id;
+END;-- --
+
 -- Role permissions
 CREATE TABLE role_privileges(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -630,6 +685,19 @@ CREATE INDEX idx_privilege_provider ON role_privileges ( permission_id )
 	WHERE permission_id IS NOT NULL;-- --
 CREATE INDEX idx_privilege_settings ON role_privileges ( settings_id )
 	WHERE settings_id IS NOT NULL;-- --
+
+-- Format settings
+CREATE TRIGGER rpi_insert_setting_fmt AFTER INSERT ON role_privileges FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE role_privileges SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
+CREATE TRIGGER rpi_update_setting_fmt AFTER UPDATE ON role_privileges FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE role_privileges SET settings = '{}' WHERE id = NEW.id;
+END;-- --
 
 -- User role relationships
 CREATE TABLE user_roles(
@@ -739,6 +807,19 @@ CREATE UNIQUE INDEX idx_area_label ON areas ( label );-- --
 CREATE INDEX idx_area_settings ON areas ( settings_id )
 	WHERE settings_id IS NOT NULL;-- --
 
+-- Format settings
+CREATE TRIGGER area_insert_setting_fmt AFTER INSERT ON areas FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE areas SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
+CREATE TRIGGER area_update_setting_fmt AFTER UPDATE ON areas FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE areas SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
 -- Area render regions
 CREATE TABLE area_render (
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
@@ -768,6 +849,19 @@ CREATE INDEX idx_area_render_style ON area_render ( style_id )
 	WHERE style_id IS NOT NULL;-- --
 CREATE INDEX idx_area_render_settings ON area_render ( settings_id )
 	WHERE settings_id IS NOT NULL;-- --
+
+-- Format settings
+CREATE TRIGGER ar_insert_setting_fmt AFTER INSERT ON area_render FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE area_render SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
+CREATE TRIGGER ar_update_setting_fmt AFTER UPDATE ON area_render FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE area_render SET settings = '{}' WHERE id = NEW.id;
+END;-- --
 
 CREATE VIEW area_view AS SELECT
 	a.id AS id,
@@ -899,6 +993,19 @@ BEGIN
 		WHERE id = OLD.parent_id;
 END;-- --
 
+-- Format settings
+CREATE TRIGGER page_insert_setting_fmt AFTER INSERT ON pages FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE pages SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
+CREATE TRIGGER page_update_setting_fmt AFTER UPDATE ON pages FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE pages SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
 
 -- URL Slug prefix paths
 CREATE TABLE page_paths (
@@ -1004,6 +1111,21 @@ CREATE UNIQUE INDEX idx_global_path_id ON
 CREATE INDEX idx_global_path_settings ON global_path_settings ( settings_id )
 	WHERE settings_id IS NOT NULL;-- --
 
+-- Format settings
+CREATE TRIGGER gp_insert_setting_fmt AFTER INSERT ON global_path_settings FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE global_path_settings SET settings = '{}' 
+		WHERE id = NEW.id;
+END;-- --
+
+CREATE TRIGGER gp_update_setting_fmt AFTER UPDATE ON global_path_settings FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE global_path_settings SET settings = '{}' 
+		WHERE id = NEW.id;
+END;-- --
+
 -- Role-specific 
 CREATE TABLE role_path_settings(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -1034,6 +1156,20 @@ CREATE UNIQUE INDEX idx_role_path_role ON
 CREATE INDEX idx_role_path_settings ON role_path_settings ( settings_id )
 	WHERE settings_id IS NOT NULL;-- --
 
+-- Format settings
+CREATE TRIGGER rpa_insert_setting_fmt AFTER INSERT ON role_path_settings FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE role_path_settings SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
+CREATE TRIGGER rpa_update_setting_fmt AFTER UPDATE ON role_path_settings FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE role_path_settings SET settings = '{}' 
+		WHERE id = NEW.id;
+END;-- --
+
 -- Page customizations for users (overrides role and global settings)
 CREATE TABLE user_path_settings(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -1058,6 +1194,21 @@ CREATE UNIQUE INDEX idx_user_path_user ON
 	user_path_settings ( path_id, user_id );-- --
 CREATE INDEX idx_user_path_settings ON user_path_settings ( settings_id )
 	WHERE settings_id IS NOT NULL;-- --
+
+-- Format settings
+CREATE TRIGGER up_insert_setting_fmt AFTER INSERT ON user_path_settings FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE user_path_settings SET settings = '{}' 
+		WHERE id = NEW.id;
+END;-- --
+
+CREATE TRIGGER up_update_setting_fmt AFTER UPDATE ON user_path_settings FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE user_path_settings SET settings = '{}' 
+		WHERE id = NEW.id;
+END;-- --
 
 
 -- Path settings view
@@ -1985,6 +2136,19 @@ BEGIN
 	DELETE FROM task_search WHERE docid = OLD.id;
 END;-- --
 
+-- Format settings
+CREATE TRIGGER task_insert_setting_fmt AFTER INSERT ON tasks FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE tasks SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
+CREATE TRIGGER task_update_setting_fmt AFTER UPDATE ON tasks FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE tasks SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
 -- Assigned page tasks
 CREATE TABLE page_tasks(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -2205,6 +2369,19 @@ BEGIN
 	DELETE FROM place_search WHERE docid = OLD.id;
 END;-- --
 
+-- Format settings
+CREATE TRIGGER place_insert_setting_fmt AFTER INSERT ON places FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE places SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
+CREATE TRIGGER place_update_setting_fmt AFTER UPDATE ON places FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE places SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
 -- User locations
 CREATE TABLE user_places(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
@@ -2351,13 +2528,26 @@ CREATE INDEX idx_global_event_trigger ON global_events( trigger_id );-- --
 CREATE INDEX idx_global_event_settings ON global_events ( settings_id )
 	WHERE settings_id IS NOT NULL;-- --
 
+-- Format settings
+CREATE TRIGGER ge_insert_setting_fmt AFTER INSERT ON global_events FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE global_events SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
+CREATE TRIGGER ge_update_setting_fmt AFTER UPDATE ON global_events FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE global_events SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
 CREATE VIEW global_event_view AS SELECT
 	o.id AS id,
 	o.event_id AS event_id, 
 	o.sort_order AS sort_order,
 	e.label AS event_label, 
 	o.trigger_id AS trigger_id, 
-	GROUP_CONCAT( DISTINCT t.callback, ',' ) AS callback,
+	GROUP_CONCAT( DISTINCT t.callback ) AS callback,
 	o.settings AS settings_override,
 	COALESCE( g.settings, '{}' ) AS settings
 	
@@ -2405,13 +2595,26 @@ CREATE INDEX idx_site_event_trigger ON site_events( trigger_id );-- --
 CREATE INDEX idx_site_event_settings ON site_events ( settings_id )
 	WHERE settings_id IS NOT NULL;-- --
 
+-- Format settings
+CREATE TRIGGER se_insert_setting_fmt AFTER INSERT ON site_events FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE site_events SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
+CREATE TRIGGER se_update_setting_fmt AFTER UPDATE ON site_events FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE site_events SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
 CREATE VIEW site_event_view AS SELECT
 	s.id AS site_id, 
 	s.event_id AS event_id, 
 	s.sort_order AS sort_order,
 	e.label AS event_label, 
 	s.trigger_id AS trigger_id, 
-	GROUP_CONCAT( DISTINCT t.callback, ',' ) AS callback,
+	GROUP_CONCAT( DISTINCT t.callback ) AS callback,
 	s.settings AS settings_override,
 	COALESCE( g.settings, '{}' ) AS settings
 	
@@ -2457,6 +2660,18 @@ CREATE INDEX idx_user_event_trigger ON user_events( trigger_id );-- --
 CREATE INDEX idx_user_event_settings ON user_events ( settings_id )
 	WHERE settings_id IS NOT NULL;-- --
 
+-- Format settings
+CREATE TRIGGER ue_insert_setting_fmt AFTER INSERT ON user_events FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE user_events SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
+CREATE TRIGGER ue_update_setting_fmt AFTER UPDATE ON user_events FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE user_events SET settings = '{}' WHERE id = NEW.id;
+END;-- --
 
 CREATE VIEW user_event_view AS SELECT
 	u.id AS user_id, 
@@ -2464,7 +2679,7 @@ CREATE VIEW user_event_view AS SELECT
 	u.sort_order AS sort_order,
 	e.label AS event_label, 
 	u.trigger_id AS trigger_id, 
-	GROUP_CONCAT( DISTINCT t.callback, ',' ) AS callback,
+	GROUP_CONCAT( DISTINCT t.callback ) AS callback,
 	u.settings AS settings_override,
 	COALESCE( g.settings, '{}' ) AS settings
 	
@@ -2510,6 +2725,19 @@ CREATE INDEX idx_page_event_trigger ON page_events( trigger_id );-- --
 CREATE INDEX idx_page_event_settings ON page_events ( settings_id )
 	WHERE settings_id IS NOT NULL;-- --
 
+-- Format settings
+CREATE TRIGGER pe_insert_setting_fmt AFTER INSERT ON page_events FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE page_events SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
+CREATE TRIGGER pe_update_setting_fmt AFTER UPDATE ON page_events FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE page_events SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
 
 CREATE VIEW page_event_view AS SELECT
 	p.id AS page_id, 
@@ -2517,7 +2745,7 @@ CREATE VIEW page_event_view AS SELECT
 	p.sort_order AS sort_order,
 	e.label AS event_label, 
 	p.trigger_id AS trigger_id, 
-	GROUP_CONCAT( DISTINCT t.callback, ',' ) AS callback,
+	GROUP_CONCAT( DISTINCT t.callback ) AS callback,
 	p.settings AS settings_override,
 	COALESCE( g.settings, '{}' ) AS settings
 	
@@ -2563,6 +2791,19 @@ CREATE INDEX idx_comment_event_trigger ON comment_events( trigger_id );-- --
 CREATE INDEX idx_comment_event_settings ON comment_events ( settings_id )
 	WHERE settings_id IS NOT NULL;-- --
 
+-- Format settings
+CREATE TRIGGER ce_insert_setting_fmt AFTER INSERT ON comment_events FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE comment_events SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
+CREATE TRIGGER ce_update_setting_fmt AFTER UPDATE ON comment_events FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE comment_events SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
 
 CREATE VIEW comment_event_view AS SELECT
 	c.id AS comment_id, 
@@ -2570,7 +2811,7 @@ CREATE VIEW comment_event_view AS SELECT
 	c.sort_order AS sort_order,
 	e.label AS event_label, 
 	c.trigger_id AS trigger_id, 
-	GROUP_CONCAT( DISTINCT t.callback, ',' ) AS callback,
+	GROUP_CONCAT( DISTINCT t.callback ) AS callback,
 	c.settings AS settings_override,
 	COALESCE( g.settings, '{}' ) AS settings
 	
@@ -2615,6 +2856,19 @@ CREATE INDEX idx_menu_event_trigger ON menu_events( trigger_id );-- --
 CREATE INDEX idx_menu_event_settings ON menu_events ( settings_id )
 	WHERE settings_id IS NOT NULL;-- --
 
+-- Format settings
+CREATE TRIGGER me_insert_setting_fmt AFTER INSERT ON menu_events FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE menu_events SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
+CREATE TRIGGER me_event_update_setting_fmt AFTER UPDATE ON menu_events FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE menu_events SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
 
 CREATE VIEW menu_event_view AS SELECT
 	m.id AS user_id, 
@@ -2622,7 +2876,7 @@ CREATE VIEW menu_event_view AS SELECT
 	m.sort_order AS sort_order,
 	e.label AS event_label, 
 	s.trigger_id AS trigger_id, 
-	GROUP_CONCAT( DISTINCT t.callback, ',' ) AS callback,
+	GROUP_CONCAT( DISTINCT t.callback ) AS callback,
 	m.settings AS settings_override,
 	COALESCE( g.settings, '{}' ) AS settings
 	
@@ -2665,6 +2919,19 @@ CREATE TABLE module_access(
 		REFERENCES settings ( id )
 		ON DELETE SET NULL
 );-- --
+
+-- Format settings
+CREATE TRIGGER ma_insert_setting_fmt AFTER INSERT ON module_access FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE module_access SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
+CREATE TRIGGER ma_update_setting_fmt AFTER UPDATE ON module_access FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE module_access SET settings = '{}' WHERE id = NEW.id;
+END;-- --
 
 CREATE VIEW module_load_view AS SELECT 
 	m.id AS id,
@@ -2736,13 +3003,26 @@ CREATE INDEX idx_redirect_event_trigger ON redirect_events( trigger_id );-- --
 CREATE INDEX idx_redirect_event_settings ON redirect_events ( settings_id )
 	WHERE settings_id IS NOT NULL;-- --
 
+-- Format settings
+CREATE TRIGGER rdr_insert_setting_fmt AFTER INSERT ON redirect_events FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE redirect_events SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
+CREATE TRIGGER rdr_update_setting_fmt AFTER UPDATE ON redirect_events FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE redirect_events SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
 CREATE VIEW redirect_event_view AS SELECT
 	r.id AS user_id, 
 	r.event_id AS event_id, 
 	r.sort_order AS sort_order,
 	e.label AS event_label, 
 	s.trigger_id AS trigger_id, 
-	GROUP_CONCAT( DISTINCT t.callback, ',' ) AS callback,
+	GROUP_CONCAT( DISTINCT t.callback ) AS callback,
 	r.settings AS settings_override,
 	COALESCE( g.settings, '{}' ) AS settings
 	
@@ -3296,6 +3576,19 @@ CREATE INDEX idx_form_event_trigger ON form_events( trigger_id );-- --
 CREATE INDEX idx_form_event_settings ON form_events ( settings_id )
 	WHERE settings_id IS NOT NULL;-- --
 
+-- Format settings
+CREATE TRIGGER form_insert_setting_fmt AFTER INSERT ON form_events FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE form_events SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
+CREATE TRIGGER form_update_setting_fmt AFTER UPDATE ON form_events FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE form_events SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
 -- Property render templates for input fields
 CREATE TABLE form_fields(
 	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
@@ -3336,6 +3629,19 @@ CREATE INDEX idx_form_field_form ON form_fields( form_id );-- --
 CREATE INDEX idx_form_field_name ON form_fields( field_name );-- --
 CREATE INDEX idx_form_field_settings ON form_fields( settings_id )
 	WHERE settings_id IS NOT NULL;-- --
+
+-- Format settings
+CREATE TRIGGER field_insert_setting_fmt AFTER INSERT ON form_fields FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE form_fields SET settings = '{}' WHERE id = NEW.id;
+END;-- --
+
+CREATE TRIGGER field_update_setting_fmt AFTER UPDATE ON form_fields FOR EACH ROW
+WHEN NEW.settings = ''
+BEGIN
+	UPDATE form_fields SET settings = '{}' WHERE id = NEW.id;
+END;-- --
 
 -- Form field descriptions
 CREATE TABLE field_language(
