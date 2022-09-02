@@ -11,67 +11,67 @@ class Request extends Message {
 	 *  Visitor's IP address (IPv4 or IPv6)
 	 *  @var string
 	 */
-	private $ip;
+	protected readonly string $ip;
 	
 	/**
 	 *  Raw IP address, unfiltered
 	 *  @var string
 	 */
-	private $raw_ip;
+	protected readonly string $raw_ip;
 	
 	/**
 	 *  Visitor signature
 	 *  @var string
 	 */
-	private $sig;
+	protected readonly string $sig;
 	
 	/**
 	 *  Current request guessed to be a secure connection, if true
 	 *  @var bool
 	 */
-	private $secure;
+	protected readonly bool $secure;
 	
 	/**
 	 *  Forwarded headers from reverse proxy, load balancer etc...
 	 *  @var array
 	 */
-	private $forwarded;
+	protected readonly array $forwarded;
 	
 	/**
 	 *  Raw user agent header sent by visitor
 	 *  @var string
 	 */
-	private $user_agent;
+	protected readonly string $user_agent;
 	
 	/**
 	 *  Current HTTP request method E.G. get, post, head etc...
 	 *  @var string
 	 */
-	private $request_method;
+	protected readonly string $request_method;
 	
 	/**
 	 *  Accept languages sorted by priority
 	 *  @var array
 	 */
-	private $language;
+	protected readonly array $language;
 	
 	/**
 	 *  Current server host name
 	 *  @var string
 	 */
-	private $host;
+	protected readonly string $host;
 	
 	/**
 	 *  Prefix URL including hostname and protocol
 	 *  @var string
 	 */
-	private $web;
+	protected readonly string $web;
 	
 	/**
 	 *  Full request path
 	 *  @var string
 	 */
-	private $url;
+	protected readonly string $url;
 	
 	/**
 	 *  Process HTTP_* variables
