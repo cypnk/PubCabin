@@ -11,7 +11,7 @@ class Event implements \SplSubject {
 	 *  Current event name
 	 *  @var string
 	 */
-	protected $name;
+	protected readonly string $name;
 	
 	/**
 	 *  Main event controller
@@ -23,18 +23,18 @@ class Event implements \SplSubject {
 	 *  Registered handlers
 	 *  @var array
 	 */
-	protected $handlers	= [];
+	protected array $handlers	= [];
 	
 	/**
 	 *  Event parameters on execution
 	 */
-	protected $params	= [];
+	protected array $params	= [];
 	
 	/**
 	 *  Stored event data
 	 *  @var array
 	 */
-	protected $output	= [];
+	protected array $output	= [];
 	
 	
 	/**
