@@ -40,79 +40,79 @@ abstract class Entity {
 	 *  Database index primary key (set once)
 	 *  @var int
 	 */
-	private $_id;
+	public readonly int $id;
 	
 	/**
 	 *  Unique identifier (set once)
 	 *  @var string
 	 */
-	private $_uuid;
+	public readonly string $uuid;
 	
 	/**
 	 *  Configuration settings
 	 *  @var array 
 	 */
-	private $_settings;
+	private array $_settings;
 	
 	/**
 	 *  Settings identifier
 	 *  @var int
 	 */
-	private $_settings_id;
+	private int $_settings_id;
 	
 	/**
 	 *  New settings ID if swapping settings
 	 *  @var int
 	 */
-	private $_n_settings_id;
+	private int $_n_settings_id;
 	
 	/**
 	 *  Created UTC datetime stamp
 	 *  @var string
 	 */
-	public $created;
+	public string $created;
 	
 	/**
 	 *  Last modified UTC datetime stamp
 	 *  @var string
 	 */
-	public $updated;
+	public string $updated;
 	
 	/**
 	 *  Trigger events
 	 *  @var array
 	 */
-	public $events		= [];
+	public array $events		= [];
 	
 	/**
 	 *  Sorting order
 	 *  @var int
 	 */
-	private $_sort_order;
+	private int $_sort_order;
 	
 	/**
 	 *  Special handling status, based on object type
 	 *  @var int
 	 */
-	private $status;
+	private int $status;
 	
 	/**
 	 *  Inherited or overriden base permissions
 	 *  @var array
 	 */
-	private $_permissions;
+	private array $_permissions;
 	
 	/**
 	 *  Settings changed since first loading and needs saving
 	 *  @var bool
 	 */
-	protected $s_changed	= false;
+	protected bool $s_changed	= false;
 	
 	/**
 	 *  When in paged mode, current index of paged items 
 	 *  @var int
 	 */
-	protected $_total;
+	protected int $_total;
 	
 	/**
 	 *  Main event controller
@@ -139,21 +139,6 @@ abstract class Entity {
 	public function __set( $name, $value ) {
 		
 		switch ( $name ) {
-			case 'id':
-				// ID must not be overwritten
-				if ( isset( $this->_id ) ) {
-					return;
-				} 
-				$this->_id = ( int ) $value;
-				break;
-			
-			case 'uuid':
-				// UUID must not be overwritten
-				if ( isset( $this->_uuid ) ) {
-					return;
-				}
-				$this->_uuid = ( string ) $value;
-				break;
 			
 			case 'settings_id':
 				// Settings ID change separately
@@ -198,12 +183,6 @@ abstract class Entity {
 	
 	public function __get( $name ) {
 		switch ( $name ) {
-			case 'id':
-				return $this->_id ?? 0;
-				
-			case 'uuid':
-				return $this->_uuid ?? '';
-				
 			case 'settings_id':
 				return $this->_settings_id ?? 0;
 				
