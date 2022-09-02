@@ -17,7 +17,7 @@ class Event implements \SplSubject {
 	 *  Main event controller
 	 *  @var \PubCabin\Controller
 	 */
-	protected $controller;
+	protected readonly object $controller;
 	
 	/**
 	 *  Registered handlers
