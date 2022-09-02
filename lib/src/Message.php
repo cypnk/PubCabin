@@ -17,43 +17,43 @@ class Message {
 	 *  Message headers list
 	 *  @var array
 	 */
-	public $headers;
+	protected readonly headers $headers;
 	
 	/**
 	 *  Message headers list
 	 *  @var array
 	 */
-	public $lv_headers;
+	public readonly array $lv_headers;
 	
 	/**
 	 *  Message source or destination URI
 	 *  @var string
 	 */
-	protected $uri;
+	protected readonly string $uri;
 	
 	/**
 	 *  Message protocol. E.G. HTTP 1.1
 	 *  @var string
 	 */
-	protected $protocol;
+	protected readonly string $protocol;
 	
 	/**
 	 *  Current message querystring or path attachment
 	 *  @var string
 	 */
-	protected $querystring;
+	protected readonly string $querystring;
 	
 	/**
 	 *  Core settings and configuration 
 	 *  @var \PubCabin\Config
 	 */
-	protected $config;
+	protected readonly object $config;
 	
 	/**
 	 *  Main event controller
 	 *  @var \PubCabin\Controller
 	 */
-	protected $ctrl;
+	protected readonly object $ctrl;
 	
 	public function __construct( \PubCabin\Controller $ctrl ) {
 		$this->ctrl	= $ctrl;
