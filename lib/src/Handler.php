@@ -11,13 +11,13 @@ class Handler implements \SplObserver {
 	 *  Main event controller
 	 *  @var \PubCabin\Controller
 	 */
-	protected $controller;
+	protected readonly object $controller;
 	
 	/**
 	 *  Running event output
 	 *  @var array
 	 */
-	protected $data		= [];
+	protected array $data		= [];
 	
 	/**
 	 *  List of resource sub folders
