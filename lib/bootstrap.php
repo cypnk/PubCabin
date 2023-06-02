@@ -108,6 +108,23 @@ function logToFile( string $msg, string $dest ) {
 }
 
 /**
+ *  Exception recording helper
+ *  
+ *  @param Exception	$e	Thrown error
+ *  @param string	$msg	Optional override of default error format
+ */
+function logException( \Exception $e, ?string $msg = null ) {
+	$msg	??= 'Error: {msg} File: {file} Line: {line}';
+	$err	= 
+	\strtr( $msg, [
+		'{msg}'		=> $e->getMessage(),
+		'{file}'	=> $e->getFile(),
+		'{line}'	=> $e->getLine()
+	] );
+	messages( 'error', $err );
+}
+
+/**
  *  Environment check
  */
 function baseEnv() : bool {
