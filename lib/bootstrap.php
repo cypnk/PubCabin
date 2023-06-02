@@ -168,14 +168,14 @@ function baseEnv() : bool {
 			case 'error':
 			case 'errors':
 				foreach( $v as $m ) {
-					logToFile( $m, \RIVER_ERRORS );
+					logToFile( $m, \PUBCABIN_ERRORS );
 				}
 				break;
 				
 			case 'notice':
 			case 'notices':
 				foreach( $v as $m ) {
-					logToFile( $m, \RIVER_NOTICES );
+					logToFile( $m, \PUBCABIN_NOTICES );
 				}
 				break;
 				
